@@ -103,9 +103,7 @@ class CameraAnalyser(context: Context):
     // ---------------------------------------------------------------------------------------------
 
     fun setPreviewView(preview: PreviewView) {
-        println("set preview ??")
         cameraUses.useCases.filterIsInstance<Preview>().firstOrNull()?.let {
-            println("    .... yes!")
             it.surfaceProvider = preview.surfaceProvider
         }
     }
