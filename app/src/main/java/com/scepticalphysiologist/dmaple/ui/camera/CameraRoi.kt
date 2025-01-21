@@ -43,9 +43,7 @@ import com.scepticalphysiologist.dmaple.ui.helper.Warnings
  * @param attributeSet
  */
 class CameraRoi(context: Context, attributeSet: AttributeSet?):
-    FrameLayout(context, attributeSet),
-    ImageAnalysis.Analyzer,
-    LifecycleOwner
+    FrameLayout(context, attributeSet)
 {
 
     // Views
@@ -63,25 +61,9 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
 
 
     // Camera
-    private val lifecycleRegistry: LifecycleRegistry = LifecycleRegistry(this)
-
-    override val lifecycle: Lifecycle
-        get() = lifecycleRegistry
-
-    private val cameraProvider: ProcessCameraProvider
-
-    private val cameraUses: UseCaseGroup
-
-    private val camera: Camera
 
     private val display = (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay
 
-    // State
-    private var recording: Boolean = false
-
-    private var analysers = mutableListOf<GutAnalyser>()
-
-    val upDateMap = MutableLiveData<Boolean>(false)
 
     // ---------------------------------------------------------------------------------------------
     // Construction
@@ -94,16 +76,6 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
         cameraPreview.implementationMode = PreviewView.ImplementationMode.COMPATIBLE
         cameraPreview.scaleType = PreviewView.ScaleType.FILL_CENTER
         this.addView(cameraPreview)
-
-        // Camera
-        cameraProvider = ProcessCameraProvider.getInstance(context).get()
-        cameraProvider.unbindAll()
-        cameraUses = buildUseCases()
-        camera = cameraProvider.bindToLifecycle(
-            lifecycleOwner = this,
-            cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA,
-            cameraUses
-        )
 
         // Roi and spine overlay.
         spineView = SpineView(context, attributeSet)
@@ -118,30 +90,6 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
 
         // Layout.
         setBackgroundColor(Color.GRAY)
-    }
-
-    private fun buildUseCases(): UseCaseGroup {
-
-        val useCaseGroup= UseCaseGroup.Builder()
-
-        val viewport = ViewPort.Builder(
-            Rational(1, 1), Surface.ROTATION_0
-        ).setScaleType(ViewPort.FIT).build()
-        useCaseGroup.setViewPort(viewport)
-
-        val preview = Preview.Builder().setTargetAspectRatio(aspect).build()
-        preview.surfaceProvider = cameraPreview.surfaceProvider
-        useCaseGroup.addUseCase(preview)
-
-        val imageCapture = ImageCapture.Builder().setTargetAspectRatio(aspect).build()
-        useCaseGroup.addUseCase(imageCapture)
-
-        val imageAnalysis = ImageAnalysis.Builder().setTargetAspectRatio(aspect).build()
-        imageAnalysis.setAnalyzer(Executors.newSingleThreadExecutor(), this)
-
-        useCaseGroup.addUseCase(imageAnalysis)
-
-        return useCaseGroup.build()
     }
 
 
@@ -159,97 +107,15 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
         }
     }
 
-
     // ---------------------------------------------------------------------------------------------
-    // Analysis
+    // Public
     // ---------------------------------------------------------------------------------------------
 
-    fun startStop(): Boolean {
-        val warnings = if(recording) stop() else start()
-        warnings.show(this.context)
-        return recording
-    }
+    fun getRois(): List<MappingRoi> { return roiView.savedRois }
 
-    fun isRecording(): Boolean { return recording }
+    fun getCameraPreview(): PreviewView { return cameraPreview }
 
-    fun getAnalyser(i: Int): GutAnalyser? { return if(i < analysers.size) analysers[i] else null }
-
-    private fun start(): Warnings {
-
-        // Cannot not start if there are no ROIs.
-        val warnings = Warnings("Start Recording")
-        if(roiView.savedRois.isEmpty()) {
-            val msg = "There are no areas to map (dashed rectangles).\n" +
-                      "Make a mapping area by double tapping a selection."
-            warnings.add(msg, true)
-            return warnings
-        }
-
-        // Convert the frame of the mapping ROIs to the frame of the camera.
-        val imageFrame = imageAnalyserFrame() ?: return warnings
-        analysers = roiView.roisInNewFrame(imageFrame).map {GutMapper(it)}.toMutableList()
-
-        // Prevent ROI editing.
-        roiView.allowEditing(false)
-        recording = true
-        return warnings
-    }
-
-    private fun stop(): Warnings {
-        val warnings = Warnings("Stop Recording")
-
-        // Save maps.
-        // ?????????
-
-        // Allow ROIs to be edited.
-        analysers.clear()
-        roiView.allowEditing(true)
-        recording = false
-        return warnings
-    }
-
-    private fun imageAnalyserFrame(): Frame? {
-        // Get analyser and update its target orientation.
-        val analysis = cameraUses.useCases.filterIsInstance<ImageAnalysis>().firstOrNull() ?: return null
-        analysis.targetRotation = display.rotation
-
-        val imageInfo = analysis.resolutionInfo ?: return null
-        val or = imageInfo.rotationDegrees + surfaceRotationDegrees(analysis.targetRotation)
-        return Frame(
-            width=imageInfo.resolution.width.toFloat(),
-            height = imageInfo.resolution.height.toFloat(),
-            orientation = or
-        )
-    }
-
-    override fun analyze(image: ImageProxy) {
-        // Not recording.
-        if(!recording) {
-            image.close() // Image must be "closed" to allow preview to continue.
-            return
-        }
-
-        // Analyse each mapping area.
-        val bm = image.toBitmap()
-        for(analyser in analysers) analyser.analyse(bm)
-
-        // set live data object to indicate update to view/fragment
-        upDateMap.postValue(!upDateMap.value!!)
-
-        // Image must be "closed" to allow preview to continue.
-        image.close()
-    }
-
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-        lifecycleRegistry.currentState = Lifecycle.State.STARTED
-    }
-
-    override fun onDetachedFromWindow() {
-        super.onDetachedFromWindow()
-        lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
-    }
-
+    fun allowEditing(allow: Boolean = true) { roiView.allowEditing(allow) }
 
     // ---------------------------------------------------------------------------------------------
     // Layout
@@ -269,6 +135,9 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
     }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+        if(!changed) return
+
         // Make sure the view does not exceed the parent view.
         // Because width/height might not be set to "match parent" (see this.resize()),
         // the view might end up extending past the parent view after rotation.
@@ -289,7 +158,6 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
         val (px0, px1) = complement(padding.x.roundToInt())
         val (py0, py1) = complement(padding.y.roundToInt())
         this.setPadding(px0, py0, px1, py1)
-        super.onLayout(changed, left, top, right, bottom)
     }
 
     private fun complement(x: Int): Pair<Int, Int> {

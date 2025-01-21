@@ -51,7 +51,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
     /** The size of the view in terms of bitmap pixels at the current zoom (x = space, y = time). */
     private var viewSizeInBitmapPixels = Point()
     /** A matrix used for rotating and scaling the map's bitmap. */
-    private lateinit var bitmapMatrix: Matrix
+    private var bitmapMatrix: Matrix = Matrix()
     /** The offset of the end of shown map from the end of the view (x = space, y = time). */
     private val offset = Point(0f, 0f)
 

@@ -2,14 +2,9 @@ package com.scepticalphysiologist.dmaple.ui
 
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
-import android.os.Bundle
 import android.view.MotionEvent
-import android.view.View
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat.checkSelfPermission
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelProvider
-import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.databinding.RecorderBinding
 import com.scepticalphysiologist.dmaple.ui.camera.Point
@@ -28,26 +23,20 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         }.toSet()
         requestPermissions(permissionsToAsk.toTypedArray(), 6543)
 
+        // Set the view model.
         model = ViewModelProvider(this).get(RecorderModel::class.java)
 
+        // Ensure that camera view is set-up correctly each time the root view is created and
+        // has its inflated size - either when the fragment is created or resumed.
+        binding.root.post {
+            model.setCameraPreview(binding.cameraAndRoi.getCameraPreview())
+            setState()
+        }
 
         // Start/stop recording.
         binding.recordButton.setOnClickListener {
-            // Try to start/stop recording.
-            val isRecording = binding.cameraAndRoi.startStop()
-
-            // Reset map view.
-            binding.maps.reset()
-
-            // Button icon
-            val icon = if(isRecording) R.drawable.stop_5f6368 else R.drawable.play_arrow
-            binding.recordButton.setImageResource(icon)
-
-            // Set camera view.
-            if(isRecording) {
-                var extent = Point.ofViewExtent(binding.root) * 0.5f
-                binding.cameraAndRoi.resize(extent.x.toInt(), extent.y.toInt())
-            } else binding.cameraAndRoi.fullSize()
+            model.startStop(binding.cameraAndRoi.getRois())
+            setState()
         }
 
         // When recording, allow the camera view to be resized by dragging near its
@@ -59,14 +48,34 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         }
 
         // Map update
-        binding.cameraAndRoi.upDateMap.observe(viewLifecycleOwner) {
-            binding.cameraAndRoi.getAnalyser(0)?.let {binding.maps.updateMap(it)}
+        model.cameraAnalyser.upDateMap.observe(viewLifecycleOwner) {
+            model.getAnalyser(0)?.let {binding.maps.updateMap(it)}
         }
 
     }
 
+    private fun setState() {
+        val isRecording = model.isRecording()
+
+        // Button icon
+        val icon = if(isRecording) R.drawable.stop_5f6368 else R.drawable.play_arrow
+        binding.recordButton.setImageResource(icon)
+
+        // Map view.
+        if(!isRecording) binding.maps.reset()
+
+        // Set camera view.
+        binding.cameraAndRoi.allowEditing(!isRecording)
+        if(isRecording) {
+            val extent = Point.ofViewExtent(binding.root) * 0.5f
+            binding.cameraAndRoi.resize(extent.x.toInt(), extent.y.toInt())
+        } else {
+            binding.cameraAndRoi.fullSize()
+        }
+    }
+
     private fun dragCameraView(event: MotionEvent): Boolean {
-        if(binding.cameraAndRoi.isRecording() && (event.action == MotionEvent.ACTION_MOVE)) {
+        if(model.isRecording() && (event.action == MotionEvent.ACTION_MOVE)) {
             val d = (Point.ofViewExtent(binding.cameraAndRoi) - Point.ofMotionEvent(event)).l2()
             if (d < 100) {
                 binding.cameraAndRoi.resize(event.x.toInt(), event.y.toInt())
