@@ -26,7 +26,9 @@ import kotlin.math.roundToInt
 
 import android.view.WindowManager
 import androidx.core.view.updateLayoutParams
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.MutableLiveData
 import com.scepticalphysiologist.dmaple.ui.VerticalSlider
 import com.scepticalphysiologist.dmaple.ui.helper.Warnings
@@ -42,7 +44,8 @@ import com.scepticalphysiologist.dmaple.ui.helper.Warnings
  */
 class CameraRoi(context: Context, attributeSet: AttributeSet?):
     FrameLayout(context, attributeSet),
-    ImageAnalysis.Analyzer
+    ImageAnalysis.Analyzer,
+    LifecycleOwner
 {
 
     // Views
@@ -60,6 +63,10 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
 
 
     // Camera
+    private val lifecycleRegistry: LifecycleRegistry = LifecycleRegistry(this)
+
+    override val lifecycle: Lifecycle
+        get() = lifecycleRegistry
 
     private val cameraProvider: ProcessCameraProvider
 
@@ -93,7 +100,7 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
         cameraProvider.unbindAll()
         cameraUses = buildUseCases()
         camera = cameraProvider.bindToLifecycle(
-            lifecycleOwner = context as AppCompatActivity,
+            lifecycleOwner = this,
             cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA,
             cameraUses
         )
@@ -215,7 +222,6 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
         )
     }
 
-
     override fun analyze(image: ImageProxy) {
         // Not recording.
         if(!recording) {
@@ -232,6 +238,16 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
 
         // Image must be "closed" to allow preview to continue.
         image.close()
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        lifecycleRegistry.currentState = Lifecycle.State.STARTED
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
     }
 
 

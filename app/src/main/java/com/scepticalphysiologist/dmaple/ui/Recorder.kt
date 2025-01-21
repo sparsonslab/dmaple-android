@@ -2,14 +2,22 @@ package com.scepticalphysiologist.dmaple.ui
 
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
+import android.os.Bundle
 import android.view.MotionEvent
+import android.view.View
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat.checkSelfPermission
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ViewModelProvider
+import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.databinding.RecorderBinding
 import com.scepticalphysiologist.dmaple.ui.camera.Point
 
 
 class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
+
+    private lateinit var model: RecorderModel
 
     @SuppressLint("ClickableViewAccessibility")
     override fun createUI() {
@@ -19,6 +27,9 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
             (checkSelfPermission(binding.root.context, it)  == PackageManager.PERMISSION_DENIED)
         }.toSet()
         requestPermissions(permissionsToAsk.toTypedArray(), 6543)
+
+        model = ViewModelProvider(this).get(RecorderModel::class.java)
+
 
         // Start/stop recording.
         binding.recordButton.setOnClickListener {
