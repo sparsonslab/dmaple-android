@@ -15,7 +15,6 @@ import kotlin.math.floor
 
 /** A view for live display of a spatio-temporal map.
  *
- * @property bitmapMatrix blabala
  */
 class MapView(context: Context, attributeSet: AttributeSet):
     androidx.appcompat.widget.AppCompatImageView(context, attributeSet),
