@@ -36,21 +36,21 @@ class MapView(context: Context, attributeSet: AttributeSet):
     /** Holder for the scale (distance between fingers) at the start of a pinch. */
     private var scaleStart = Point()
 
-    // Time(x)- space(y) pairs.
+    // Space(x)-Time(y) pairs.
     // -------------------------
-    /** The size of the view (x = time, y = space). */
+    /** The size of the view (x = space, y = time). */
     private var viewSize = Point()
-    /** The size of the view (x = time, y = space). */
+    /** The size of the view (x = space, y = time). */
     private var bitmapSize = Point()
-    /** Zoom of the bitmap (x = time, y = space). */
+    /** Zoom of the bitmap (x = space, y = time). */
     private var zoom = Point(1f, 1f)
     /** The ratio of bitmap pixels to view pixels, along the spatial axis at zoom = 1. */
     private var scale  = 1f
-    /** The size of the view in terms of bitmap pixels at the current zoom. (x = time, y = space). */
+    /** The size of the view in terms of bitmap pixels at the current zoom (x = space, y = time). */
     private var viewSizeInBitmapPixels = Point()
     /** A matrix used for rotating and scaling the map's bitmap. */
     private lateinit var bitmapMatrix: Matrix
-    /** The offset of the end of shown map from the end of the view (x = time, y = space). */
+    /** The offset of the end of shown map from the end of the view (x = space, y = time). */
     private val offset = Point(0f, 0f)
 
     fun reset() {
@@ -61,47 +61,47 @@ class MapView(context: Context, attributeSet: AttributeSet):
     // Size, scale and zoom variables.
     // ---------------------------------------------------------------------------------------------
 
-    /** Convert a screen coordinate to a time-space coordinate.
+    /** Convert a screen coordinate to a space-time coordinate.
      * Time is always the larger dimension of the view.
      * */
-    private fun timeSpacePoint(screenPoint: Point): Point {
-        return if(width > height) screenPoint else screenPoint.swap()
+    private fun spaceTimePoint(screenPoint: Point): Point {
+        return if(width > height) screenPoint.swap() else screenPoint
     }
 
     /** The inverse of [timeSpacePoint]. */
-    private fun screenPoint(timeSpacePoint: Point): Point { return timeSpacePoint(timeSpacePoint) }
+    private fun screenPoint(timeSpacePoint: Point): Point { return spaceTimePoint(timeSpacePoint) }
 
     /** Update [viewSize]. */
     private fun updateViewSize(){
-        viewSize = timeSpacePoint(Point(width.toFloat(), height.toFloat()))
+        viewSize = spaceTimePoint(Point(width.toFloat(), height.toFloat()))
         updateScale()
         updateMatrix()
     }
 
     private fun updateBitmapSize(analyserSize: Size){
-        bitmapSize.x = analyserSize.height.toFloat()
+        bitmapSize.y = analyserSize.height.toFloat()
         val w = analyserSize.width.toFloat()
-        if(bitmapSize.y != w) {
-            bitmapSize.y = w
+        if(bitmapSize.x != w) {
+            bitmapSize.x = w
             updateScale()
         }
     }
 
     private fun updateScale(){
-        scale = bitmapSize.y / viewSize.y
+        scale = bitmapSize.x / viewSize.x
         updateViewSizeInBitmapPixels()
     }
 
     private fun updateZoom(z: Point) {
         // Restrict zoom ranges.
-        // Space (y) cannot be zoomed out to less than the width of the screen (zoom >= 1).
-        zoom = Point.maxOf(Point.minOf(z, Point(5f, 4f)), Point(0.1f, 1f))
+        // Space (x) cannot be zoomed out to less than the width of the screen (zoom >= 1).
+        zoom = Point.maxOf(Point.minOf(z, Point(4f, 5f)), Point(1f, 0.1f))
         // Update dependent variables.
         updateMatrix()
         updateViewSizeInBitmapPixels()
         // Restrict time anchor point. Cannot have an time offset if full time span of the bitmap
         // is within the view.
-        if(bitmapSize.x < viewSizeInBitmapPixels.x) offset.x = 0f
+        if(bitmapSize.y < viewSizeInBitmapPixels.y) offset.y = 0f
     }
 
     private fun updateViewSizeInBitmapPixels() {
@@ -139,8 +139,8 @@ class MapView(context: Context, attributeSet: AttributeSet):
         val p0 = Point.maxOf(bitmapSize - pE - offset, Point())
         val p1 = p0 + pE
         val bm = analyser.getImage(Rect(
-            p0.y.toInt(), p0.x.toInt(),
-            p1.y.toInt(), p1.x.toInt(),
+            p0.x.toInt(), p0.y.toInt(),
+            p1.x.toInt(), p1.y.toInt(),
         ))
 
         // Create adjusted bitmap.
@@ -171,8 +171,8 @@ class MapView(context: Context, attributeSet: AttributeSet):
     private fun fingerZoom(s0: Point, s1: Point, f1: Point) {
         // Distance of finger movement (< 0  pinch, > 0 stretch)
         // and zoom factor (> 1 zoom in, < 1 zoom out).
-        val dFinger = timeSpacePoint(s1 - s0).abs()
-        val zFactor = timeSpacePoint(s1 / s0)
+        val dFinger = spaceTimePoint(s1 - s0).abs()
+        val zFactor = spaceTimePoint(s1 / s0)
         // Zoom only in one direction, of the larger finger movement.
         if(dFinger.x > dFinger.y) zFactor.y = 1f else zFactor.x = 1f
         // Zoom.
@@ -184,7 +184,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
      * @param ds The change in finger position during a scroll.
      */
     private fun fingerScroll(ds: Point) {
-        val bitmapShift = timeSpacePoint(ds) * scale / zoom
+        val bitmapShift = spaceTimePoint(ds) * scale / zoom
         // todo - Direction of shift should depend on orientation
         val shift = offset + bitmapShift
         if(shift.x > 0) offset.x = shift.x
