@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/black"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    tools:context="com.scepticalphysiologist.dmaple.ui.Recorder">
+
+
+    <com.scepticalphysiologist.dmaple.ui.camera.MapView
+        android:id="@+id/maps"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitCenter"
+        android:background="@color/teal_200">
+    </com.scepticalphysiologist.dmaple.ui.camera.MapView>
+
+
+    <com.scepticalphysiologist.dmaple.ui.camera.CameraRoi
+        android:id="@+id/camera_and_roi"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+    </com.scepticalphysiologist.dmaple.ui.camera.CameraRoi>
+
+
+    <ImageButton
+        android:id="@+id/record_button"
+        android:src="@drawable/play_arrow"
+        android:background="@null"
+        android:scaleType="fitXY"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_gravity="center_horizontal|bottom"
+        android:layout_margin="20px">
+    </ImageButton>
+
+
+</FrameLayout>

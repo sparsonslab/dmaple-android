@@ -1,0 +1,239 @@
+package com.scepticalphysiologist.dmaple.ui.camera
+
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Matrix
+import android.graphics.Rect
+import android.util.AttributeSet
+import android.util.Size
+import android.view.GestureDetector
+import android.view.MotionEvent
+import android.view.ScaleGestureDetector
+import android.view.Surface
+import android.view.WindowManager
+
+/** A view for live display of a spatio-temporal map.
+ *
+ * @property bitmapMatrix blabala
+ */
+class MapView(context: Context, attributeSet: AttributeSet):
+    androidx.appcompat.widget.AppCompatImageView(context, attributeSet),
+    GestureDetector.OnGestureListener,
+    ScaleGestureDetector.OnScaleGestureListener
+{
+
+    // Display
+    // -------
+    /** Information about the display. Needed for determining screen orientation. */
+    private val display = (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay
+
+    // Gesture detection
+    // ------------------
+    /** General gesture detector. Needed to detect scrolling of the map. */
+    private val gestureDetector: GestureDetector = GestureDetector(this.context, this)
+    /** Scale gesture detector. Need to detect pinch zoom of the map. */
+    private val scaleGestureDetector: ScaleGestureDetector = ScaleGestureDetector(this.context, this)
+    /** Holder for the scale (distance between fingers) at the start of a pinch. */
+    private var scaleStart = Point()
+
+    // Time(x)- space(y) pairs.
+    // -------------------------
+    /** The size of the view (x = time, y = space). */
+    private var viewSize = Point()
+    /** The size of the view (x = time, y = space). */
+    private var bitmapSize = Point()
+    /** Zoom of the bitmap (x = time, y = space). */
+    private var zoom = Point(1f, 1f)
+    /** The ratio of bitmap pixels to view pixels, along the spatial axis at zoom = 1. */
+    private var scale  = 1f
+    /** The size of the view in terms of bitmap pixels at the current zoom. (x = time, y = space). */
+    private var viewSizeInBitmapPixels = Point()
+    /** A matrix used for rotating and scaling the map's bitmap. */
+    private lateinit var bitmapMatrix: Matrix
+    /** The offset of the end of shown map from the end of the view (x = time, y = space). */
+    private val offset = Point(0f, 0f)
+
+    fun reset() {
+        updateZoom(Point(1f, 1f))
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Size, scale and zoom variables.
+    // ---------------------------------------------------------------------------------------------
+
+    /** Convert a screen coordinate to a time-space coordinate.
+     * Time is always the larger dimension of the view.
+     * */
+    private fun timeSpacePoint(screenPoint: Point): Point {
+        return if(width > height) screenPoint else screenPoint.swap()
+    }
+
+    /** The inverse of [timeSpacePoint]. */
+    private fun screenPoint(timeSpacePoint: Point): Point { return timeSpacePoint(timeSpacePoint) }
+
+    /** Update [viewSize]. */
+    private fun updateViewSize(){
+        viewSize = timeSpacePoint(Point(width.toFloat(), height.toFloat()))
+        updateScale()
+        updateMatrix()
+    }
+
+    private fun updateBitmapSize(analyserSize: Size){
+        bitmapSize.x = analyserSize.height.toFloat()
+        val w = analyserSize.width.toFloat()
+        if(bitmapSize.y != w) {
+            bitmapSize.y = w
+            updateScale()
+        }
+    }
+
+    private fun updateScale(){
+        scale = bitmapSize.y / viewSize.y
+        updateViewSizeInBitmapPixels()
+    }
+
+    private fun updateZoom(z: Point) {
+        // Restrict zoom ranges.
+        // Space (y) cannot be zoomed out to less than the width of the screen (zoom >= 1).
+        zoom = Point.maxOf(Point.minOf(z, Point(5f, 4f)), Point(0.1f, 1f))
+        // Update dependent variables.
+        updateMatrix()
+        updateViewSizeInBitmapPixels()
+        // Restrict time anchor point. Cannot have an time offset if full time span of the bitmap
+        // is within the view.
+        if(bitmapSize.x < viewSizeInBitmapPixels.x) offset.x = 0f
+    }
+
+    private fun updateViewSizeInBitmapPixels() {
+        viewSizeInBitmapPixels = viewSize * scale / zoom
+    }
+
+    private fun updateMatrix() {
+        bitmapMatrix = Matrix()
+
+        // Rotate so that the time (height) axis of the a map's bitmap is shown
+        // along the long axis of the view.
+        bitmapMatrix.setRotate(if(width > height) 90f else 0f)
+
+        // Flip so that time goes from top>bottom or left>right and space matches ROI.
+        // todo - Does this actually work on all tablets? Is this general??
+        val s = screenPoint(zoom)
+        when(display.rotation) {
+            Surface.ROTATION_0 -> bitmapMatrix.postScale(-s.x, s.y)
+            Surface.ROTATION_90 -> bitmapMatrix.postScale(-s.x, s.y)
+            Surface.ROTATION_180 -> bitmapMatrix.postScale(s.x, s.y)
+            Surface.ROTATION_270 -> bitmapMatrix.postScale(-s.x, -s.y)
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Bitmap and layout.
+    // ---------------------------------------------------------------------------------------------
+
+    fun updateMap(analyser: GutAnalyser) {
+        // Update bitmap size.
+        updateBitmapSize(analyser.size())
+
+        // Extract section of map as a bitmap.
+        val pE = Point.minOf(bitmapSize, viewSizeInBitmapPixels)
+        val p0 = Point.maxOf(bitmapSize - pE - offset, Point())
+        val p1 = p0 + pE
+        val bm = analyser.getImage(Rect(
+            p0.y.toInt(), p0.x.toInt(),
+            p1.y.toInt(), p1.x.toInt(),
+        ))
+
+        // Create adjusted bitmap.
+        bm?.let {
+            this.setImageBitmap(Bitmap.createBitmap(
+                bm, 0, 0, bm.width, bm.height,
+                bitmapMatrix, false
+            ))
+        }
+    }
+
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+        // Update view size and bitmap transformation matrix.
+        if(changed) updateViewSize()
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Gesture reaction.
+    // ---------------------------------------------------------------------------------------------
+
+    /** Zoom the map from a finger pinch or stretch movement.
+     *
+     * @param s0 The scale (distance between fingers) at the start of the movement.
+     * @param s1 The scale (distance between fingers) at the end of the movement.
+     * @param f1 The focus (midpoint between fingers) at the end of the movement.
+     */
+    private fun fingerZoom(s0: Point, s1: Point, f1: Point) {
+        // Distance of finger movement (< 0  pinch, > 0 stretch)
+        // and zoom factor (> 1 zoom in, < 1 zoom out).
+        val dFinger = timeSpacePoint(s1 - s0).abs()
+        val zFactor = timeSpacePoint(s1 / s0)
+        // Zoom only in one direction, of the larger finger movement.
+        if(dFinger.x > dFinger.y) zFactor.y = 1f else zFactor.x = 1f
+        // Zoom.
+        updateZoom(zFactor * zoom)
+    }
+
+    /** Scroll the map from a scrolling finger movement.
+     *
+     * @param ds The change in finger position during a scroll.
+     */
+    private fun fingerScroll(ds: Point) {
+        val bitmapShift = timeSpacePoint(ds) * scale / zoom
+        // todo - Direction of shift should depend on orientation
+        val shift = offset + bitmapShift
+        if(shift.x > 0) offset.x = shift.x
+        if(shift.y > 0) offset.y = shift.y
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Gesture detection
+    // ---------------------------------------------------------------------------------------------
+
+    /** Process a motion event passed by a parent view.
+     * onTouchEvent() is called in children views before their parent. In this case it makes
+     * sense for the map view's parent to process the touch event before it reaches here. Hence
+     * this function.
+     * */
+    fun processMotionEvent(event: MotionEvent): Boolean {
+        // todo - adjust event coordinates from parent to child using left/right?
+        var res = scaleGestureDetector.onTouchEvent(event)
+        res = gestureDetector.onTouchEvent(event) || res
+        return res
+    }
+
+    override fun onDown(p0: MotionEvent): Boolean { return true }
+
+    override fun onShowPress(p0: MotionEvent) { }
+
+    override fun onSingleTapUp(p0: MotionEvent): Boolean { return true }
+
+    override fun onScroll(down: MotionEvent?, current: MotionEvent, dx: Float, dy: Float): Boolean {
+        if(scaleGestureDetector.isInProgress) return false
+        fingerScroll(Point(dx, dy))
+        return true
+    }
+
+    override fun onLongPress(p0: MotionEvent) { }
+
+    override fun onFling(p0: MotionEvent?, p1: MotionEvent, p2: Float, p3: Float): Boolean { return true }
+
+    override fun onScaleBegin(gd: ScaleGestureDetector): Boolean {
+        scaleStart.x = gd.currentSpanX
+        scaleStart.y = gd.currentSpanY
+        return true
+    }
+
+    override fun onScale(gd: ScaleGestureDetector): Boolean { return true }
+
+    override fun onScaleEnd(gd: ScaleGestureDetector) {
+        fingerZoom(scaleStart, Point(gd.currentSpanX, gd.currentSpanY), Point(gd.focusX, gd.focusY))
+    }
+
+}
+
