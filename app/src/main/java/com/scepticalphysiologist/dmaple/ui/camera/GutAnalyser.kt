@@ -81,7 +81,6 @@ class GutMapper(roi: MappingRoi): GutAnalyser(roi) {
         catch (e: IndexOutOfBoundsException) { return null }
         catch (e: IllegalArgumentException) { return null }
     }
-
 }
 
 private fun rangeSize(range: Int, step: Int): Int {

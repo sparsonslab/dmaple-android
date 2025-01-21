@@ -101,7 +101,6 @@ class MapView(context: Context, attributeSet: AttributeSet):
         zoom = Point.maxOf(Point.minOf(z, Point(4f, 5f)), Point(1f, 0.1f))
         // Skip time (y) pixels at low zoom.
         pixelStep.y = if(zoom.y < 0.5) floor(1f / zoom.y) else 1f
-        println("step = $pixelStep")
         // Update dependent variables.
         updateMatrix()
         updateViewSizeInBitmapPixels()
