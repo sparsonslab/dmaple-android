@@ -6,6 +6,8 @@ import android.util.Size
 import java.lang.IllegalArgumentException
 import java.lang.IndexOutOfBoundsException
 import kotlin.math.abs
+import kotlin.math.ceil
+
 
 abstract class GutAnalyser(val area: MappingRoi) {
 
@@ -13,7 +15,7 @@ abstract class GutAnalyser(val area: MappingRoi) {
 
     abstract fun size(): Size
 
-    abstract fun getImage(crop: Rect?): Bitmap?
+    abstract fun getImage(crop: Rect?, stepX: Int = 1, stepY: Int = 1): Bitmap?
 
 }
 
@@ -62,23 +64,29 @@ class GutMapper(roi: MappingRoi): GutAnalyser(roi) {
         return Size(ns, nt)
     }
 
-    override fun getImage(crop: Rect?): Bitmap? {
+    override fun getImage(crop: Rect?, stepX: Int, stepY: Int): Bitmap? {
         val area = Rect(0, 0, ns, nt)
         crop?.let { area.intersect(crop) }
         try {
+            val bs = Size(rangeSize(area.width(), stepX), rangeSize(area.height(), stepY))
+            val arr = IntArray(bs.width * bs.height)
             var k = 0
-            val arr = IntArray(area.width() * area.height())
-            for(j in area.top until area.bottom)
-                for(i in area.left until area.right) {
+            for(j in area.top until area.bottom step stepY)
+                for(i in area.left until area.right step stepX) {
                     arr[k] = map[j * ns + i]
                     k += 1
                 }
-            return Bitmap.createBitmap(arr, area.width(), area.height(), bconfig)
+            return Bitmap.createBitmap(arr, bs.width, bs.height, bconfig)
         }
         catch (e: IndexOutOfBoundsException) { return null }
-        catch (e: IllegalArgumentException) {return null }
+        catch (e: IllegalArgumentException) { return null }
     }
 
+}
+
+private fun rangeSize(range: Int, step: Int): Int {
+    //return range.floorDiv(step)
+    return ceil(range.toFloat() / step.toFloat()).toInt()
 }
 
 

@@ -11,6 +11,7 @@ import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.Surface
 import android.view.WindowManager
+import kotlin.math.floor
 
 /** A view for live display of a spatio-temporal map.
  *
@@ -46,6 +47,8 @@ class MapView(context: Context, attributeSet: AttributeSet):
     private var zoom = Point(1f, 1f)
     /** The ratio of bitmap pixels to view pixels, along the spatial axis at zoom = 1. */
     private var scale  = 1f
+    /** Skipping of map pixels to display (x = space, y = time). */
+    private var pixelStep = Point(1f, 1f)
     /** The size of the view in terms of bitmap pixels at the current zoom (x = space, y = time). */
     private var viewSizeInBitmapPixels = Point()
     /** A matrix used for rotating and scaling the map's bitmap. */
@@ -96,6 +99,9 @@ class MapView(context: Context, attributeSet: AttributeSet):
         // Restrict zoom ranges.
         // Space (x) cannot be zoomed out to less than the width of the screen (zoom >= 1).
         zoom = Point.maxOf(Point.minOf(z, Point(4f, 5f)), Point(1f, 0.1f))
+        // Skip time (y) pixels at low zoom.
+        pixelStep.y = if(zoom.y < 0.5) floor(1f / zoom.y) else 1f
+        println("step = $pixelStep")
         // Update dependent variables.
         updateMatrix()
         updateViewSizeInBitmapPixels()
@@ -117,7 +123,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
 
         // Flip so that time goes from top>bottom or left>right and space matches ROI.
         // todo - Does this actually work on all tablets? Is this general??
-        val s = screenPoint(zoom)
+        val s = screenPoint(zoom * pixelStep)
         when(display.rotation) {
             Surface.ROTATION_0 -> bitmapMatrix.postScale(-s.x, s.y)
             Surface.ROTATION_90 -> bitmapMatrix.postScale(-s.x, s.y)
@@ -141,7 +147,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
         val bm = analyser.getImage(Rect(
             p0.x.toInt(), p0.y.toInt(),
             p1.x.toInt(), p1.y.toInt(),
-        ))
+        ), stepX = pixelStep.x.toInt(), stepY = pixelStep.y.toInt())
 
         // Create adjusted bitmap.
         bm?.let {
