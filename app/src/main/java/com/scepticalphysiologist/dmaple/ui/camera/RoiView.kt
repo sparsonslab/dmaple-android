@@ -7,6 +7,8 @@ import android.graphics.Color
 import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.drawable.BitmapDrawable
+import android.os.Bundle
+import android.os.Parcelable
 import android.util.AttributeSet
 import android.view.Display
 import android.view.GestureDetector
@@ -110,6 +112,17 @@ class RoiView(context: Context?, attributeSet: AttributeSet?):
         // Normally is null (i.e. the view is transparent and so the camera preview can be seen).
         // When thresholding is begun, it is set to latest camera frame. i.e. the camera "freezes".
         background = null
+    }
+
+    override fun onSaveInstanceState(): Parcelable? {
+        val state = super.onSaveInstanceState()
+        println("SAVE ROI VIEW !!!!, ${state is Bundle}")
+        return state
+    }
+
+    override fun onRestoreInstanceState(state: Parcelable?) {
+        println("RESTORE ROI VIEW !!!!, ${state is Bundle}")
+        super.onRestoreInstanceState(state)
     }
 
     // ---------------------------------------------------------------------------------------------

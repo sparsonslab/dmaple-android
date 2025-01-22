@@ -1,37 +1,20 @@
 package com.scepticalphysiologist.dmaple.ui.camera
 
 import android.content.Context
-import android.graphics.Bitmap
+import android.content.res.Configuration
 import android.graphics.Color
 import android.util.AttributeSet
-import android.util.Rational
 import android.view.Gravity
-import android.view.Surface
 import android.view.View
 import android.widget.FrameLayout
-import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.AspectRatio
-import androidx.camera.core.Camera
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageProxy
-import androidx.camera.core.Preview
-import androidx.camera.core.UseCaseGroup
-import androidx.camera.core.ViewPort
-import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import java.util.concurrent.Executors
 import kotlin.math.roundToInt
 
 import android.view.WindowManager
 import androidx.core.view.updateLayoutParams
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.LifecycleRegistry
-import androidx.lifecycle.MutableLiveData
 import com.scepticalphysiologist.dmaple.ui.VerticalSlider
-import com.scepticalphysiologist.dmaple.ui.helper.Warnings
 
 /**
  * A camera preview and ROI overlay.
@@ -59,9 +42,7 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
     // Controls
     private val thresholdSlider: VerticalSlider
 
-
     // Camera
-
     private val display = (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay
 
 
@@ -113,6 +94,11 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
 
     fun getRois(): List<MappingRoi> { return roiView.savedRois }
 
+    fun setRois(rois: List<MappingRoi>) {
+        roiView.savedRois.clear()
+        roiView.savedRois.addAll(rois.toMutableList())
+    }
+
     fun getCameraPreview(): PreviewView { return cameraPreview }
 
     fun allowEditing(allow: Boolean = true) { roiView.allowEditing(allow) }
@@ -130,14 +116,17 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
         }
     }
 
-    private fun constrainSize(w: Int, h: Int) {
-        if((width > w) || (height > h)) resize(minOf(w, width), minOf(h, height))
+    override fun onConfigurationChanged(newConfig: Configuration?) {
+        super.onConfigurationChanged(newConfig)
+        updateLayout()
     }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
-        if(!changed) return
+        if(changed) updateLayout()
+    }
 
+    private fun updateLayout() {
         // Make sure the view does not exceed the parent view.
         // Because width/height might not be set to "match parent" (see this.resize()),
         // the view might end up extending past the parent view after rotation.
@@ -158,6 +147,10 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
         val (px0, px1) = complement(padding.x.roundToInt())
         val (py0, py1) = complement(padding.y.roundToInt())
         this.setPadding(px0, py0, px1, py1)
+    }
+
+    private fun constrainSize(w: Int, h: Int) {
+        if((width > w) || (height > h)) resize(minOf(w, width), minOf(h, height))
     }
 
     private fun complement(x: Int): Pair<Int, Int> {

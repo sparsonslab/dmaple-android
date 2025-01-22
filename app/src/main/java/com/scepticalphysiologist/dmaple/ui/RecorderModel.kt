@@ -13,6 +13,10 @@ class RecorderModel(application: Application) : AndroidViewModel(application) {
 
     val cameraAnalyser = CameraAnalyser(application.baseContext)
 
+
+    var rois = listOf<MappingRoi>()
+
+
     // ---------------------------------------------------------------------------------------------
     // Public access to camera analyser
     // ---------------------------------------------------------------------------------------------

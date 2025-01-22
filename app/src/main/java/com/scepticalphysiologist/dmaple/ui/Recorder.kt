@@ -2,6 +2,7 @@ package com.scepticalphysiologist.dmaple.ui
 
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.view.MotionEvent
 import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.lifecycle.ViewModelProvider
@@ -30,6 +31,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         // has its inflated size - either when the fragment is created or resumed.
         binding.root.post {
             model.setCameraPreview(binding.cameraAndRoi.getCameraPreview())
+            binding.cameraAndRoi.setRois(model.rois)
             setState()
         }
 
@@ -53,6 +55,15 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         }
 
     }
+
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+
+        model.rois = binding.cameraAndRoi.getRois()
+        //println("saving ${model.rois.size} rois to model")
+    }
+
 
     private fun setState() {
         val isRecording = model.isRecording()
