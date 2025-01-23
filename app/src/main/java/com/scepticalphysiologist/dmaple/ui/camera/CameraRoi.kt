@@ -53,9 +53,6 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
     // ---------------------------------------------------------------------------------------------
 
     init {
-
-        println("CONSTRUCT: camera roi")
-
         // Camera preview view
         cameraPreview = PreviewView(context, attributeSet)
         cameraPreview.implementationMode = PreviewView.ImplementationMode.COMPATIBLE
@@ -75,9 +72,6 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
 
         // Layout.
         setBackgroundColor(Color.GRAY)
-
-
-
     }
 
 
