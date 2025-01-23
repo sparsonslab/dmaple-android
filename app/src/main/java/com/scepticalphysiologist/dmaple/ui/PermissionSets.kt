@@ -15,7 +15,9 @@ enum class PermissionSets (
     CONNECTION(
         rationale ="Access to the camera for recording video.",
         permissions = setOf(
-            Manifest.permission.CAMERA
+            Manifest.permission.CAMERA,
+            Manifest.permission.FOREGROUND_SERVICE,
+            Manifest.permission.FOREGROUND_SERVICE_CAMERA
         ),
     );
 

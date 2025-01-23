@@ -28,7 +28,8 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         setState()
 
         // Keep the screen on, so that the camera stays on.
-        // todo - It would be better to run the camera on a foreground service.
+        // todo - It would be better to run the camera on a foreground service. CameraService is a
+        //    start on this,
         binding.root.keepScreenOn = true
 
         // Ensure that camera view is set-up correctly each time the root view is created and

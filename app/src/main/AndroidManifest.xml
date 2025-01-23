@@ -28,8 +28,15 @@
             android:name="preloaded_fonts"
             android:resource="@array/preloaded_fonts" />
 
+        <service android:name=".ui.camera.CameraService"
+            android:foregroundServiceType="camera"
+            android:exported="false">
+        </service>
+
     </application>
 
     <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA"/>
 
 </manifest>
