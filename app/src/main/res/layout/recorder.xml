@@ -16,6 +16,16 @@
         android:background="@color/teal_200">
     </com.scepticalphysiologist.dmaple.ui.camera.MapView>
 
+    <TextView
+        android:id="@+id/camera_timer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="right|top"
+        android:layout_margin="10dp"
+        android:textColor="#ff0000"
+        android:text="start"
+        android:textSize="12pt">
+    </TextView>
 
     <com.scepticalphysiologist.dmaple.ui.camera.CameraRoi
         android:id="@+id/camera_and_roi"

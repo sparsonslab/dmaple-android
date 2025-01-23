@@ -13,6 +13,8 @@ class RecorderModel(application: Application) : AndroidViewModel(application) {
 
     val cameraAnalyser = CameraAnalyser(application.baseContext)
 
+    val time: Int = 0
+
 
     var rois = listOf<MappingRoi>()
 
@@ -26,6 +28,8 @@ class RecorderModel(application: Application) : AndroidViewModel(application) {
     fun startStop(rois: List<MappingRoi>? = null): Boolean { return cameraAnalyser.startStop(rois) }
 
     fun isRecording(): Boolean { return cameraAnalyser.isRecording() }
+
+    fun elapsedSeconds(): Long { return cameraAnalyser.elapsedSeconds() }
 
     fun getAnalyser(i: Int): GutAnalyser? { return cameraAnalyser.getAnalyser(i) }
 

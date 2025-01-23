@@ -20,6 +20,8 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.MutableLiveData
 import com.scepticalphysiologist.dmaple.ui.helper.Warnings
+import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.Executors
 
 class CameraAnalyser(context: Context):
@@ -45,6 +47,8 @@ class CameraAnalyser(context: Context):
     // State
     // -----
     private var recording: Boolean = false
+
+    private var startTime: Instant? = null
 
     private var analysers = mutableListOf<GutAnalyser>()
 
@@ -117,6 +121,11 @@ class CameraAnalyser(context: Context):
 
     fun isRecording(): Boolean { return recording }
 
+    fun elapsedSeconds(): Long {
+        if(startTime == null) return 0
+        return (Duration.between(startTime, Instant.now()).toMillis() / 1000f).toLong()
+    }
+
 
     private fun start(rois: List<MappingRoi>?): Warnings {
 
@@ -135,6 +144,7 @@ class CameraAnalyser(context: Context):
 
         // State
         recording = true
+        startTime = Instant.now()
         return warning
     }
 

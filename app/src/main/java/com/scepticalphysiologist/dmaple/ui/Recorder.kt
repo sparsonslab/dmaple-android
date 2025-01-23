@@ -2,6 +2,7 @@ package com.scepticalphysiologist.dmaple.ui
 
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
+import android.text.format.DateUtils
 import android.view.MotionEvent
 import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.lifecycle.ViewModelProvider
@@ -57,6 +58,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         // Map update
         model.cameraAnalyser.upDateMap.observe(viewLifecycleOwner) {
             model.getAnalyser(0)?.let {binding.maps.updateMap(it)}
+            binding.cameraTimer.text = DateUtils.formatElapsedTime(model.elapsedSeconds())
         }
 
     }
@@ -78,6 +80,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
             binding.cameraAndRoi.resize(extent.x.toInt(), extent.y.toInt())
         } else {
             binding.cameraAndRoi.fullSize()
+            binding.cameraTimer.text = ""
         }
     }
 
