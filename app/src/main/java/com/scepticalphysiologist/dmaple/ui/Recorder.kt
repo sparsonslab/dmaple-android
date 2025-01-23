@@ -71,8 +71,10 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         if(isRecording) {
             val extent = Point.ofViewExtent(binding.root) * 0.5f
             binding.cameraAndRoi.resize(extent.x.toInt(), extent.y.toInt())
+            //binding.root.keepScreenOn = true
         } else {
             binding.cameraAndRoi.fullSize()
+            //binding.root.keepScreenOn = false
         }
     }
 
