@@ -6,7 +6,6 @@ import android.text.format.DateUtils
 import android.view.MotionEvent
 import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.observe
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.databinding.RecorderBinding
 import com.scepticalphysiologist.dmaple.ui.camera.Point

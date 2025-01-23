@@ -100,8 +100,6 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
 
     fun allowEditing(allow: Boolean = true) { roiView.allowEditing(allow) }
 
-
-
     // ---------------------------------------------------------------------------------------------
     // Layout
     // ---------------------------------------------------------------------------------------------

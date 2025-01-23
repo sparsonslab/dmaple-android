@@ -94,7 +94,7 @@ class RoiView(context: Context?, attributeSet: AttributeSet?):
     // -----
     /** The ROIs are editable - can be moved, expanded, saved, activated, etc. */
     private var editable: Boolean = true
-
+    /** The index of a saved ROI that has been selected. */
     val selectedRoi = MutableLiveData<Int>(0)
 
 
