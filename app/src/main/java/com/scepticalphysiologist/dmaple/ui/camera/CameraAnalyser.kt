@@ -114,6 +114,8 @@ class CameraAnalyser(context: Context):
 
     fun getAnalyser(i: Int): GutAnalyser? { return if(i < analysers.size) analysers[i] else null }
 
+    fun nAnalysers(): Int { return analysers.size }
+
     fun startStop(rois: List<MappingRoi>? = null): Boolean {
         warnings.postValue(if(recording) stop() else start(rois))
         return recording

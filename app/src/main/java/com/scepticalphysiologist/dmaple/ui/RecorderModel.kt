@@ -13,11 +13,7 @@ class RecorderModel(application: Application) : AndroidViewModel(application) {
 
     val cameraAnalyser = CameraAnalyser(application.baseContext)
 
-    val time: Int = 0
-
-
-    var rois = listOf<MappingRoi>()
-
+    private var currentAnalyser: Int = 0
 
     // ---------------------------------------------------------------------------------------------
     // Public access to camera analyser
@@ -31,7 +27,11 @@ class RecorderModel(application: Application) : AndroidViewModel(application) {
 
     fun elapsedSeconds(): Long { return cameraAnalyser.elapsedSeconds() }
 
-    fun getAnalyser(i: Int): GutAnalyser? { return cameraAnalyser.getAnalyser(i) }
+    fun setCurrentAnalyser(i: Int) {
+        currentAnalyser = if(i < cameraAnalyser.nAnalysers()) i else 0
+    }
+
+    fun currentAnalyser(): GutAnalyser? { return cameraAnalyser.getAnalyser(currentAnalyser) }
 
     // ---------------------------------------------------------------------------------------------
     //

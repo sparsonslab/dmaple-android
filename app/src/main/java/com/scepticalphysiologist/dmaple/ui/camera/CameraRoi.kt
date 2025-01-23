@@ -13,6 +13,7 @@ import kotlin.math.roundToInt
 import android.view.WindowManager
 import androidx.core.view.updateLayoutParams
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.MutableLiveData
 import com.scepticalphysiologist.dmaple.ui.VerticalSlider
 
 /**
@@ -93,14 +94,13 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
 
     fun getRois(): List<MappingRoi> { return roiView.savedRois }
 
-    fun setRois(rois: List<MappingRoi>) {
-        roiView.savedRois.clear()
-        roiView.savedRois.addAll(rois.toMutableList())
-    }
+    fun selectedRoiObject(): MutableLiveData<Int> { return roiView.selectedRoi }
 
     fun getCameraPreview(): PreviewView { return cameraPreview }
 
     fun allowEditing(allow: Boolean = true) { roiView.allowEditing(allow) }
+
+
 
     // ---------------------------------------------------------------------------------------------
     // Layout

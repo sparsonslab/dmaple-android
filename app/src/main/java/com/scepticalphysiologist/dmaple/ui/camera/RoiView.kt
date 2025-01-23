@@ -95,6 +95,9 @@ class RoiView(context: Context?, attributeSet: AttributeSet?):
     /** The ROIs are editable - can be moved, expanded, saved, activated, etc. */
     private var editable: Boolean = true
 
+    val selectedRoi = MutableLiveData<Int>(0)
+
+
     init {
         // Paints for active and saved ROIs
         activeRoiPaint.color = Color.RED
@@ -231,11 +234,10 @@ class RoiView(context: Context?, attributeSet: AttributeSet?):
         gestureDetector.onTouchEvent(event)
         val isDoubleClick = gesture == GestureState.DOUBLE_TAP
 
-        // Editable?
-        if(!editable) return true
+        // Double click on saved ROI?
+        if(isDoubleClick && clickedOnSavedRoi(event)) return true
 
-        // Double click on centre of saved ROI: make it the current ROI.
-        if(isDoubleClick && savedToActiveRoi(event)) return true
+        if(!editable) return true
 
         // No active ROI: create a new ROI.
         if(activeRoi == null) {
@@ -285,6 +287,25 @@ class RoiView(context: Context?, attributeSet: AttributeSet?):
         invalidate()
     }
 
+    private fun clickedOnSavedRoi(event: MotionEvent): Boolean {
+        val p = Point.ofMotionEvent(event)
+        for(i in savedRois.indices) {
+            val ap = p.relativeDistance(savedRois[i]).abs()
+            if ((ap.x < ft) && (ap.y < ft)) {
+                // If editable - change the saved ROI to the active,
+                if(editable) {
+                    changeActiveRoi(savedRois.removeAt(i))
+                    drag = Point(event.x, event.y)
+                    invalidate()
+                }
+                // notify selection
+                selectedRoi.postValue(i)
+                return true
+            }
+        }
+        return false
+    }
+
     /** In a touch is near the centre of a saved ROI, make it the active ROI.
      * @return Whether a saved ROI was made the active ROI.
      * */
@@ -293,10 +314,7 @@ class RoiView(context: Context?, attributeSet: AttributeSet?):
         for(i in savedRois.indices) {
             val ap = p.relativeDistance(savedRois[i]).abs()
             if((ap.x < ft) && (ap.y < ft)) {
-                changeActiveRoi(savedRois.removeAt(i))
-                drag = Point(event.x, event.y)
-                invalidate()
-                return true
+
             }
         }
         return false

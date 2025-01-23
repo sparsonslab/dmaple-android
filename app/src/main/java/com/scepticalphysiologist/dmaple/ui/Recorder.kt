@@ -6,6 +6,7 @@ import android.text.format.DateUtils
 import android.view.MotionEvent
 import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.observe
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.databinding.RecorderBinding
 import com.scepticalphysiologist.dmaple.ui.camera.Point
@@ -57,8 +58,14 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
 
         // Map update
         model.cameraAnalyser.upDateMap.observe(viewLifecycleOwner) {
-            model.getAnalyser(0)?.let {binding.maps.updateMap(it)}
+            model.currentAnalyser()?.let {binding.maps.updateMap(it)}
             binding.cameraTimer.text = DateUtils.formatElapsedTime(model.elapsedSeconds())
+        }
+
+        // ROI selection
+        binding.cameraAndRoi.selectedRoiObject().observe(viewLifecycleOwner) { i ->
+            // todo - use IDs for ROIs rather than index.
+            if(model.isRecording()) model.setCurrentAnalyser(i)
         }
 
     }
