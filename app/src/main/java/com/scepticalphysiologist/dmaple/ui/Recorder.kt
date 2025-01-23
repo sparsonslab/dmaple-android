@@ -27,6 +27,10 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         model = ViewModelProvider(this).get(RecorderModel::class.java)
         setState()
 
+        // Keep the screen on, so that the camera stays on.
+        // todo - It would be better to run the camera on a foreground service.
+        binding.root.keepScreenOn = true
+
         // Ensure that camera view is set-up correctly each time the root view is created and
         // has its inflated size - either when the fragment is created or resumed.
         binding.root.post {
@@ -71,10 +75,8 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         if(isRecording) {
             val extent = Point.ofViewExtent(binding.root) * 0.5f
             binding.cameraAndRoi.resize(extent.x.toInt(), extent.y.toInt())
-            //binding.root.keepScreenOn = true
         } else {
             binding.cameraAndRoi.fullSize()
-            //binding.root.keepScreenOn = false
         }
     }
 
