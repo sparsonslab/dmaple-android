@@ -64,7 +64,8 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
 
         // ROI selection
         binding.cameraAndRoi.selectedRoiObject().observe(viewLifecycleOwner) { i ->
-            // todo - use IDs for ROIs rather than index.
+            // todo - use IDs for ROIs rather than index? Tried this but problems can come
+            //     with copying and transforming
             if(model.isRecording()) model.setCurrentAnalyser(i)
         }
 
