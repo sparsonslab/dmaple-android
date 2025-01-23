@@ -15,6 +15,7 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import androidx.core.view.ViewCompat
 import androidx.lifecycle.MutableLiveData
 
 /** Gesture states for [RoiView]. */
@@ -112,6 +113,15 @@ class RoiView(context: Context?, attributeSet: AttributeSet?):
         // Normally is null (i.e. the view is transparent and so the camera preview can be seen).
         // When thresholding is begun, it is set to latest camera frame. i.e. the camera "freezes".
         background = null
+
+        // Enable state restoration.
+        // An ID must be set.
+        isSaveEnabled = true
+        id = RoiView.id
+    }
+
+    companion object {
+        val id: Int = ViewCompat.generateViewId()
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -130,6 +140,52 @@ class RoiView(context: Context?, attributeSet: AttributeSet?):
     private fun changeActiveRoi(roi: MappingRoi?){
         activeRoi = roi
         activeRoiChanged.postValue(activeRoi?.threshold)
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // State saving.
+    // ---------------------------------------------------------------------------------------------
+
+    /** Save the ROIs when the view instance is lost, e.g. with configuration change. */
+    class RoiSavedState(
+        superState: Parcelable,
+        roiView: RoiView
+    ) : BaseSavedState(superState) {
+
+        val activeRoi: MappingRoi? = roiView.activeRoi
+        val savedRois: List<MappingRoi> = roiView.savedRois
+
+        companion object {
+
+            val parcel_id = "ROI_VIEW_STATE"
+
+            fun restore(parcel: Parcelable, roiView: RoiView): Parcelable? {
+                if(parcel !is Bundle) return parcel
+                return parcel.getParcelable<RoiSavedState>(parcel_id)?.let {
+                    roiView.activeRoi = it.activeRoi
+                    roiView.savedRois.clear()
+                    roiView.savedRois.addAll(it.savedRois)
+                    it.superState
+                }
+            }
+        }
+
+        fun save(): Bundle {
+            val roiBundle = Bundle()
+            roiBundle.putParcelable(parcel_id, this)
+            return roiBundle
+        }
+
+    }
+
+    override fun onSaveInstanceState(): Parcelable? {
+        return super.onSaveInstanceState()?.let { superState ->
+            RoiSavedState(superState, this).save()
+        }
+    }
+
+    override fun onRestoreInstanceState(state: Parcelable?) {
+        state?.let { super.onRestoreInstanceState(RoiSavedState.restore(it, this)) }
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -303,6 +359,7 @@ class RoiView(context: Context?, attributeSet: AttributeSet?):
             invalidate()
         }
     }
+
 
     // ---------------------------------------------------------------------------------------------
     // Drawing & layout

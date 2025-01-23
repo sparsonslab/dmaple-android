@@ -1,9 +1,7 @@
 package com.scepticalphysiologist.dmaple.ui.camera
 
 import android.content.Context
-import android.content.res.Configuration
 import android.graphics.Color
-import android.graphics.Rect
 import android.util.AttributeSet
 import android.view.Gravity
 import android.view.View
