@@ -3,6 +3,7 @@ package com.scepticalphysiologist.dmaple.ui.camera
 import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Color
+import android.graphics.Rect
 import android.util.AttributeSet
 import android.view.Gravity
 import android.view.View
@@ -26,7 +27,8 @@ import com.scepticalphysiologist.dmaple.ui.VerticalSlider
  * @param attributeSet
  */
 class CameraRoi(context: Context, attributeSet: AttributeSet?):
-    FrameLayout(context, attributeSet)
+    FrameLayout(context, attributeSet),
+    View.OnLayoutChangeListener
 {
 
     // Views
@@ -52,6 +54,8 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
 
     init {
 
+        println("CONSTRUCT: camera roi")
+
         // Camera preview view
         cameraPreview = PreviewView(context, attributeSet)
         cameraPreview.implementationMode = PreviewView.ImplementationMode.COMPATIBLE
@@ -71,6 +75,9 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
 
         // Layout.
         setBackgroundColor(Color.GRAY)
+
+
+
     }
 
 
@@ -107,26 +114,40 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
     // Layout
     // ---------------------------------------------------------------------------------------------
 
-    fun resize(w: Int, h: Int) { updateLayoutParams<LayoutParams> { width = w; height = h } }
+    fun resize(w: Int, h: Int) {
+        updateSize(w, h)
+        // Now this view is detached from its parent size, the parent will not call this view's
+        // onLayout when it is resized. Therefore listen to the parent layout directly and update
+        // this view's layout when the parent changes size.
+        (this.parent as View).addOnLayoutChangeListener(this)
+    }
 
     fun fullSize(){
-        updateLayoutParams<LayoutParams> {
-            width = LayoutParams.MATCH_PARENT
-            height = LayoutParams.MATCH_PARENT
-        }
+        updateSize(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
+        // Now this view is attached to its parent's size, the parent will always call this view's
+        // onLayout when it is resized.
+        // view's layout when it resizes. Therefore we don't need
+        (this.parent as View).removeOnLayoutChangeListener(this)
     }
 
-    override fun onConfigurationChanged(newConfig: Configuration?) {
-        super.onConfigurationChanged(newConfig)
-        updateLayout()
+    private fun updateSize(w: Int, h: Int) {
+        updateLayoutParams<LayoutParams> { width = w; height = h }
     }
 
+    /** Respond to the resize of another view. */
+    override fun onLayoutChange(p0: View?, l0: Int, t0: Int, r0: Int, b0: Int, l1: Int, t1: Int, r1: Int, b1: Int) {
+        if((r0 - l0 != r1 - l1) || (b0 - t0 != b1 - t1)) updateLayout()
+    }
+
+    /** Respond to the resize of the parent view when its decides the layout of children needs to change. */
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
         if(changed) updateLayout()
     }
 
     private fun updateLayout() {
+        println("UPDATE LAYOUT: camera roi")
+
         // Make sure the view does not exceed the parent view.
         // Because width/height might not be set to "match parent" (see this.resize()),
         // the view might end up extending past the parent view after rotation.
@@ -157,5 +178,5 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
         val x0 = x / 2
         return Pair(x0, x - x0)
     }
-    
+
 }

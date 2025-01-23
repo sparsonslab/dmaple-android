@@ -1,5 +1,6 @@
 package com.scepticalphysiologist.dmaple.ui.camera
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Rational
 import android.view.Surface
@@ -102,6 +103,7 @@ class CameraAnalyser(context: Context):
     // Public
     // ---------------------------------------------------------------------------------------------
 
+    @SuppressLint("RestrictedApi")
     fun setPreviewView(preview: PreviewView) {
         cameraUses.useCases.filterIsInstance<Preview>().firstOrNull()?.let {
             it.surfaceProvider = preview.surfaceProvider

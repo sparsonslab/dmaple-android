@@ -26,12 +26,13 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
 
         // Set the view model.
         model = ViewModelProvider(this).get(RecorderModel::class.java)
+        setState()
 
         // Ensure that camera view is set-up correctly each time the root view is created and
         // has its inflated size - either when the fragment is created or resumed.
         binding.root.post {
             model.setCameraPreview(binding.cameraAndRoi.getCameraPreview())
-            binding.cameraAndRoi.setRois(model.rois)
+            //binding.cameraAndRoi.setRois(model.rois)
             setState()
         }
 
@@ -55,15 +56,6 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         }
 
     }
-
-
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-
-        model.rois = binding.cameraAndRoi.getRois()
-        //println("saving ${model.rois.size} rois to model")
-    }
-
 
     private fun setState() {
         val isRecording = model.isRecording()

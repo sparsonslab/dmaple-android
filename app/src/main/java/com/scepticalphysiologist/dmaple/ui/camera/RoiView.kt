@@ -114,17 +114,6 @@ class RoiView(context: Context?, attributeSet: AttributeSet?):
         background = null
     }
 
-    override fun onSaveInstanceState(): Parcelable? {
-        val state = super.onSaveInstanceState()
-        println("SAVE ROI VIEW !!!!, ${state is Bundle}")
-        return state
-    }
-
-    override fun onRestoreInstanceState(state: Parcelable?) {
-        println("RESTORE ROI VIEW !!!!, ${state is Bundle}")
-        super.onRestoreInstanceState(state)
-    }
-
     // ---------------------------------------------------------------------------------------------
     // State and data
     // ---------------------------------------------------------------------------------------------
