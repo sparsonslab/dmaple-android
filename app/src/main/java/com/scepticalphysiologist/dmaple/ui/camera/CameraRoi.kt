@@ -133,8 +133,6 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
     }
 
     private fun updateLayout() {
-        println("UPDATE LAYOUT: camera roi")
-
         // Make sure the view does not exceed the parent view.
         // Because width/height might not be set to "match parent" (see this.resize()),
         // the view might end up extending past the parent view after rotation.
