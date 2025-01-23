@@ -118,9 +118,6 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
 
     fun fullSize(){
         updateSize(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
-        // Now this view is attached to its parent's size, the parent will always call this view's
-        // onLayout when it is resized.
-        // view's layout when it resizes. Therefore we don't need
         (this.parent as View).removeOnLayoutChangeListener(this)
     }
 
