@@ -26,19 +26,17 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
 
         // Set the view model.
         model = ViewModelProvider(this).get(RecorderModel::class.java)
-        setState()
+        //setState()
 
         // Keep the screen on, so that the camera stays on.
         // todo - It would be better to run the camera on a foreground service. CameraService is a
         //    start on this,
-        binding.root.keepScreenOn = true
+        //binding.root.keepScreenOn = true
 
         // Ensure that camera view is set-up correctly each time the root view is created and
         // has its inflated size - either when the fragment is created or resumed.
         binding.root.post {
-            model.setCameraPreview(binding.cameraAndRoi.getCameraPreview())
-            //binding.cameraAndRoi.setRois(model.rois)
-            setState()
+            model.startService(binding.root.context, binding.cameraAndRoi.getCameraPreview())
         }
 
         // Start/stop recording.
@@ -56,7 +54,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         }
 
         // Map update
-        model.cameraAnalyser.upDateMap.observe(viewLifecycleOwner) {
+        model.upDateMap.observe(viewLifecycleOwner) {
             model.currentAnalyser()?.let {binding.maps.updateMap(it)}
             binding.cameraTimer.text = DateUtils.formatElapsedTime(model.elapsedSeconds())
         }
@@ -69,6 +67,16 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         }
 
     }
+
+
+    override fun onDestroy() {
+
+        super.onDestroy()
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Access
+    // ---------------------------------------------------------------------------------------------
 
     private fun setState() {
         val isRecording = model.isRecording()

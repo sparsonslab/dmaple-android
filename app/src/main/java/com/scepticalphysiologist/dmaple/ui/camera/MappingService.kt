@@ -1,8 +1,14 @@
 package com.scepticalphysiologist.dmaple.ui.camera
 
-import android.annotation.SuppressLint
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
+import android.content.pm.ServiceInfo
+import android.os.Binder
+import android.os.IBinder
 import android.util.Rational
+import android.view.Display
 import android.view.Surface
 import android.view.WindowManager
 import androidx.camera.core.AspectRatio
@@ -15,34 +21,37 @@ import androidx.camera.core.UseCaseGroup
 import androidx.camera.core.ViewPort
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.LifecycleRegistry
+import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
+import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.MutableLiveData
 import com.scepticalphysiologist.dmaple.ui.helper.Warnings
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.Executors
 
-class CameraAnalyser(context: Context):
-    ImageAnalysis.Analyzer,
-    LifecycleOwner
-{
-
-    private val display = (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay
+/** A foreground service that will run the camera and record spatio-temporal maps, irrespective
+ * of whether the app is in he background or foreground.
+ *
+ * If CameraX is run directly from a ViewModel or Fragment it will stop recording after the app
+ * has been in the background for a while.
+ */
+class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     // Camera
     // ------
     private var aspect = AspectRatio.RATIO_16_9
 
-    private val cameraProvider: ProcessCameraProvider
+    private lateinit var cameraProvider: ProcessCameraProvider
 
-    private val cameraUses: UseCaseGroup
+    private lateinit var cameraUses: UseCaseGroup
 
+    private lateinit var imageAnalysis: ImageAnalysis
 
-    private val imageAnalysis: ImageAnalysis
+    private lateinit var camera: Camera
 
-    private val camera: Camera
+    private lateinit var display: Display
+
 
     // State
     // -----
@@ -56,39 +65,29 @@ class CameraAnalyser(context: Context):
 
     val warnings = MutableLiveData<Warnings>()
 
-    // Lifecycle
-    // ---------
-    private val lifecycleRegistry: LifecycleRegistry = LifecycleRegistry(this)
-
-    override val lifecycle: Lifecycle
-        get() = lifecycleRegistry
-
-
-
-    init {
-
-        lifecycleRegistry.currentState = Lifecycle.State.STARTED
+    override fun onCreate() {
+        super.onCreate()
 
         // Camera
-        cameraProvider = ProcessCameraProvider.getInstance(context).get()
+        cameraProvider = ProcessCameraProvider.getInstance(this).get()
         cameraProvider.unbindAll()
+        display = (this.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay
 
-
+        // Use cases.
         val useCaseGroup= UseCaseGroup.Builder()
-
+        // ... view port
         val viewport = ViewPort.Builder(
             Rational(1, 1), Surface.ROTATION_0
         ).setScaleType(ViewPort.FIT).build()
         useCaseGroup.setViewPort(viewport)
-
+        // ... preview
         val preview = Preview.Builder().setTargetAspectRatio(aspect).build()
         useCaseGroup.addUseCase(preview)
-
+        // ... image analysis
         imageAnalysis = ImageAnalysis.Builder().setTargetAspectRatio(aspect).build()
         imageAnalysis.setAnalyzer(Executors.newSingleThreadExecutor(), this)
-
         useCaseGroup.addUseCase(imageAnalysis)
-
+        // ... build
         cameraUses = useCaseGroup.build()
 
         // Bind to this lifecycle.
@@ -97,18 +96,59 @@ class CameraAnalyser(context: Context):
             cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA,
             cameraUses
         )
-
     }
 
+    // ---------------------------------------------------------------------------------------------
+    // Binding access
+    // ---------------------------------------------------------------------------------------------
+
+    private val binder = MappingBinder()
+
+    inner class MappingBinder: Binder() {
+        fun getService(): MappingService { return this@MappingService }
+    }
+
+    override fun onBind(intent: Intent): IBinder? {
+        super.onBind(intent)
+        return binder
+    }
 
     // ---------------------------------------------------------------------------------------------
-    // Public
+    // Service start and stop.
     // ---------------------------------------------------------------------------------------------
 
-    @SuppressLint("RestrictedApi")
-    fun setPreviewView(preview: PreviewView) {
+    // Called from context.startForegroundService()
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+
+        // Notification and channel.
+        val channelId = "MAPPING_CHANNEL"
+        val channel = NotificationChannel(channelId, "Mapping", NotificationManager.IMPORTANCE_HIGH)
+        (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(channel)
+        val notification = NotificationCompat.Builder(this, channelId).also {
+            it.setContentTitle("dMapLE")
+            it.setContentText("Recording maps")
+        }.build()
+
+        // Start in foreground.
+        ServiceCompat.startForeground(this, startId, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA)
+
+
+        return super.onStartCommand(intent, flags, startId)
+    }
+
+    // Called from context.stopService()
+    override fun onDestroy() {
+        // stop camera ????
+        super.onDestroy()
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Analysis
+    // ---------------------------------------------------------------------------------------------
+
+    fun setPreview(pv: PreviewView) {
         cameraUses.useCases.filterIsInstance<Preview>().firstOrNull()?.let {
-            it.surfaceProvider = preview.surfaceProvider
+            it.surfaceProvider = pv.surfaceProvider
         }
     }
 
