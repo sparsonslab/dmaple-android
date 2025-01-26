@@ -26,11 +26,8 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
 
         // Set the view model.
         model = ViewModelProvider(this).get(RecorderModel::class.java)
-        //setState()
 
         // Keep the screen on, so that the camera stays on.
-        // todo - It would be better to run the camera on a foreground service. CameraService is a
-        //    start on this,
         //binding.root.keepScreenOn = true
 
         // Ensure that camera view is set-up correctly each time the root view is created and
@@ -45,6 +42,9 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
             setState()
         }
 
+        // Show warnings upon start/stop.
+        model.warnings.observe(viewLifecycleOwner) { it.show(binding.root.context) }
+
         // When recording, allow the camera view to be resized by dragging near its
         // far (bottom right) corner.
         // Listen to the touch event in the child (map) view, as the event will register here first.
@@ -53,35 +53,23 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
             if(!dragCameraView(event)) binding.maps.processMotionEvent(event) else true
         }
 
-        // Model warnings.
-        model.warnings.observe(viewLifecycleOwner) {
-            it.show(binding.root.context)
-        }
-
-        // Map update.
-        model.upDateMap.observe(viewLifecycleOwner) {
-            model.currentMapCreator()?.let {binding.maps.updateMap(it)}
-            binding.cameraTimer.text = DateUtils.formatElapsedTime(model.elapsedSeconds())
-        }
-
-        // ROI selection.
+        // When recording, select the ROI of the map being shown.
         binding.cameraAndRoi.selectedRoiObject().observe(viewLifecycleOwner) { i ->
             // todo - use IDs for ROIs rather than index? Tried this but problems can come
             //     with copying and transforming
             if(model.isCreatingMaps()) model.setCurrentMap(i)
         }
 
+        // Update the map shown during recording.
+        model.upDateMap.observe(viewLifecycleOwner) {
+            model.currentMapCreator()?.let {binding.maps.updateMap(it)}
+            binding.cameraTimer.text = DateUtils.formatElapsedTime(model.elapsedSeconds())
+        }
     }
-
 
     override fun onDestroy() {
-
         super.onDestroy()
     }
-
-    // ---------------------------------------------------------------------------------------------
-    // Access
-    // ---------------------------------------------------------------------------------------------
 
     /** Set the UI appearance depending on whether maps are being created. */
     private fun setState() {
@@ -105,6 +93,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         }
     }
 
+    /** While recording, resize the camera view by dragging its lower-right corner. */
     private fun dragCameraView(event: MotionEvent): Boolean {
         if(model.isCreatingMaps() && (event.action == MotionEvent.ACTION_MOVE)) {
             val d = (Point.ofViewExtent(binding.cameraAndRoi) - Point.ofMotionEvent(event)).l2()
@@ -115,6 +104,5 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         }
         return false
     }
-
 
 }
