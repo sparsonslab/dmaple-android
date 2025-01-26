@@ -104,7 +104,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         fun getService(): MappingService { return this@MappingService }
     }
 
-    override fun onBind(intent: Intent): IBinder? {
+    override fun onBind(intent: Intent): IBinder {
         super.onBind(intent)
         return binder
     }
