@@ -40,7 +40,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
     // -------------------------
     /** The size of the view (x = space, y = time). */
     private var viewSize = Point()
-    /** The size of the view (x = space, y = time). */
+    /** The size of the map's bitmap (x = space, y = time). */
     private var bitmapSize = Point()
     /** Zoom of the bitmap (x = space, y = time). */
     private var zoom = Point(1f, 1f)
@@ -55,12 +55,8 @@ class MapView(context: Context, attributeSet: AttributeSet):
     /** The offset of the end of shown map from the end of the view (x = space, y = time). */
     private val offset = Point(0f, 0f)
 
-    fun reset() {
-        updateZoom(Point(1f, 1f))
-    }
-
     // ---------------------------------------------------------------------------------------------
-    // Size, scale and zoom variables.
+    // Map layout, scaling and zoom.
     // ---------------------------------------------------------------------------------------------
 
     /** Convert a screen coordinate to a space-time coordinate.
@@ -73,27 +69,36 @@ class MapView(context: Context, attributeSet: AttributeSet):
     /** The inverse of [timeSpacePoint]. */
     private fun screenPoint(timeSpacePoint: Point): Point { return spaceTimePoint(timeSpacePoint) }
 
-    /** Update [viewSize]. */
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+        // Update view size and bitmap transformation matrix.
+        if(changed) updateViewSize()
+    }
+
+    /** Update the view size [viewSize]. */
     private fun updateViewSize(){
         viewSize = spaceTimePoint(Point(width.toFloat(), height.toFloat()))
         updateScale()
         updateMatrix()
     }
 
-    private fun updateBitmapSize(analyserSize: Size){
-        bitmapSize.y = analyserSize.height.toFloat()
-        val w = analyserSize.width.toFloat()
+    /** Update the size of the map's bitmap ([bitmapSize]). */
+    private fun updateBitmapSize(size: Size){
+        bitmapSize.y = size.height.toFloat()
+        val w = size.width.toFloat()
         if(bitmapSize.x != w) {
             bitmapSize.x = w
             updateScale()
         }
     }
 
+    /** Update the scale ([scale]). */
     private fun updateScale(){
         scale = bitmapSize.x / viewSize.x
         updateViewSizeInBitmapPixels()
     }
 
+    /** Update the zoom ([zoom]). */
     private fun updateZoom(z: Point) {
         // Restrict zoom ranges.
         // Space (x) cannot be zoomed out to less than the width of the screen (zoom >= 1).
@@ -108,10 +113,12 @@ class MapView(context: Context, attributeSet: AttributeSet):
         if(bitmapSize.y < viewSizeInBitmapPixels.y) offset.y = 0f
     }
 
+
     private fun updateViewSizeInBitmapPixels() {
         viewSizeInBitmapPixels = viewSize * scale / zoom
     }
 
+    /** Update the map's bitmap transformation matrix ([bitmapMatrix]). */
     private fun updateMatrix() {
         bitmapMatrix = Matrix()
 
@@ -131,18 +138,19 @@ class MapView(context: Context, attributeSet: AttributeSet):
     }
 
     // ---------------------------------------------------------------------------------------------
-    // Bitmap and layout.
+    // Public interface
     // ---------------------------------------------------------------------------------------------
 
-    fun updateMap(analyser: MapCreator) {
-        // Update bitmap size.
-        updateBitmapSize(analyser.size())
+    /** Update the map being shown. */
+    fun updateMap(creator: MapCreator) {
+        // Update the map size.
+        updateBitmapSize(creator.size())
 
-        // Extract section of map as a bitmap.
+        // Extract section of the map as a bitmap.
         val pE = Point.minOf(bitmapSize, viewSizeInBitmapPixels)
         val p0 = Point.maxOf(bitmapSize - pE - offset, Point())
         val p1 = p0 + pE
-        val bm = analyser.getImage(Rect(
+        val bm = creator.getImage(Rect(
             p0.x.toInt(), p0.y.toInt(),
             p1.x.toInt(), p1.y.toInt(),
         ), stepX = pixelStep.x.toInt(), stepY = pixelStep.y.toInt())
@@ -156,10 +164,9 @@ class MapView(context: Context, attributeSet: AttributeSet):
         }
     }
 
-    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
-        super.onLayout(changed, left, top, right, bottom)
-        // Update view size and bitmap transformation matrix.
-        if(changed) updateViewSize()
+    /** Reset the map view. */
+    fun reset() {
+        updateZoom(Point(1f, 1f))
     }
 
     // ---------------------------------------------------------------------------------------------
