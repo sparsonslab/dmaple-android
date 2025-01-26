@@ -24,7 +24,7 @@
         android:layout_margin="10dp"
         android:textColor="#ff0000"
         android:text="start"
-        android:textSize="12pt">
+        android:textSize="22sp">
     </TextView>
 
     <com.scepticalphysiologist.dmaple.ui.camera.CameraRoi
