@@ -34,6 +34,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         // has its inflated size - either when the fragment is created or resumed.
         binding.root.post {
             model.startService(binding.root.context, binding.cameraAndRoi.getCameraPreview())
+            setState()
         }
 
         // Start/stop recording.
