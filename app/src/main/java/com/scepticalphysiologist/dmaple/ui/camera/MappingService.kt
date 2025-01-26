@@ -17,10 +17,10 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
+import androidx.camera.core.Preview.SurfaceProvider
 import androidx.camera.core.UseCaseGroup
 import androidx.camera.core.ViewPort
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.view.PreviewView
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.lifecycle.LifecycleService
@@ -40,36 +40,34 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     // Camera
     // ------
-    private var aspect = AspectRatio.RATIO_16_9
-
-    private lateinit var cameraProvider: ProcessCameraProvider
-
-    private lateinit var cameraUses: UseCaseGroup
-
-    private lateinit var imageAnalysis: ImageAnalysis
-
+    /** The camera. */
     private lateinit var camera: Camera
-
+    /** The device display. */
     private lateinit var display: Display
-
+    /** The aspect ratio of the camera. */
+    private var aspect = AspectRatio.RATIO_16_9
+    /** The camera preview. */
+    private lateinit var preview: Preview
+    /** The camera image analyser. */
+    private lateinit var analyser: ImageAnalysis
 
     // State
     // -----
-    private var recording: Boolean = false
-
+    /** Map creators. */
+    private var creators = mutableListOf<MapCreator>()
+    /** Maps are being created ("recording"). */
+    private var creating: Boolean = false
+    /** The instant that creation of maps started. */
     private var startTime: Instant? = null
+    /** Switches between true/false everytime the maps are extended during creation. */
+    val ticker = MutableLiveData<Boolean>(false)
 
-    private var analysers = mutableListOf<GutAnalyser>()
-
-    val upDateMap = MutableLiveData<Boolean>(false)
-
-    val warnings = MutableLiveData<Warnings>()
-
+    /** Set-up the camera. */
     override fun onCreate() {
         super.onCreate()
 
-        // Camera
-        cameraProvider = ProcessCameraProvider.getInstance(this).get()
+        // Camera provider and display.
+        val cameraProvider = ProcessCameraProvider.getInstance(this).get()
         cameraProvider.unbindAll()
         display = (this.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay
 
@@ -81,20 +79,18 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         ).setScaleType(ViewPort.FIT).build()
         useCaseGroup.setViewPort(viewport)
         // ... preview
-        val preview = Preview.Builder().setTargetAspectRatio(aspect).build()
+        preview = Preview.Builder().setTargetAspectRatio(aspect).build()
         useCaseGroup.addUseCase(preview)
         // ... image analysis
-        imageAnalysis = ImageAnalysis.Builder().setTargetAspectRatio(aspect).build()
-        imageAnalysis.setAnalyzer(Executors.newSingleThreadExecutor(), this)
-        useCaseGroup.addUseCase(imageAnalysis)
-        // ... build
-        cameraUses = useCaseGroup.build()
+        analyser = ImageAnalysis.Builder().setTargetAspectRatio(aspect).build()
+        analyser.setAnalyzer(Executors.newSingleThreadExecutor(), this)
+        useCaseGroup.addUseCase(analyser)
 
         // Bind to this lifecycle.
         camera = cameraProvider.bindToLifecycle(
             lifecycleOwner = this,
             cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA,
-            cameraUses
+            useCaseGroup = useCaseGroup.build()
         )
     }
 
@@ -119,7 +115,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     // Called from context.startForegroundService()
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-
         // Notification and channel.
         val channelId = "MAPPING_CHANNEL"
         val channel = NotificationChannel(channelId, "Mapping", NotificationManager.IMPORTANCE_HIGH)
@@ -129,10 +124,10 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             it.setContentText("Recording maps")
         }.build()
 
-        // Start in foreground.
-        ServiceCompat.startForeground(this, startId, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA)
-
-
+        // Start this service the foreground.
+        ServiceCompat.startForeground(
+            this, startId, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
+        )
         return super.onStartCommand(intent, flags, startId)
     }
 
@@ -143,35 +138,40 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     }
 
     // ---------------------------------------------------------------------------------------------
-    // Analysis
+    // Public interface
     // ---------------------------------------------------------------------------------------------
 
-    fun setPreview(pv: PreviewView) {
-        cameraUses.useCases.filterIsInstance<Preview>().firstOrNull()?.let {
-            it.surfaceProvider = pv.surfaceProvider
-        }
+    /** Set the surface provider (physical view) for the camera preview. */
+    fun setSurface(provider: SurfaceProvider) { preview.surfaceProvider = provider }
+
+    /** Get the ith map creator. */
+    fun getMapCreator(i: Int): MapCreator? { return if(i < creators.size) creators[i] else null }
+
+    /** The number of map creators. */
+    fun nMapCreators(): Int { return creators.size }
+
+    /** Start or stop map creation, depending on the current creation state. */
+    fun startStop(rois: List<MappingRoi>? = null): Warnings {
+        return if(creating) stop() else start(rois)
     }
 
-    fun getAnalyser(i: Int): GutAnalyser? { return if(i < analysers.size) analysers[i] else null }
+    /** Is the mapping service currently creating maps? */
+    fun isCreatingMaps(): Boolean { return creating }
 
-    fun nAnalysers(): Int { return analysers.size }
-
-    fun startStop(rois: List<MappingRoi>? = null): Boolean {
-        warnings.postValue(if(recording) stop() else start(rois))
-        return recording
-    }
-
-    fun isRecording(): Boolean { return recording }
-
+    /** The number of seconds since the service started mapping. */
     fun elapsedSeconds(): Long {
-        if(startTime == null) return 0
-        return (Duration.between(startTime, Instant.now()).toMillis() / 1000f).toLong()
+        return startTime?.let {
+            (Duration.between(it, Instant.now()).toMillis() / 1000f).toLong()
+        } ?: 0
     }
 
+    // ---------------------------------------------------------------------------------------------
+    // Map creation
+    // ---------------------------------------------------------------------------------------------
 
+    /** Start creating maps from a set of ROIs. */
     private fun start(rois: List<MappingRoi>?): Warnings {
-
-        // Cannot not start if there are no ROIs.
+        // No reason to start if there are no mapping ROIs.
         val warning = Warnings("Start Recording")
         if(rois.isNullOrEmpty()) {
             val msg = "There are no areas to map (dashed rectangles).\n" +
@@ -181,15 +181,19 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         }
 
         // Convert the frame of the mapping ROIs to the frame of the camera.
-        val imageFrame = imageAnalyserFrame() ?: return warning
-        analysers = rois.map {it.inNewFrame(imageFrame)}.map{GutMapper(it)}.toMutableList()
+        // todo - MappingRois should include the MapCreator class to which they are used for.
+        val imageFrame = imageAnalysisFrame() ?: return warning
+        creators = rois.map {
+            GutMapper(it.inNewFrame(imageFrame))
+        }.toMutableList()
 
         // State
-        recording = true
+        creating = true
         startTime = Instant.now()
         return warning
     }
 
+    /** Stop creating maps. */
     private fun stop(): Warnings {
         val warnings = Warnings("Stop Recording")
 
@@ -197,17 +201,20 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         // ?????????
 
         // State
-        analysers.clear()
-        recording = false
+        creators.clear()
+        creating = false
+        startTime = null
         return warnings
     }
 
-    private fun imageAnalyserFrame(): Frame? {
+    /** Get the frame of the image analyser. */
+    private fun imageAnalysisFrame(): Frame? {
         // Get analyser and update its target orientation.
-        imageAnalysis.targetRotation = display.rotation
-
-        val imageInfo = imageAnalysis.resolutionInfo ?: return null
-        val or = imageInfo.rotationDegrees + surfaceRotationDegrees(imageAnalysis.targetRotation)
+        analyser.targetRotation = display.rotation
+        // The frame orientation is the sum of the image and analyser target.
+        // (see the definition of ImageAnalysis.targetRotation)
+        val imageInfo = analyser.resolutionInfo ?: return null
+        val or = imageInfo.rotationDegrees + surfaceRotationDegrees(analyser.targetRotation)
         return Frame(
             width=imageInfo.resolution.width.toFloat(),
             height = imageInfo.resolution.height.toFloat(),
@@ -215,21 +222,15 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         )
     }
 
-
+    /** Analyse each image from the camera feed. Called continuously during the life of the service. */
     override fun analyze(image: ImageProxy) {
-        // Not recording.
-        if(!recording) {
-            image.close() // Image must be "closed" to allow preview to continue.
-            return
+        if(creating) {
+            // Pass the image to each map creator to analyse.
+            val bm = image.toBitmap()
+            for(creator in creators) creator.analyse(bm)
+            // Announce the analysis.
+            ticker.postValue(!ticker.value!!)
         }
-
-        // Analyse each mapping area.
-        val bm = image.toBitmap()
-        for(analyser in analysers) analyser.analyse(bm)
-
-        // set live data object to indicate update to view/fragment
-        upDateMap.postValue(!upDateMap.value!!)
-
         // Image must be "closed" to allow preview to continue.
         image.close()
     }

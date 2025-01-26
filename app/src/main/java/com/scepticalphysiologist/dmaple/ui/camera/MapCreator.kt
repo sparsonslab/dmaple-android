@@ -9,7 +9,7 @@ import kotlin.math.abs
 import kotlin.math.ceil
 
 
-abstract class GutAnalyser(val area: MappingRoi) {
+abstract class MapCreator(val area: MappingRoi) {
 
     abstract fun analyse(bitmap: Bitmap)
 
@@ -20,7 +20,7 @@ abstract class GutAnalyser(val area: MappingRoi) {
 }
 
 
-class GutMapper(roi: MappingRoi): GutAnalyser(roi) {
+class GutMapper(roi: MappingRoi): MapCreator(roi) {
 
 
     val map = ArrayDeque<Int>()

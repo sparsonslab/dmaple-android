@@ -134,7 +134,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
     // Bitmap and layout.
     // ---------------------------------------------------------------------------------------------
 
-    fun updateMap(analyser: GutAnalyser) {
+    fun updateMap(analyser: MapCreator) {
         // Update bitmap size.
         updateBitmapSize(analyser.size())
 

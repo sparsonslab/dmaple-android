@@ -53,6 +53,11 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
             if(!dragCameraView(event)) binding.maps.processMotionEvent(event) else true
         }
 
+        // Model warnings.
+        model.warnings.observe(viewLifecycleOwner) {
+            it.show(binding.root.context)
+        }
+
         // Map update
         model.upDateMap.observe(viewLifecycleOwner) {
             model.currentAnalyser()?.let {binding.maps.updateMap(it)}
