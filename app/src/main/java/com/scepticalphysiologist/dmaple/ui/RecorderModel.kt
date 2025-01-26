@@ -21,13 +21,11 @@ class RecorderModel(application: Application) :
     ServiceConnection
 {
 
-    private val app = application
-
     private var mapper: MappingService? = null
 
     private var surface: SurfaceProvider? = null
 
-    /** The index (in [mapper]'s map creators) of the current map to be shown. */
+    /** The index (in [mapper]'s list of map creators) of the current map to be shown. */
     private var currentMapIndex: Int = 0
 
     val warnings = MutableLiveData<Warnings>()
@@ -39,7 +37,7 @@ class RecorderModel(application: Application) :
     // ---------------------------------------------------------------------------------------------
 
     fun startService(context: Context, preview: PreviewView) {
-        this.surface = preview.surfaceProvider
+        surface = preview.surfaceProvider
         val intent = Intent(context, MappingService::class.java)
         context.startForegroundService(intent)
         context.bindService(intent, this, Context.BIND_AUTO_CREATE)
@@ -56,8 +54,9 @@ class RecorderModel(application: Application) :
 
     override fun onCleared() {
         // Stop the mapping service.
-        val intent = Intent(app, MappingService::class.java)
-        app.stopService(intent)
+        val cxt = getApplication<Application>()
+        val intent = Intent(cxt, MappingService::class.java)
+        cxt.stopService(intent)
     }
 
     // ---------------------------------------------------------------------------------------------
