@@ -27,11 +27,16 @@ class RecorderModel(application: Application) :
 
     private var surface: SurfaceProvider? = null
 
-    private var currentAnalyser: Int = 0
+    /** The index (in [mapper]'s map creators) of the current map to be shown. */
+    private var currentMapIndex: Int = 0
 
     val warnings = MutableLiveData<Warnings>()
 
     val upDateMap = MutableLiveData<Boolean>(false)
+
+    // ---------------------------------------------------------------------------------------------
+    // Mapping service initiation and connection.
+    // ---------------------------------------------------------------------------------------------
 
     fun startService(context: Context, preview: PreviewView) {
         this.surface = preview.surfaceProvider
@@ -56,7 +61,7 @@ class RecorderModel(application: Application) :
     }
 
     // ---------------------------------------------------------------------------------------------
-    // Public access to mapping service.
+    // Public access (wrapper) to mapping service.
     // ---------------------------------------------------------------------------------------------
 
     fun startStop(rois: List<MappingRoi>? = null): Boolean {
@@ -66,14 +71,14 @@ class RecorderModel(application: Application) :
         } ?: false
     }
 
-    fun isRecording(): Boolean { return mapper?.isCreatingMaps() ?: false }
+    fun isCreatingMaps(): Boolean { return mapper?.isCreatingMaps() ?: false }
 
     fun elapsedSeconds(): Long { return mapper?.elapsedSeconds() ?: 0 }
 
-    fun setCurrentAnalyser(i: Int) {
-        mapper?.let{ currentAnalyser = if(i < it.nMapCreators()) i else 0 }
+    fun setCurrentMap(i: Int) {
+        mapper?.let{ currentMapIndex = if(i < it.nMapCreators()) i else 0 }
     }
 
-    fun currentAnalyser(): MapCreator? { return mapper?.getMapCreator(currentAnalyser) }
+    fun currentMapCreator(): MapCreator? { return mapper?.getMapCreator(currentMapIndex) }
 
 }

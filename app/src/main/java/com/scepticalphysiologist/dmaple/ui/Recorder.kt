@@ -58,17 +58,17 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
             it.show(binding.root.context)
         }
 
-        // Map update
+        // Map update.
         model.upDateMap.observe(viewLifecycleOwner) {
-            model.currentAnalyser()?.let {binding.maps.updateMap(it)}
+            model.currentMapCreator()?.let {binding.maps.updateMap(it)}
             binding.cameraTimer.text = DateUtils.formatElapsedTime(model.elapsedSeconds())
         }
 
-        // ROI selection
+        // ROI selection.
         binding.cameraAndRoi.selectedRoiObject().observe(viewLifecycleOwner) { i ->
             // todo - use IDs for ROIs rather than index? Tried this but problems can come
             //     with copying and transforming
-            if(model.isRecording()) model.setCurrentAnalyser(i)
+            if(model.isCreatingMaps()) model.setCurrentMap(i)
         }
 
     }
@@ -83,8 +83,9 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
     // Access
     // ---------------------------------------------------------------------------------------------
 
+    /** Set the UI appearance depending on whether maps are being created. */
     private fun setState() {
-        val isRecording = model.isRecording()
+        val isRecording = model.isCreatingMaps()
 
         // Button icon
         val icon = if(isRecording) R.drawable.stop_5f6368 else R.drawable.play_arrow
@@ -105,7 +106,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
     }
 
     private fun dragCameraView(event: MotionEvent): Boolean {
-        if(model.isRecording() && (event.action == MotionEvent.ACTION_MOVE)) {
+        if(model.isCreatingMaps() && (event.action == MotionEvent.ACTION_MOVE)) {
             val d = (Point.ofViewExtent(binding.cameraAndRoi) - Point.ofMotionEvent(event)).l2()
             if (d < 100) {
                 binding.cameraAndRoi.resize(event.x.toInt(), event.y.toInt())
