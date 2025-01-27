@@ -13,6 +13,12 @@ import com.scepticalphysiologist.dmaple.ui.camera.MappingService
 import com.scepticalphysiologist.dmaple.ui.camera.MapCreator
 import com.scepticalphysiologist.dmaple.ui.camera.MappingRoi
 import com.scepticalphysiologist.dmaple.ui.helper.Warnings
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 
 class RecorderModel(application: Application) :
@@ -34,7 +40,8 @@ class RecorderModel(application: Application) :
 
     val warnings = MutableLiveData<Warnings>()
 
-    val upDateMap = MutableLiveData<Boolean>(false)
+    private var scope: CoroutineScope? = null
+    val timer = MutableLiveData<Long>(0L)
 
     // ---------------------------------------------------------------------------------------------
     // Mapping service initiation and connection.
@@ -48,7 +55,6 @@ class RecorderModel(application: Application) :
 
     override fun onServiceConnected(p0: ComponentName?, binder: IBinder?) {
         val service = (binder as MappingService.MappingBinder).getService()
-        service.ticker.observeForever { this.upDateMap.postValue(!this.upDateMap.value!!) }
         mapper = service
         mappingServiceConnected.postValue(true)
     }
@@ -68,18 +74,40 @@ class RecorderModel(application: Application) :
     fun startStop(): Boolean {
         return mapper?.let {
             warnings.postValue(it.startStop())
-            it.isCreatingMaps()
+            val isCreating = it.isCreatingMaps()
+            if(isCreating) startTimer() else stopTimer()
+            isCreating
         } ?: false
     }
 
     fun isCreatingMaps(): Boolean { return mapper?.isCreatingMaps() ?: false }
-
-    fun elapsedSeconds(): Long { return mapper?.elapsedSeconds() ?: 0 }
 
     fun setCurrentMap(i: Int) {
         mapper?.let{ currentMapIndex = if(i < it.nMapCreators()) i else 0 }
     }
 
     fun currentMapCreator(): MapCreator? { return mapper?.getMapCreator(currentMapIndex) }
+
+    // ---------------------------------------------------------------------------------------------
+    // Timer
+    // ---------------------------------------------------------------------------------------------
+
+    private fun startTimer() {
+        if((scope != null) || (mapper == null) ) return
+        scope = MainScope()
+        runTimer()
+    }
+
+    private fun stopTimer() {
+        scope?.cancel()
+        scope = null
+    }
+
+    private fun runTimer() = scope?.launch(Dispatchers.Default) {
+        while(true) {
+            mapper?.let {timer.postValue(it.elapsedSeconds())}
+            delay(1000)
+        }
+    }
 
 }

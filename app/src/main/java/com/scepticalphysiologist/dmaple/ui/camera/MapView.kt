@@ -11,6 +11,14 @@ import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.Surface
 import android.view.WindowManager
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.findViewTreeLifecycleOwner
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.floor
 
 /** A view for live display of a spatio-temporal map.
@@ -22,8 +30,11 @@ class MapView(context: Context, attributeSet: AttributeSet):
     ScaleGestureDetector.OnScaleGestureListener
 {
 
-    // Map creator
+    // Map creation
+    // -------------
     private var creator: MapCreator? = null
+
+    private var scope: CoroutineScope? = null
 
     // Display
     // -------
@@ -144,36 +155,53 @@ class MapView(context: Context, attributeSet: AttributeSet):
     // Public interface
     // ---------------------------------------------------------------------------------------------
 
-
+    private var newBitmap = MutableLiveData<Bitmap?>(null)
 
     /** Update the map being shown. */
-    fun updateCreator(currentCreator: MapCreator?) {
-        // Update the map size.
-        creator = currentCreator
+    fun updateCreator(currentCreator: MapCreator?) { creator = currentCreator }
+
+    fun start() {
+        if(scope != null) return
+        findViewTreeLifecycleOwner()?.let{newBitmap.observe(it) {bm-> setImageBitmap(bm)} }
+        scope = MainScope()
+        updateMap()
+    }
+
+    fun stop() {
+        findViewTreeLifecycleOwner()?.let {newBitmap.removeObservers(it)}
+        scope?.cancel()
+        scope = null
     }
 
     // todo - run this in its own thread/coroutine rather than being called in main thread.
-    fun updateMap() {
-        creator?.let { mapCreator ->
-            updateBitmapSize(mapCreator.size())
-            // Extract section of the map as a bitmap.
-            val pE = Point.minOf(bitmapSize, viewSizeInBitmapPixels)
-            val p0 = Point.maxOf(bitmapSize - pE - offset, Point())
-            val p1 = p0 + pE
-            val bm = mapCreator.getImage(Rect(
-                p0.x.toInt(), p0.y.toInt(),
-                p1.x.toInt(), p1.y.toInt(),
-            ), stepX = pixelStep.x.toInt(), stepY = pixelStep.y.toInt())
+    private fun updateMap() = scope?.launch(Dispatchers.Default){
 
-            // Create adjusted bitmap.
-            bm?.let {
-                this.setImageBitmap(Bitmap.createBitmap(
-                    bm, 0, 0, bm.width, bm.height,
-                    bitmapMatrix, false
-                ))
+        while(true) {
+            creator?.let { mapCreator ->
+                updateBitmapSize(mapCreator.size())
+                // Extract section of the map as a bitmap.
+                val pE = Point.minOf(bitmapSize, viewSizeInBitmapPixels)
+                val p0 = Point.maxOf(bitmapSize - pE - offset, Point())
+                val p1 = p0 + pE
+                val bm = mapCreator.getImage(Rect(
+                    p0.x.toInt(), p0.y.toInt(),
+                    p1.x.toInt(), p1.y.toInt(),
+                ), stepX = pixelStep.x.toInt(), stepY = pixelStep.y.toInt())
+
+                bm?.let {
+                    // Create adjusted bitmap.
+                    val transformedBitmap = Bitmap.createBitmap(
+                        bm, 0, 0, bm.width, bm.height,
+                        bitmapMatrix, false
+                    )
+                    // Update the shown bitmap.
+                    newBitmap.postValue(transformedBitmap)
+                }
             }
+            delay(100)
         }
     }
+
 
     /** Reset the map view. */
     fun reset() {

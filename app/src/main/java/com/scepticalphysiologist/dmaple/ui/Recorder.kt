@@ -9,6 +9,8 @@ import androidx.lifecycle.ViewModelProvider
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.databinding.RecorderBinding
 import com.scepticalphysiologist.dmaple.ui.camera.Point
+import java.time.Duration
+import java.time.Instant
 
 
 class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
@@ -79,11 +81,9 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
             }
         }
 
-        // Update the map shown during recording.
-        model.upDateMap.observe(viewLifecycleOwner) {
-            //model.currentMapCreator()?.let {binding.maps.updateMap(it)}
-            binding.maps.updateMap()
-            binding.cameraTimer.text = DateUtils.formatElapsedTime(model.elapsedSeconds())
+        // Update the timer shown during recording.
+        model.timer.observe(viewLifecycleOwner) { elapsedSec ->
+            binding.cameraTimer.text = DateUtils.formatElapsedTime(elapsedSec)
         }
     }
 
@@ -107,9 +107,11 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         if(isRecording) {
             val extent = Point.ofViewExtent(binding.root) * 0.5f
             binding.cameraAndRoi.resize(extent.x.toInt(), extent.y.toInt())
+            binding.maps.start()
         } else {
             binding.cameraAndRoi.fullSize()
             binding.cameraTimer.text = ""
+            binding.maps.stop()
         }
     }
 

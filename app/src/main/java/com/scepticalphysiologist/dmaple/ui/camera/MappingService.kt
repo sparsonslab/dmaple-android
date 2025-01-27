@@ -72,8 +72,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     private var creating: Boolean = false
     /** The instant that creation of maps started. */
     private var startTime: Instant? = null
-    /** Switches between true/false everytime the maps are extended during creation. */
-    val ticker = MutableLiveData<Boolean>(false)
 
     /** Set-up the camera. */
     override fun onCreate() {
@@ -254,8 +252,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             // Pass the image to each map creator to analyse.
             val bm = image.toBitmap()
             for(creator in creators) creator.analyse(bm)
-            // Announce the analysis.
-            ticker.postValue(!ticker.value!!)
         }
         // Image must be "closed" to allow preview to continue.
         image.close()
