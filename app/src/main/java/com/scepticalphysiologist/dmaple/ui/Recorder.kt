@@ -32,12 +32,14 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
 
         // Once the view is inflated, connect the mapping service, passing it the camera preview.
         binding.root.post {
-            model.connectMappingService(binding.root.context, binding.cameraAndRoi.getCameraPreview())
+            model.connectMappingService(binding.root.context)
         }
 
-        // Once the mapping service is connected, restore any saved ROIs and set the UI state.
+        // Once the mapping service is connected: set it's preview; restore any saved ROIs from it;
+        // and set the UI state.
         model.mappingServiceConnected.observe(viewLifecycleOwner) { isConnected ->
             if(isConnected) {
+                model.setPreviewView(binding.cameraAndRoi.getCameraPreview())
                 binding.cameraAndRoi.setSavedRois(model.getSavedRois())
                 setUIState()
             }

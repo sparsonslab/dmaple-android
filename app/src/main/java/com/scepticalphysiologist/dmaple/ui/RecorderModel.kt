@@ -21,10 +21,15 @@ class RecorderModel(application: Application) :
     ServiceConnection
 {
 
+    // Mapping service
+    // ---------------
+    /** The foreground service to record maps ans save state. */
     private var mapper: MappingService? = null
+    /** Indicate that the mapping service has been connected to. */
+    val mappingServiceConnected = MutableLiveData<Boolean>(false)
 
-    private var surface: SurfaceProvider? = null
-
+    // State
+    // -----
     /** The index (in [mapper]'s list of map creators) of the current map to be shown. */
     private var currentMapIndex: Int = 0
 
@@ -32,14 +37,11 @@ class RecorderModel(application: Application) :
 
     val upDateMap = MutableLiveData<Boolean>(false)
 
-    val mappingServiceConnected = MutableLiveData<Boolean>(false)
-
     // ---------------------------------------------------------------------------------------------
     // Mapping service initiation and connection.
     // ---------------------------------------------------------------------------------------------
 
-    fun connectMappingService(context: Context, preview: PreviewView) {
-        surface = preview.surfaceProvider
+    fun connectMappingService(context: Context, ) {
         val intent = Intent(context, MappingService::class.java)
         context.startForegroundService(intent)
         context.bindService(intent, this, Context.BIND_AUTO_CREATE)
@@ -47,13 +49,14 @@ class RecorderModel(application: Application) :
 
     override fun onServiceConnected(p0: ComponentName?, binder: IBinder?) {
         val service = (binder as MappingService.MappingBinder).getService()
-        surface?.let {service.setSurface(it)}
         service.ticker.observeForever { this.upDateMap.postValue(!this.upDateMap.value!!) }
         mapper = service
         mappingServiceConnected.postValue(true)
     }
 
     override fun onServiceDisconnected(p0: ComponentName?) { }
+
+    fun setPreviewView(preview: PreviewView) { mapper?.setSurface(preview.surfaceProvider) }
 
     // ---------------------------------------------------------------------------------------------
     // Public access (wrapper) to mapping service.

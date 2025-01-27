@@ -73,7 +73,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** Switches between true/false everytime the maps are extended during creation. */
     val ticker = MutableLiveData<Boolean>(false)
 
-
     /** Set-up the camera. */
     override fun onCreate() {
         super.onCreate()
@@ -158,13 +157,14 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** Set the surface provider (physical view) for the camera preview. */
     fun setSurface(provider: SurfaceProvider) { preview.surfaceProvider = provider }
 
+    /** Set the ROIs. e.g. when ROIs are updated in a view. */
     fun setRois(viewRois: List<MappingRoi>) {
         rois.clear()
         for(roi in viewRois) rois.add(roi.copy())
     }
 
+    /** Get the ROIs. e.g. for when a view of the ROIs needs to be reconstructed. */
     fun getRois(): List<MappingRoi> { return rois }
-
 
     /** Start or stop map creation, depending on the current creation state. */
     fun startStop(): Warnings { return if(creating) stop() else start() }
