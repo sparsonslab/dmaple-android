@@ -34,10 +34,6 @@ class RecorderModel(application: Application) :
 
     val mappingServiceConnected = MutableLiveData<Boolean>(false)
 
-    init {
-        println("creating view model")
-    }
-
     // ---------------------------------------------------------------------------------------------
     // Mapping service initiation and connection.
     // ---------------------------------------------------------------------------------------------
@@ -58,10 +54,6 @@ class RecorderModel(application: Application) :
     }
 
     override fun onServiceDisconnected(p0: ComponentName?) { }
-
-    override fun onCleared() {
-        println("clearing view model")
-    }
 
     // ---------------------------------------------------------------------------------------------
     // Public access (wrapper) to mapping service.

@@ -10,9 +10,4 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
     }
 
-    override fun onDestroy() {
-        println("main activity destroyed")
-        super.onDestroy()
-    }
-
 }

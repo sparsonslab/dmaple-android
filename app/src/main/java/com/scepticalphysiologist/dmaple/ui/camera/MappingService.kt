@@ -147,6 +147,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** Stop the service when the app is "closed" (task removed) by the user. */
     override fun onTaskRemoved(rootIntent: Intent?) {
         this.stopService(rootIntent)
+        // TODO - save maps.
         super.onTaskRemoved(rootIntent)
     }
 
