@@ -94,8 +94,12 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         useCaseGroup.addUseCase(preview)
         // ... image analysis
         // todo - bind/unbind during map creation start/stop.
-        analyser = ImageAnalysis.Builder().setTargetAspectRatio(aspect).build()
-        analyser.setAnalyzer(Executors.newSingleThreadExecutor(), this)
+        analyser =ImageAnalysis.Builder().also {
+            it.setTargetAspectRatio(aspect)
+            it.setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            it.setImageQueueDepth(10)
+        }.build()
+        analyser.setAnalyzer(Executors.newFixedThreadPool(5), this)
         useCaseGroup.addUseCase(analyser)
 
         // Bind to this lifecycle.

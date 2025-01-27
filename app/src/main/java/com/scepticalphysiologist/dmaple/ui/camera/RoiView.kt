@@ -7,19 +7,14 @@ import android.graphics.Color
 import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.drawable.BitmapDrawable
-import android.os.Bundle
-import android.os.Parcel
-import android.os.Parcelable
 import android.util.AttributeSet
 import android.view.Display
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
-import android.view.View.BaseSavedState
 import android.view.WindowManager
 import androidx.core.view.ViewCompat
 import androidx.lifecycle.MutableLiveData
-import java.lang.ClassCastException
 
 /** Gesture states for [RoiView]. */
 enum class GestureState {
