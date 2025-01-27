@@ -30,11 +30,20 @@ import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.Executors
 
-/** A foreground service that will run the camera and record spatio-temporal maps, irrespective
- * of whether the app is in he background or foreground.
+/** A foreground service that will run the camera, record spatio-temporal maps and keep ROI state.
  *
- * If CameraX is run directly from a ViewModel or Fragment it will stop recording after the app
- * has been in the background for a while.
+ * It does this for however long the app is "open", is a android "task". i.e. it will never stop
+ * in response to:
+ * - Changes in current activity or fragment.
+ * - Backgrounding of the app (which typically destroys all activities after a few minutes).
+ * - Sleep of the app (which typically destroys all activities after a few minutes).
+ *
+ * This is vital as:
+ * - The user may want to record maps for tens-of-minutes or even hours, while putting the app in
+ * the background to save battery.
+ * - View ROIs will be persisted across configuration changes other then rotation (which [RoiView]
+ * already handles).
+ *
  */
 class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
@@ -53,6 +62,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     // State
     // -----
+    /** The mapping ROIs in their last view frame. */
+    private var rois = mutableListOf<MappingRoi>()
     /** Map creators. */
     private var creators = mutableListOf<MapCreator>()
     /** Maps are being created ("recording"). */
@@ -61,6 +72,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     private var startTime: Instant? = null
     /** Switches between true/false everytime the maps are extended during creation. */
     val ticker = MutableLiveData<Boolean>(false)
+
 
     /** Set-up the camera. */
     override fun onCreate() {
@@ -132,10 +144,10 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         return super.onStartCommand(intent, flags, startId)
     }
 
-    // Called from context.stopService()
-    override fun onDestroy() {
-        // stop camera ????
-        super.onDestroy()
+    /** Stop the service when the app is "closed" (task removed) by the user. */
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        this.stopService(rootIntent)
+        super.onTaskRemoved(rootIntent)
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -145,19 +157,25 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** Set the surface provider (physical view) for the camera preview. */
     fun setSurface(provider: SurfaceProvider) { preview.surfaceProvider = provider }
 
+    fun setRois(viewRois: List<MappingRoi>) {
+        rois.clear()
+        for(roi in viewRois) rois.add(roi.copy())
+    }
+
+    fun getRois(): List<MappingRoi> { return rois }
+
+
+    /** Start or stop map creation, depending on the current creation state. */
+    fun startStop(): Warnings { return if(creating) stop() else start() }
+
+    /** Is the mapping service currently creating maps? */
+    fun isCreatingMaps(): Boolean { return creating }
+
     /** Get the ith map creator. */
     fun getMapCreator(i: Int): MapCreator? { return if(i < creators.size) creators[i] else null }
 
     /** The number of map creators. */
     fun nMapCreators(): Int { return creators.size }
-
-    /** Start or stop map creation, depending on the current creation state. */
-    fun startStop(rois: List<MappingRoi>? = null): Warnings {
-        return if(creating) stop() else start(rois)
-    }
-
-    /** Is the mapping service currently creating maps? */
-    fun isCreatingMaps(): Boolean { return creating }
 
     /** The number of seconds since the service started mapping. */
     fun elapsedSeconds(): Long {
@@ -171,10 +189,10 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     // ---------------------------------------------------------------------------------------------
 
     /** Start creating maps from a set of ROIs. */
-    private fun start(rois: List<MappingRoi>?): Warnings {
+    private fun start(): Warnings {
         // No reason to start if there are no mapping ROIs.
         val warning = Warnings("Start Recording")
-        if(rois.isNullOrEmpty()) {
+        if(rois.isEmpty()) {
             val msg = "There are no areas to map (dashed rectangles).\n" +
                     "Make a mapping area by double tapping a selection."
             warning.add(msg, true)

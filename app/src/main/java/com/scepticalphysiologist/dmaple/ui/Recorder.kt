@@ -24,23 +24,35 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         }.toSet()
         requestPermissions(permissionsToAsk.toTypedArray(), 6543)
 
-        // Set the view model.
-        model = ViewModelProvider(this).get(RecorderModel::class.java)
+        // Get the view model.
+        model = ViewModelProvider(this.requireActivity()).get(RecorderModel::class.java)
 
         // Keep the screen on, so that the camera stays on.
         //binding.root.keepScreenOn = true
 
-        // Ensure that camera view is set-up correctly each time the root view is created and
-        // has its inflated size - either when the fragment is created or resumed.
+        // Once the view is inflated, connect the mapping service, passing it the camera preview.
         binding.root.post {
-            model.startService(binding.root.context, binding.cameraAndRoi.getCameraPreview())
-            setState()
+            model.connectMappingService(binding.root.context, binding.cameraAndRoi.getCameraPreview())
+        }
+
+        // Once the mapping service is connected, restore any saved ROIs and set the UI state.
+        model.mappingServiceConnected.observe(viewLifecycleOwner) { isConnected ->
+            if(isConnected) {
+                binding.cameraAndRoi.setSavedRois(model.getSavedRois())
+                setUIState()
+            }
+        }
+
+        // Whenever the saved ROIs have changed in the view, transfer these to the mapping
+        // service so they are persisted.
+        binding.cameraAndRoi.savedRoisHaveChanged().observe(viewLifecycleOwner) { haveChanged ->
+            if(haveChanged) model.setSavedRois(binding.cameraAndRoi.getSavedRois())
         }
 
         // Start/stop recording.
         binding.recordButton.setOnClickListener {
-            model.startStop(binding.cameraAndRoi.getRois())
-            setState()
+            model.startStop()
+            setUIState()
         }
 
         // Show warnings upon start/stop.
@@ -55,7 +67,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         }
 
         // When recording, select the ROI of the map being shown.
-        binding.cameraAndRoi.selectedRoiObject().observe(viewLifecycleOwner) { i ->
+        binding.cameraAndRoi.roiHasBeenSelected().observe(viewLifecycleOwner) { i ->
             // todo - use IDs for ROIs rather than index? Tried this but problems can come
             //     with copying and transforming
             if(model.isCreatingMaps()) model.setCurrentMap(i)
@@ -73,7 +85,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
     }
 
     /** Set the UI appearance depending on whether maps are being created. */
-    private fun setState() {
+    private fun setUIState() {
         val isRecording = model.isCreatingMaps()
 
         // Button icon

@@ -32,11 +32,17 @@ class RecorderModel(application: Application) :
 
     val upDateMap = MutableLiveData<Boolean>(false)
 
+    val mappingServiceConnected = MutableLiveData<Boolean>(false)
+
+    init {
+        println("creating view model")
+    }
+
     // ---------------------------------------------------------------------------------------------
     // Mapping service initiation and connection.
     // ---------------------------------------------------------------------------------------------
 
-    fun startService(context: Context, preview: PreviewView) {
+    fun connectMappingService(context: Context, preview: PreviewView) {
         surface = preview.surfaceProvider
         val intent = Intent(context, MappingService::class.java)
         context.startForegroundService(intent)
@@ -48,24 +54,26 @@ class RecorderModel(application: Application) :
         surface?.let {service.setSurface(it)}
         service.ticker.observeForever { this.upDateMap.postValue(!this.upDateMap.value!!) }
         mapper = service
+        mappingServiceConnected.postValue(true)
     }
 
     override fun onServiceDisconnected(p0: ComponentName?) { }
 
     override fun onCleared() {
-        // Stop the mapping service.
-        val cxt = getApplication<Application>()
-        val intent = Intent(cxt, MappingService::class.java)
-        cxt.stopService(intent)
+        println("clearing view model")
     }
 
     // ---------------------------------------------------------------------------------------------
     // Public access (wrapper) to mapping service.
     // ---------------------------------------------------------------------------------------------
 
-    fun startStop(rois: List<MappingRoi>? = null): Boolean {
+    fun setSavedRois(viewRois: List<MappingRoi>) { mapper?.setRois(viewRois) }
+
+    fun getSavedRois(): List<MappingRoi> { return mapper?.getRois() ?: listOf() }
+
+    fun startStop(): Boolean {
         return mapper?.let {
-            warnings.postValue(it.startStop(rois))
+            warnings.postValue(it.startStop())
             it.isCreatingMaps()
         } ?: false
     }

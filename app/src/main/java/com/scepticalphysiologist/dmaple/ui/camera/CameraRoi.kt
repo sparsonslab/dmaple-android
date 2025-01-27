@@ -89,16 +89,20 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
     }
 
     // ---------------------------------------------------------------------------------------------
-    // Public
+    // Public wrappers around child views
     // ---------------------------------------------------------------------------------------------
 
-    fun getRois(): List<MappingRoi> { return roiView.savedRois }
+    fun getSavedRois(): List<MappingRoi> { return roiView.savedRois }
 
-    fun selectedRoiObject(): MutableLiveData<Int> { return roiView.selectedRoi }
+    fun setSavedRois(rois: List<MappingRoi>) { roiView.setSavedRois(rois) }
 
-    fun getCameraPreview(): PreviewView { return cameraPreview }
+    fun roiHasBeenSelected(): MutableLiveData<Int> { return roiView.selectedRoi }
+
+    fun savedRoisHaveChanged(): MutableLiveData<Boolean> { return roiView.savedRoiChange }
 
     fun allowEditing(allow: Boolean = true) { roiView.allowEditing(allow) }
+
+    fun getCameraPreview(): PreviewView { return cameraPreview }
 
     // ---------------------------------------------------------------------------------------------
     // Layout
