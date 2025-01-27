@@ -22,6 +22,9 @@ class MapView(context: Context, attributeSet: AttributeSet):
     ScaleGestureDetector.OnScaleGestureListener
 {
 
+    // Map creator
+    private var creator: MapCreator? = null
+
     // Display
     // -------
     /** Information about the display. Needed for determining screen orientation. */
@@ -141,26 +144,34 @@ class MapView(context: Context, attributeSet: AttributeSet):
     // Public interface
     // ---------------------------------------------------------------------------------------------
 
+
+
     /** Update the map being shown. */
-    fun updateMap(creator: MapCreator) {
+    fun updateCreator(currentCreator: MapCreator?) {
         // Update the map size.
-        updateBitmapSize(creator.size())
+        creator = currentCreator
+    }
 
-        // Extract section of the map as a bitmap.
-        val pE = Point.minOf(bitmapSize, viewSizeInBitmapPixels)
-        val p0 = Point.maxOf(bitmapSize - pE - offset, Point())
-        val p1 = p0 + pE
-        val bm = creator.getImage(Rect(
-            p0.x.toInt(), p0.y.toInt(),
-            p1.x.toInt(), p1.y.toInt(),
-        ), stepX = pixelStep.x.toInt(), stepY = pixelStep.y.toInt())
+    // todo - run this in its own thread/coroutine rather than being called in main thread.
+    fun updateMap() {
+        creator?.let { mapCreator ->
+            updateBitmapSize(mapCreator.size())
+            // Extract section of the map as a bitmap.
+            val pE = Point.minOf(bitmapSize, viewSizeInBitmapPixels)
+            val p0 = Point.maxOf(bitmapSize - pE - offset, Point())
+            val p1 = p0 + pE
+            val bm = mapCreator.getImage(Rect(
+                p0.x.toInt(), p0.y.toInt(),
+                p1.x.toInt(), p1.y.toInt(),
+            ), stepX = pixelStep.x.toInt(), stepY = pixelStep.y.toInt())
 
-        // Create adjusted bitmap.
-        bm?.let {
-            this.setImageBitmap(Bitmap.createBitmap(
-                bm, 0, 0, bm.width, bm.height,
-                bitmapMatrix, false
-            ))
+            // Create adjusted bitmap.
+            bm?.let {
+                this.setImageBitmap(Bitmap.createBitmap(
+                    bm, 0, 0, bm.width, bm.height,
+                    bitmapMatrix, false
+                ))
+            }
         }
     }
 

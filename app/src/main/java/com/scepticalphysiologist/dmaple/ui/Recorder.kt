@@ -54,6 +54,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         // Start/stop recording.
         binding.recordButton.setOnClickListener {
             model.startStop()
+            binding.maps.updateCreator(model.currentMapCreator())
             setUIState()
         }
 
@@ -72,12 +73,16 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         binding.cameraAndRoi.roiHasBeenSelected().observe(viewLifecycleOwner) { i ->
             // todo - use IDs for ROIs rather than index? Tried this but problems can come
             //     with copying and transforming
-            if(model.isCreatingMaps()) model.setCurrentMap(i)
+            if(model.isCreatingMaps()){
+                model.setCurrentMap(i)
+                binding.maps.updateCreator(model.currentMapCreator())
+            }
         }
 
         // Update the map shown during recording.
         model.upDateMap.observe(viewLifecycleOwner) {
-            model.currentMapCreator()?.let {binding.maps.updateMap(it)}
+            //model.currentMapCreator()?.let {binding.maps.updateMap(it)}
+            binding.maps.updateMap()
             binding.cameraTimer.text = DateUtils.formatElapsedTime(model.elapsedSeconds())
         }
     }

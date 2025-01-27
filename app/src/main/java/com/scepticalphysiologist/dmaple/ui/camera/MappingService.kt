@@ -59,6 +59,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     private lateinit var preview: Preview
     /** The camera image analyser. */
     private lateinit var analyser: ImageAnalysis
+    /** Approximate interval between frames (milliseconds). */
+    private val approxFrameIntervalMs: Long = 33
 
     // State
     // -----
@@ -257,6 +259,11 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         }
         // Image must be "closed" to allow preview to continue.
         image.close()
+
+        // Keep things slow.
+        // https://stackoverflow.com/questions/
+        // 65801379/how-to-add-a-delay-inside-the-executor-bound-to-cameraxs-analyzer
+        Thread.sleep(approxFrameIntervalMs)
     }
 
 }
