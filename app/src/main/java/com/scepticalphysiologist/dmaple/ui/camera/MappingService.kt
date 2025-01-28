@@ -24,7 +24,6 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.lifecycle.LifecycleService
-import androidx.lifecycle.MutableLiveData
 import com.scepticalphysiologist.dmaple.ui.helper.Warnings
 import java.time.Duration
 import java.time.Instant
@@ -41,11 +40,17 @@ import java.util.concurrent.Executors
  * This is vital as:
  * - The user may want to record maps for tens-of-minutes or even hours, while putting the app in
  * the background to save battery.
- * - View ROIs will be persisted across configuration changes other then rotation (which [RoiView]
+ * - View ROIs will be persisted across configuration changes other then rotation (which [MappingRoiOverlay]
  * already handles).
  *
  */
 class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
+
+    companion object {
+
+        /** The aspect ratio of the camera. */
+        const val CAMERA_ASPECT_RATIO = AspectRatio.RATIO_16_9
+    }
 
     // Camera
     // ------
@@ -53,8 +58,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     private lateinit var camera: Camera
     /** The device display. */
     private lateinit var display: Display
-    /** The aspect ratio of the camera. */
-    private var aspect = AspectRatio.RATIO_16_9
     /** The camera preview. */
     private lateinit var preview: Preview
     /** The camera image analyser. */
@@ -90,12 +93,12 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         ).setScaleType(ViewPort.FIT).build()
         useCaseGroup.setViewPort(viewport)
         // ... preview
-        preview = Preview.Builder().setTargetAspectRatio(aspect).build()
+        preview = Preview.Builder().setTargetAspectRatio(CAMERA_ASPECT_RATIO).build()
         useCaseGroup.addUseCase(preview)
         // ... image analysis
         // todo - bind/unbind during map creation start/stop.
         analyser =ImageAnalysis.Builder().also {
-            it.setTargetAspectRatio(aspect)
+            it.setTargetAspectRatio(CAMERA_ASPECT_RATIO)
             it.setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             it.setImageQueueDepth(10)
         }.build()

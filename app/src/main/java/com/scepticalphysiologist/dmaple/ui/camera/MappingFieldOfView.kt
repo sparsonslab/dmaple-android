@@ -6,83 +6,65 @@ import android.util.AttributeSet
 import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
-import androidx.camera.core.AspectRatio
 import androidx.camera.view.PreviewView
 import kotlin.math.roundToInt
-
 import android.view.WindowManager
 import androidx.core.view.updateLayoutParams
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import com.scepticalphysiologist.dmaple.ui.VerticalSlider
 
-/**
- * A camera preview and ROI overlay.
- *
- * @constructor
- * TODO
- *
- * @param context
- * @param attributeSet
+/** The mapping field of view. The camera feed and overlays for:
+ * - drawing mapping ROIs and thresholding them.
+ * - showing the mapping process.
  */
-class CameraRoi(context: Context, attributeSet: AttributeSet?):
+class MappingFieldOfView(context: Context, attributeSet: AttributeSet?):
     FrameLayout(context, attributeSet),
     View.OnLayoutChangeListener
 {
+    // Child Views
+    // -----------
+    /** The camera feed. The camera is actually run by the [MappingService]. */
+    private val cameraFeed = PreviewView(context, attributeSet)
+    /** An overlay over the camera feed unto which mappings ROIs can eb drawn. */
+    private val roiOverlay = MappingRoiOverlay(context, attributeSet)
+    /** An overlay over the camera feed unto which mapping processes *such as spines) can be drawn. */
+    private val spineOverlay = SpineView(context, attributeSet)
 
-    // Views
+    // Other
     // -----
-    private var aspect = AspectRatio.RATIO_16_9
-
-    private val cameraPreview: PreviewView
-
-    private val roiView: RoiView
-
-    private val spineView: SpineView
-
-    // Controls
-    private val thresholdSlider: VerticalSlider
-
-    // Camera
+    /** A slider for thresholding mapping ROIs. */
+    private val thresholdSlider = VerticalSlider(this.context, attributeSet, Pair(0, 255), Color.RED)
+    /** Display information. */
     private val display = (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay
-
-
-    // ---------------------------------------------------------------------------------------------
-    // Construction
-    // ---------------------------------------------------------------------------------------------
+    /** The parent view. */
+    private val parentView: View get() = this.parent as View
 
     init {
         // Camera preview view
-        cameraPreview = PreviewView(context, attributeSet)
-        cameraPreview.implementationMode = PreviewView.ImplementationMode.COMPATIBLE
-        cameraPreview.scaleType = PreviewView.ScaleType.FILL_CENTER
-        this.addView(cameraPreview)
+        cameraFeed.implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+        cameraFeed.scaleType = PreviewView.ScaleType.FILL_CENTER
 
-        // Roi and spine overlay.
-        spineView = SpineView(context, attributeSet)
-        this.addView(spineView)
-        roiView = RoiView(context, attributeSet)
-        this.addView(roiView)
-
-        // ROI threshold slider.
-        thresholdSlider = VerticalSlider(this.context, attributeSet, Pair(0, 255), Color.RED)
+        // Add child views, from lowest to highest layer in the frame.
+        this.addView(cameraFeed)
+        this.addView(spineOverlay)
+        this.addView(roiOverlay)
         this.addView(thresholdSlider, LayoutParams(40, LayoutParams.MATCH_PARENT, Gravity.RIGHT))
-        if(this.context is LifecycleOwner) connectThresholdSlider(this.context as LifecycleOwner)
 
         // Layout.
         setBackgroundColor(Color.GRAY)
-    }
 
-
-    private fun connectThresholdSlider(owner: LifecycleOwner){
+        // React to the thresholding slider.
+        val owner = context as LifecycleOwner
+        // ... start or stop thresholding when the slide is moved or releases.
         thresholdSlider.onoff.observe(owner) { isOn ->
-            if (isOn) cameraPreview.bitmap?.let { roiView.startThresholding(it) }
-            else roiView.stopThresholding()
+            if (isOn) cameraFeed.bitmap?.let { roiOverlay.startThresholding(it) }
+            else roiOverlay.stopThresholding()
         }
-        thresholdSlider.position.observe(owner) { position ->
-            roiView.setThreshold(position)
-        }
-        roiView.activeRoiChanged.observe(owner) { threshold ->
+        // ... update the ROI's threshold.
+        thresholdSlider.position.observe(owner) { position -> roiOverlay.setThreshold(position) }
+        // ... set the slider to the threshold of a selected ROI.
+        roiOverlay.activeRoiChanged.observe(owner) { threshold ->
             threshold?.let { thresholdSlider.setPosition(it) }
             thresholdSlider.visibility = if(threshold != null) View.VISIBLE else View.INVISIBLE
         }
@@ -92,33 +74,35 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
     // Public wrappers around child views
     // ---------------------------------------------------------------------------------------------
 
-    fun getSavedRois(): List<MappingRoi> { return roiView.savedRois }
+    fun getSavedRois(): List<MappingRoi> { return roiOverlay.savedRois }
 
-    fun setSavedRois(rois: List<MappingRoi>) { roiView.setSavedRois(rois) }
+    fun setSavedRois(rois: List<MappingRoi>) { roiOverlay.setSavedRois(rois) }
 
-    fun roiHasBeenSelected(): MutableLiveData<Int> { return roiView.selectedRoi }
+    fun roiHasBeenSelected(): MutableLiveData<Int> { return roiOverlay.selectedRoi }
 
-    fun savedRoisHaveChanged(): MutableLiveData<Boolean> { return roiView.savedRoiChange }
+    fun savedRoisHaveChanged(): MutableLiveData<Boolean> { return roiOverlay.savedRoiChange }
 
-    fun allowEditing(allow: Boolean = true) { roiView.allowEditing(allow) }
+    fun allowEditing(allow: Boolean = true) { roiOverlay.allowEditing(allow) }
 
-    fun getCameraPreview(): PreviewView { return cameraPreview }
+    fun getCameraPreview(): PreviewView { return cameraFeed }
 
     // ---------------------------------------------------------------------------------------------
     // Layout
     // ---------------------------------------------------------------------------------------------
 
+    /** Resize the field of view to an arbitrary size. */
     fun resize(w: Int, h: Int) {
         updateSize(w, h)
         // Now this view is detached from its parent size, the parent will not call this view's
         // onLayout when it is resized. Therefore listen to the parent layout directly and update
         // this view's layout when the parent changes size.
-        (this.parent as View).addOnLayoutChangeListener(this)
+        parentView.addOnLayoutChangeListener(this)
     }
 
+    /** Resize the field of view to match its parent view. */
     fun fullSize(){
         updateSize(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
-        (this.parent as View).removeOnLayoutChangeListener(this)
+        parentView.removeOnLayoutChangeListener(this)
     }
 
     private fun updateSize(w: Int, h: Int) {
@@ -126,7 +110,11 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
     }
 
     /** Respond to the resize of another view. */
-    override fun onLayoutChange(p0: View?, l0: Int, t0: Int, r0: Int, b0: Int, l1: Int, t1: Int, r1: Int, b1: Int) {
+    override fun onLayoutChange(
+        p0: View?,
+        l0: Int, t0: Int, r0: Int, b0: Int,
+        l1: Int, t1: Int, r1: Int, b1: Int
+    ) {
         if((r0 - l0 != r1 - l1) || (b0 - t0 != b1 - t1)) updateLayout()
     }
 
@@ -136,16 +124,18 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
         if(changed) updateLayout()
     }
 
+    /** Update the view's layout so that it does not exceed the size of the parent view and is added
+     * such that the field of view maintains the same aspect ratio as specified by the [MappingService].*/
     private fun updateLayout() {
         // Make sure the view does not exceed the parent view.
         // Because width/height might not be set to "match parent" (see this.resize()),
         // the view might end up extending past the parent view after rotation.
-        val pv = this.parent as View
-        constrainSize(pv.width, pv.height)
+        val (w, h) = Pair(parentView.width, parentView.height)
+        if((width > w) || (height > h)) resize(minOf(w, width), minOf(h, height))
 
         // Appropriate aspect ratio for screen size.
         val screenArea = Point(display.width.toFloat(), display.height.toFloat())
-        val arr = aspectRatioRatio(this.aspect)
+        val arr = aspectRatioRatio(MappingService.CAMERA_ASPECT_RATIO)
         val ratio = if(screenArea.x < screenArea.y) Point(1f, arr) else Point(arr, 1f)
 
         // Pad view area to obtain aspect ratio.
@@ -159,10 +149,7 @@ class CameraRoi(context: Context, attributeSet: AttributeSet?):
         this.setPadding(px0, py0, px1, py1)
     }
 
-    private fun constrainSize(w: Int, h: Int) {
-        if((width > w) || (height > h)) resize(minOf(w, width), minOf(h, height))
-    }
-
+    /** The two nearest integers adding up to another integer. */
     private fun complement(x: Int): Pair<Int, Int> {
         val x0 = x / 2
         return Pair(x0, x - x0)

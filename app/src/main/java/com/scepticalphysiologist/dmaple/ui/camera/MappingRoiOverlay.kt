@@ -16,7 +16,7 @@ import android.view.WindowManager
 import androidx.core.view.ViewCompat
 import androidx.lifecycle.MutableLiveData
 
-/** Gesture states for [RoiView]. */
+/** Gesture states for [MappingRoiOverlay]. */
 enum class GestureState {
     DOUBLE_TAP,
     LONG_PRESS,
@@ -40,7 +40,7 @@ enum class GestureState {
  * The active ROI is drawn with a solid boundary. Saved ROIs are drawn with dashed boundaries. The
  * map seeding edge is drawn thicker than the others.
  */
-class RoiView(context: Context?, attributeSet: AttributeSet?):
+class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     View(context, attributeSet),
     GestureDetector.OnDoubleTapListener,
     GestureDetector.OnGestureListener
@@ -120,7 +120,7 @@ class RoiView(context: Context?, attributeSet: AttributeSet?):
         // Enable state restoration.
         // An ID must be set.
         isSaveEnabled = true
-        id = RoiView.id
+        id = MappingRoiOverlay.id
     }
 
     companion object {

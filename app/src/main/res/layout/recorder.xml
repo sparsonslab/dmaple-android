@@ -27,11 +27,11 @@
         android:textSize="22sp">
     </TextView>
 
-    <com.scepticalphysiologist.dmaple.ui.camera.CameraRoi
+    <com.scepticalphysiologist.dmaple.ui.camera.MappingFieldOfView
         android:id="@+id/camera_and_roi"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-    </com.scepticalphysiologist.dmaple.ui.camera.CameraRoi>
+    </com.scepticalphysiologist.dmaple.ui.camera.MappingFieldOfView>
 
 
     <ImageButton
