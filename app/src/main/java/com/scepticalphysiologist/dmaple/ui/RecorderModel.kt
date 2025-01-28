@@ -25,7 +25,6 @@ class RecorderModel(application: Application) :
     AndroidViewModel(application),
     ServiceConnection
 {
-
     // Mapping service
     // ---------------
     /** The foreground service to record maps ans save state. */
@@ -37,22 +36,25 @@ class RecorderModel(application: Application) :
     // -----
     /** The index (in [mapper]'s list of map creators) of the current map to be shown. */
     private var currentMapIndex: Int = 0
-
+    /** Indicate warning messages that should be shown, e.g. when starting mapping. */
     val warnings = MutableLiveData<Warnings>()
-
-    private var scope: CoroutineScope? = null
+    /** Indicate the elapsed time (seconds) of mapping. */
     val timer = MutableLiveData<Long>(0L)
+    /** A coroutine scope for running the timer. */
+    private var scope: CoroutineScope? = null
 
     // ---------------------------------------------------------------------------------------------
     // Mapping service initiation and connection.
     // ---------------------------------------------------------------------------------------------
 
-    fun connectMappingService(context: Context, ) {
+    /** Connect ("bind") the mapping service so that it can be called. */
+    fun connectMappingService(context: Context) {
         val intent = Intent(context, MappingService::class.java)
         context.startForegroundService(intent)
         context.bindService(intent, this, Context.BIND_AUTO_CREATE)
     }
 
+    /** Once the service is connected, get an instance of it and notify of the connection. */
     override fun onServiceConnected(p0: ComponentName?, binder: IBinder?) {
         val service = (binder as MappingService.MappingBinder).getService()
         mapper = service
@@ -61,16 +63,20 @@ class RecorderModel(application: Application) :
 
     override fun onServiceDisconnected(p0: ComponentName?) { }
 
-    fun setPreviewView(preview: PreviewView) { mapper?.setSurface(preview.surfaceProvider) }
+    /** Set the view surface onto which the camera feed will be shown. */
+    fun setCameraPreviewSurface(preview: PreviewView) { mapper?.setSurface(preview.surfaceProvider) }
 
     // ---------------------------------------------------------------------------------------------
-    // Public access (wrapper) to mapping service.
+    // Public wrapper to mapping service.
     // ---------------------------------------------------------------------------------------------
 
-    fun setSavedRois(viewRois: List<MappingRoi>) { mapper?.setRois(viewRois) }
+    /** Set the ROIs used for mapping. */
+    fun setMappingRois(viewRois: List<MappingRoi>) { mapper?.setRois(viewRois) }
 
-    fun getSavedRois(): List<MappingRoi> { return mapper?.getRois() ?: listOf() }
+    /** Get the ROIs used for mapping. */
+    fun getMappingRois(): List<MappingRoi> { return mapper?.getRois() ?: listOf() }
 
+    /** Switch the mapping state (start or stop) and return if it is then mapping. */
     fun startStop(): Boolean {
         return mapper?.let {
             warnings.postValue(it.startStop())
@@ -80,13 +86,16 @@ class RecorderModel(application: Application) :
         } ?: false
     }
 
-    fun isCreatingMaps(): Boolean { return mapper?.isCreatingMaps() ?: false }
+    /** Is the service mapping? */
+    fun isMapping(): Boolean { return mapper?.isCreatingMaps() ?: false }
 
-    fun setCurrentMap(i: Int) {
+    /** Set the current map to be shown in the [MapView]. */
+    fun setCurrentlyShownMap(i: Int) {
         mapper?.let{ currentMapIndex = if(i < it.nMapCreators()) i else 0 }
     }
 
-    fun currentMapCreator(): MapCreator? { return mapper?.getMapCreator(currentMapIndex) }
+    /** Get the map creator of the current map shown in the map*/
+    fun creatorOfCurrentlyShownMap(): MapCreator? { return mapper?.getMapCreator(currentMapIndex) }
 
     // ---------------------------------------------------------------------------------------------
     // Timer

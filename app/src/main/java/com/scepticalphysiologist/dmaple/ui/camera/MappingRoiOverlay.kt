@@ -13,7 +13,6 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
-import androidx.core.view.ViewCompat
 import androidx.lifecycle.MutableLiveData
 
 /** Gesture states for [MappingRoiOverlay]. */
@@ -45,7 +44,6 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     GestureDetector.OnDoubleTapListener,
     GestureDetector.OnGestureListener
 {
-
     // Active ROI
     // ----------
     /** The "active" (i.e. currently being edited) ROI or null if there is no active ROI. */
@@ -116,15 +114,6 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
         // Normally is null (i.e. the view is transparent and so the camera preview can be seen).
         // When thresholding is begun, it is set to latest camera frame. i.e. the camera "freezes".
         background = null
-
-        // Enable state restoration.
-        // An ID must be set.
-        isSaveEnabled = true
-        id = MappingRoiOverlay.id
-    }
-
-    companion object {
-        val id: Int = ViewCompat.generateViewId()
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -134,15 +123,11 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     /** Allow or block ROI editing. */
     fun allowEditing(allow: Boolean = true) { editable = allow }
 
+    /** Set the saved ROIs. */
     fun setSavedRois(rois: List<MappingRoi>){
         savedRois.clear()
         for(roi in rois) savedRois.add(roi.copy())
         invalidate()
-    }
-
-    /** Get the saved ROIs (for mapping) in a new frame (e.g. the frame of the camera analyser). */
-    fun roisInNewFrame(newFrame: Frame): List<MappingRoi> {
-        return savedRois.map{ it.inNewFrame(newFrame) }.toList()
     }
 
     /** Change the active ROI or set it to null (no active ROI). */
