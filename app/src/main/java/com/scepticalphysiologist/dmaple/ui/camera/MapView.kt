@@ -29,12 +29,17 @@ class MapView(context: Context, attributeSet: AttributeSet):
     GestureDetector.OnGestureListener,
     ScaleGestureDetector.OnScaleGestureListener
 {
-
     // Map creation
     // -------------
+    /** The creator of the map being shown by this view. */
     private var creator: MapCreator? = null
-
+    /** The coroutine scope used for the live (during mapping) extracting of the viewed bitmap
+     * from the map creator. */
     private var scope: CoroutineScope? = null
+    /** Used for passing the map's bitmap out of the coroutine into the view's main scope. */
+    private var newBitmap = MutableLiveData<Bitmap?>(null)
+    /** The approximate update interval (ms) for live display. */
+    private val updateInterval: Long = 100L
 
     // Display
     // -------
@@ -85,7 +90,6 @@ class MapView(context: Context, attributeSet: AttributeSet):
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
-        // Update view size and bitmap transformation matrix.
         if(changed) updateViewSize()
     }
 
@@ -127,7 +131,6 @@ class MapView(context: Context, attributeSet: AttributeSet):
         if(bitmapSize.y < viewSizeInBitmapPixels.y) offset.y = 0f
     }
 
-
     private fun updateViewSizeInBitmapPixels() {
         viewSizeInBitmapPixels = viewSize * scale / zoom
     }
@@ -155,11 +158,10 @@ class MapView(context: Context, attributeSet: AttributeSet):
     // Public interface
     // ---------------------------------------------------------------------------------------------
 
-    private var newBitmap = MutableLiveData<Bitmap?>(null)
-
     /** Update the map being shown. */
     fun updateCreator(currentCreator: MapCreator?) { creator = currentCreator }
 
+    /** Start live view of the map being created. */
     fun start() {
         if(scope != null) return
         findViewTreeLifecycleOwner()?.let{newBitmap.observe(it) {bm-> setImageBitmap(bm)} }
@@ -167,15 +169,18 @@ class MapView(context: Context, attributeSet: AttributeSet):
         updateMap()
     }
 
+    /** Stop live view of the map being created. */
     fun stop() {
         findViewTreeLifecycleOwner()?.let {newBitmap.removeObservers(it)}
         scope?.cancel()
         scope = null
     }
 
-    // todo - run this in its own thread/coroutine rather than being called in main thread.
-    private fun updateMap() = scope?.launch(Dispatchers.Default){
+    /** Reset the map view. */
+    fun reset() { updateZoom(Point(1f, 1f)) }
 
+    /** Coroutine for updating the map. */
+    private fun updateMap() = scope?.launch(Dispatchers.Default){
         while(true) {
             creator?.let { mapCreator ->
                 updateBitmapSize(mapCreator.size())
@@ -187,25 +192,16 @@ class MapView(context: Context, attributeSet: AttributeSet):
                     p0.x.toInt(), p0.y.toInt(),
                     p1.x.toInt(), p1.y.toInt(),
                 ), stepX = pixelStep.x.toInt(), stepY = pixelStep.y.toInt())
-
+                // Rotate and scale the bitmap and post to the main thread for display.
                 bm?.let {
-                    // Create adjusted bitmap.
-                    val transformedBitmap = Bitmap.createBitmap(
+                    newBitmap.postValue(Bitmap.createBitmap(
                         bm, 0, 0, bm.width, bm.height,
                         bitmapMatrix, false
-                    )
-                    // Update the shown bitmap.
-                    newBitmap.postValue(transformedBitmap)
+                    ))
                 }
             }
-            delay(100)
+            delay(updateInterval)
         }
-    }
-
-
-    /** Reset the map view. */
-    fun reset() {
-        updateZoom(Point(1f, 1f))
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -284,6 +280,4 @@ class MapView(context: Context, attributeSet: AttributeSet):
     override fun onScaleEnd(gd: ScaleGestureDetector) {
         fingerZoom(scaleStart, Point(gd.currentSpanX, gd.currentSpanY), Point(gd.focusX, gd.focusY))
     }
-
 }
-

@@ -85,10 +85,6 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-    }
-
     /** Set the UI appearance depending on whether maps are being created. */
     private fun setUIState() {
         val isRecording = model.isMapping()
