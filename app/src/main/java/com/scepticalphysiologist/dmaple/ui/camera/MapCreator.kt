@@ -42,7 +42,7 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
     // I did try using an ArrayDeque, but after 10+ minutes the dynamic memory allocation starts
     // to slow things (map update and image show) to a crawl.
     /** The buffer for incoming map data. */
-    private val map: IntBuffer
+    private val mapBuffer: IntBuffer
     /** If the end of the buffer has been reached. */
     private var endOfBuffer = false
 
@@ -56,18 +56,18 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
             pL = edge.first.y.toInt()
         }
         ns = abs(pE.first - pE.second)
-        map = IntBuffer.allocate(ns * MappingService.BUFFER_SIZE_PER_PIXEL)
+        mapBuffer = IntBuffer.allocate(ns * MappingService.BUFFER_SIZE_PER_PIXEL)
     }
 
     /** The space-time size of the map (samples). */
     override fun size(): Size { return Size(ns, nt) }
 
     /** Update the map with a new camera frame. */
-    override fun updateWithCameraImage(bm: Bitmap) {
+    override fun updateWithCameraImage(bitmap: Bitmap) {
         if(endOfBuffer) return
         try {
-            (pE.first until pE.second).map { map.put(
-                if(isVertical) bm.getPixel(pL, it) else bm.getPixel(it, pL)
+            (pE.first until pE.second).map { mapBuffer.put(
+                if(isVertical) bitmap.getPixel(pL, it) else bitmap.getPixel(it, pL)
             )}
             nt += 1
         } catch(e: BufferOverflowException) { endOfBuffer = true }
@@ -88,7 +88,7 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
             var k = 0
             for(j in area.top until area.bottom step stepY)
                 for(i in area.left until area.right step stepX) {
-                    arr[k] = map[j * ns + i]
+                    arr[k] = mapBuffer[j * ns + i]
                     k += 1
                 }
             return Bitmap.createBitmap(arr, bs.width, bs.height, Bitmap.Config.ARGB_8888)
