@@ -265,12 +265,10 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             val bm = image.toBitmap()
             for(creator in creators) creator.updateWithCameraImage(bm)
         }
-        // Image must be "closed" to allow preview to continue.
+        // Each image must be "closed" to allow preview to continue.
         image.close()
 
-        // Keep things slow.
-        // https://stackoverflow.com/questions/
-        // 65801379/how-to-add-a-delay-inside-the-executor-bound-to-cameraxs-analyzer
+        // Wait for a while before grabbing the next frame.
         Thread.sleep(APPROX_FRAME_INTERVAL_MS)
     }
 
