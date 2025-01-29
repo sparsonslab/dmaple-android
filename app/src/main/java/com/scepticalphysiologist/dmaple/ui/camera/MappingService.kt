@@ -263,7 +263,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         if(creating) {
             // Pass the image to each map creator to analyse.
             val bm = image.toBitmap()
-            for(creator in creators) creator.updateWithCameraImage(bm)
+            for(creator in creators) creator.updateWithCameraBitmap(bm)
         }
         // Each image must be "closed" to allow preview to continue.
         image.close()

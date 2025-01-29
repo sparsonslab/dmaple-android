@@ -11,11 +11,11 @@ import kotlin.math.abs
 import kotlin.math.ceil
 
 
-abstract class MapCreator(val area: MappingRoi) {
+abstract class MapCreator(val roi: MappingRoi) {
 
     abstract fun size(): Size
 
-    abstract fun updateWithCameraImage(bitmap: Bitmap)
+    abstract fun updateWithCameraBitmap(bitmap: Bitmap)
 
     abstract fun getMapBitmap(crop: Rect?, stepX: Int = 1, stepY: Int = 1): Bitmap?
 
@@ -63,12 +63,12 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
     override fun size(): Size { return Size(ns, nt) }
 
     /** Update the map with a new camera frame. */
-    override fun updateWithCameraImage(bitmap: Bitmap) {
+    override fun updateWithCameraBitmap(bitmap: Bitmap) {
         if(reachedEndOfBuffer) return
         try {
             (pE.first until pE.second).map { mapBuffer.put(
                 if(isVertical) bitmap.getPixel(pL, it) else bitmap.getPixel(it, pL)
-            )}
+            ) }
             nt += 1
         } catch(e: BufferOverflowException) { reachedEndOfBuffer = true }
     }
