@@ -44,7 +44,7 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
     /** The buffer for incoming map data. */
     private val mapBuffer: IntBuffer
     /** If the end of the buffer has been reached. */
-    private var endOfBuffer = false
+    private var reachedEndOfBuffer = false
 
     init {
         val edge = Point.ofRectEdge(roi, roi.seedingEdge)
@@ -64,13 +64,13 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
 
     /** Update the map with a new camera frame. */
     override fun updateWithCameraImage(bitmap: Bitmap) {
-        if(endOfBuffer) return
+        if(reachedEndOfBuffer) return
         try {
             (pE.first until pE.second).map { mapBuffer.put(
                 if(isVertical) bitmap.getPixel(pL, it) else bitmap.getPixel(it, pL)
             )}
             nt += 1
-        } catch(e: BufferOverflowException) { endOfBuffer = true }
+        } catch(e: BufferOverflowException) { reachedEndOfBuffer = true }
     }
 
     /** Get the map as a bitmap (space = x/width, time = y/height).
