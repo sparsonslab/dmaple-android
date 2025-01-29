@@ -46,7 +46,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         }
 
         // Whenever the saved ROIs have changed in the view, transfer these to the mapping
-        // service so they are persisted.
+        // service (via the view model) so they are persisted.
         binding.cameraAndRoi.savedRoisHaveChanged().observe(viewLifecycleOwner) { haveChanged ->
             if(haveChanged) model.setMappingRois(binding.cameraAndRoi.getSavedRois())
         }

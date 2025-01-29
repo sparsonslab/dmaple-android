@@ -198,7 +198,7 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
         if(!editable) return true
 
         // Click on ruler?
-        if(touchedRuler(tp)) return true
+        if(touchedRuler(tp, isDoubleClick)) return true
 
         // No active ROI: create a new ROI.
         if(activeRoi == null) {
@@ -249,10 +249,10 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
         invalidate()
     }
 
-    private fun touchedRuler(touchPoint: Point): Boolean {
+    private fun touchedRuler(touchPoint: Point, isDouble: Boolean): Boolean {
         ruler?.let {
-            if((touchPoint - it.p0).l2() < 100) it.p0 = touchPoint
-            else if((touchPoint - it.p1).l2() < 100) it.p1 = touchPoint
+            if((touchPoint - it.p0).l2() < 100) { if(isDouble) it.editLength(context) else it.p0 = touchPoint }
+            else if((touchPoint - it.p1).l2() < 100) {if(isDouble) it.editLength(context) else it.p1 = touchPoint }
             else return false
             invalidate()
             return true
