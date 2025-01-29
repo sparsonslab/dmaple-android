@@ -263,6 +263,9 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         if(creating) {
             // Pass the image to each map creator to analyse.
             val bm = image.toBitmap()
+            // todo - would be faster to have creators access image pixels directly rather
+            //    than convert the whole image to a bitmap. But getting pixels out of image
+            //    is a pain (decoding, planes, etc) -  I did try!
             for(creator in creators) creator.updateWithCameraBitmap(bm)
         }
         // Each image must be "closed" to allow preview to continue.
