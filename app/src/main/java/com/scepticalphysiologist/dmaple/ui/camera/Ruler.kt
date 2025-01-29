@@ -4,14 +4,19 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import kotlin.math.PI
 
+/** A ruler shown on a view used for calibration between pixel units and some measurement unit. */
 class Ruler(
+    /** The ruler's frame. */
     var frame: Frame,
+    /** The start point of the ruler in pixel coordinates.. */
     var p0: Point = Point(),
-    var p1: Point = Point(),
+    /** The end point of the ruler in pixel coordinates. */
+    var p1: Point = Point(1f, 1f),
+    /** The length of the ruler in the measurement units. */
     var length: Float = 1f,
+    /** The length of the end-caps of the ruler in pixels. */
     var end: Float = 0.1f
 ) {
-
 
     fun draw(canvas: Canvas, paint: Paint) {
         canvas.drawLine(p0.x, p0.y, p1.x, p1.y, paint)
@@ -33,5 +38,4 @@ class Ruler(
         length = (p1 - p0).l2() * lengthRatio
         frame = newFrame
     }
-
 }
