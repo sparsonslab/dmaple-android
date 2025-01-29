@@ -50,6 +50,17 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
         /** The aspect ratio of the camera. */
         const val CAMERA_ASPECT_RATIO = AspectRatio.RATIO_16_9
+
+        /** Approximate interval between frames (milliseconds). */
+        const val APPROX_FRAME_INTERVAL_MS: Long = 33
+
+        /** Upper limit on the minute length of maps. */
+        var MAX_MAP_LENGTH_MINUTES: Int = 60
+
+        /** Required buffer size per map spatial pixel. */
+        val BUFFER_SIZE_PER_PIXEL: Int
+            get() = MAX_MAP_LENGTH_MINUTES * 60 * (1000f / APPROX_FRAME_INTERVAL_MS.toFloat()).toInt()
+
     }
 
     // Camera
@@ -62,8 +73,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     private lateinit var preview: Preview
     /** The camera image analyser. */
     private lateinit var analyser: ImageAnalysis
-    /** Approximate interval between frames (milliseconds). */
-    private val approxFrameIntervalMs: Long = 33
 
     // State
     // -----
@@ -211,7 +220,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         // todo - MappingRois should include the MapCreator class to which they are used for.
         val imageFrame = imageAnalysisFrame() ?: return warning
         creators = rois.map {
-            GutMapper(it.inNewFrame(imageFrame))
+            SubstituteMapCreator(it.inNewFrame(imageFrame))
         }.toMutableList()
 
         // State
@@ -254,7 +263,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         if(creating) {
             // Pass the image to each map creator to analyse.
             val bm = image.toBitmap()
-            for(creator in creators) creator.analyse(bm)
+            for(creator in creators) creator.updateWithCameraImage(bm)
         }
         // Image must be "closed" to allow preview to continue.
         image.close()
@@ -262,7 +271,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         // Keep things slow.
         // https://stackoverflow.com/questions/
         // 65801379/how-to-add-a-delay-inside-the-executor-bound-to-cameraxs-analyzer
-        Thread.sleep(approxFrameIntervalMs)
+        Thread.sleep(APPROX_FRAME_INTERVAL_MS)
     }
 
 }

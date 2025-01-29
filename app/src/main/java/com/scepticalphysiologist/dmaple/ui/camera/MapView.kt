@@ -188,7 +188,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
                 val pE = Point.minOf(bitmapSize, viewSizeInBitmapPixels)
                 val p0 = Point.maxOf(bitmapSize - pE - offset, Point())
                 val p1 = p0 + pE
-                val bm = mapCreator.getImage(Rect(
+                val bm = mapCreator.getMapBitmap(Rect(
                     p0.x.toInt(), p0.y.toInt(),
                     p1.x.toInt(), p1.y.toInt(),
                 ), stepX = pixelStep.x.toInt(), stepY = pixelStep.y.toInt())

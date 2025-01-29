@@ -5,43 +5,49 @@ import android.graphics.Rect
 import android.util.Size
 import java.lang.IllegalArgumentException
 import java.lang.IndexOutOfBoundsException
+import java.nio.BufferOverflowException
+import java.nio.IntBuffer
 import kotlin.math.abs
 import kotlin.math.ceil
 
 
 abstract class MapCreator(val area: MappingRoi) {
 
-    abstract fun analyse(bitmap: Bitmap)
-
     abstract fun size(): Size
 
-    abstract fun getImage(crop: Rect?, stepX: Int = 1, stepY: Int = 1): Bitmap?
+    abstract fun updateWithCameraImage(bitmap: Bitmap)
+
+    abstract fun getMapBitmap(crop: Rect?, stepX: Int = 1, stepY: Int = 1): Bitmap?
 
 }
 
+/** A map creator for development purposes, that simply creates the map from the pixels
+ * along the seeding edge. */
+class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
 
-class GutMapper(roi: MappingRoi): MapCreator(roi) {
-
-
-    val map = ArrayDeque<Int>()
-    val bconfig = Bitmap.Config.ARGB_8888
-
-    val isVertical: Boolean
-    /** Coordinates at edge .*/
-    val pE: Pair<Int, Int>
-
-    /** Edge coordinate*/
-    val pL: Int
-
+    // Map geometry
+    // ------------
+    /** The map seeding edge orientation within the input images. */
+    private val isVertical: Boolean = roi.seedingEdge.isVertical()
+    /** Long-axis coordinates of the seeding edge .*/
+    private val pE: Pair<Int, Int>
+    /** Short-axis coordinate of the seeding edge. */
+    private val pL: Int
     /** Sample size of map - space and time. */
-    val ns: Int
-    var nt: Int = 0
+    private val ns: Int
+    private var nt: Int = 0
+
+    // Map data
+    // --------
+    // I did try using an ArrayDeque, but after 10+ minutes the dynamic memory allocation starts
+    // to slow things (map update and image show) to a crawl.
+    /** The buffer for incoming map data. */
+    private val map: IntBuffer
+    /** If the end of the buffer has been reached. */
+    private var endOfBuffer = false
 
     init {
-
-        isVertical = roi.seedingEdge.isVertical()
         val edge = Point.ofRectEdge(roi, roi.seedingEdge)
-
         if(isVertical) {
             pE = orderedY(edge)
             pL = edge.first.x.toInt()
@@ -49,22 +55,31 @@ class GutMapper(roi: MappingRoi): MapCreator(roi) {
             pE = orderedX(edge)
             pL = edge.first.y.toInt()
         }
-
         ns = abs(pE.first - pE.second)
+        map = IntBuffer.allocate(ns * MappingService.BUFFER_SIZE_PER_PIXEL)
     }
 
-    override fun analyse(bm: Bitmap) {
-        (pE.first until pE.second).map { map.add(
-            if(isVertical) bm.getPixel(pL, it) else bm.getPixel(it, pL)
-        )}
-        nt += 1
+    /** The space-time size of the map (samples). */
+    override fun size(): Size { return Size(ns, nt) }
+
+    /** Update the map with a new camera frame. */
+    override fun updateWithCameraImage(bm: Bitmap) {
+        if(endOfBuffer) return
+        try {
+            (pE.first until pE.second).map { map.put(
+                if(isVertical) bm.getPixel(pL, it) else bm.getPixel(it, pL)
+            )}
+            nt += 1
+        } catch(e: BufferOverflowException) { endOfBuffer = true }
     }
 
-    override fun size(): Size {
-        return Size(ns, nt)
-    }
-
-    override fun getImage(crop: Rect?, stepX: Int, stepY: Int): Bitmap? {
+    /** Get the map as a bitmap (space = x/width, time = y/height).
+     *
+     * @param crop The area of the map to return.
+     * @param stepX A step in the spatial pixels (for pixel skip).
+     * @param stepY A step in the time pixels (for pixel skip).
+     * */
+    override fun getMapBitmap(crop: Rect?, stepX: Int, stepY: Int): Bitmap? {
         val area = Rect(0, 0, ns, nt)
         crop?.let { area.intersect(crop) }
         try {
@@ -76,7 +91,7 @@ class GutMapper(roi: MappingRoi): MapCreator(roi) {
                     arr[k] = map[j * ns + i]
                     k += 1
                 }
-            return Bitmap.createBitmap(arr, bs.width, bs.height, bconfig)
+            return Bitmap.createBitmap(arr, bs.width, bs.height, Bitmap.Config.ARGB_8888)
         }
         catch (e: IndexOutOfBoundsException) { return null }
         catch (e: IllegalArgumentException) { return null }
