@@ -11,6 +11,7 @@ import androidx.camera.core.ImageProxy
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.abs
+import kotlin.math.atan
 import kotlin.math.min
 import kotlin.math.pow
 
@@ -124,6 +125,9 @@ class Point(var x: Float = 0f, var y: Float = 0f) {
     /** The distance from the origin.*/
     fun l2(): Float { return (x.pow(2) + y.pow(2)).pow(0.5f) }
 
+    /** The angle to the origin. */
+    fun theta(): Float { return atan(y / x) }
+
     /** Rotate the point about the origin.
      *
      * @param theta Rotation angle (radians).
@@ -152,6 +156,9 @@ class Point(var x: Float = 0f, var y: Float = 0f) {
         fun minOf(p0: Point, p1: Point): Point { return Point(minOf(p0.x, p1.x), minOf(p0.y, p1.y)) }
 
         fun maxOf(p0: Point, p1: Point): Point { return Point(maxOf(p0.x, p1.x), maxOf(p0.y, p1.y)) }
+
+        /** The point with unit length from the origin for a given angle. */
+        fun unitLength(theta: Float): Point { return Point(cos(theta), sin(theta)) }
 
         /** The two opposing corners of a rectangle.*/
         fun fromRect(r: RectF): List<Point> {

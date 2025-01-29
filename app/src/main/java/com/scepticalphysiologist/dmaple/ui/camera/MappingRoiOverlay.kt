@@ -73,6 +73,13 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     /** Indicates (if true) that the saved ROIs have changed (added to or subtracted from). */
     val savedRoiChange = MutableLiveData<Boolean>(false)
 
+    // Ruler
+    // -----
+    /** A ruler for calibrating distance.*/
+    private var ruler: Ruler? = null
+    /** The paint for the ruler. */
+    private val rulerPaint = Paint()
+
     // View information
     // ----------------
     /** Information about the display. */
@@ -105,6 +112,9 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
         savedRoiPaint.style = Paint.Style.STROKE
         savedRoiPaint.setPathEffect(DashPathEffect(floatArrayOf(10f, 5f), 0f))
         savedRoiPaint.strokeWidth = 1.6f
+        rulerPaint.color = Color.RED
+        rulerPaint.style = Paint.Style.STROKE
+        rulerPaint.strokeWidth = 3.2f
 
         // Gesture detection.
         gestureDetector = GestureDetector(this.context, this)
@@ -179,10 +189,16 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
         gestureDetector.onTouchEvent(event)
         val isDoubleClick = gesture == GestureState.DOUBLE_TAP
 
+        // Touch point.
+        val tp = Point.ofMotionEvent(event)
+
         // Double click on saved ROI?
-        if(isDoubleClick && clickedOnSavedRoi(event)) return true
+        if(isDoubleClick && clickedOnSavedRoi(tp)) return true
 
         if(!editable) return true
+
+        // Click on ruler?
+        if(touchedRuler(tp)) return true
 
         // No active ROI: create a new ROI.
         if(activeRoi == null) {
@@ -193,7 +209,7 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
         // Active Roi ... (has to come after the above).
         activeRoi?.let {
             // Touch point relative to current ROI.
-            val rp = Point.ofMotionEvent(event).relativeDistance(it)
+            val rp = tp.relativeDistance(it)
             val ap = rp.abs()
             // ... near centre
             if((ap.x < ft) && (ap.y < ft)) {
@@ -233,16 +249,26 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
         invalidate()
     }
 
-    private fun clickedOnSavedRoi(event: MotionEvent): Boolean {
-        val p = Point.ofMotionEvent(event)
+    private fun touchedRuler(touchPoint: Point): Boolean {
+        ruler?.let {
+            if((touchPoint - it.p0).l2() < 100) it.p0 = touchPoint
+            else if((touchPoint - it.p1).l2() < 100) it.p1 = touchPoint
+            else return false
+            invalidate()
+            return true
+        }
+        return false
+    }
+
+    private fun clickedOnSavedRoi(touchPoint: Point): Boolean {
         for(i in savedRois.indices) {
-            val ap = p.relativeDistance(savedRois[i]).abs()
+            val ap = touchPoint.relativeDistance(savedRois[i]).abs()
             if ((ap.x < ft) && (ap.y < ft)) {
                 // If editable - change the saved ROI to the active,
                 if(editable) {
                     changeActiveRoi(savedRois.removeAt(i))
                     savedRoiChange.postValue(true)
-                    drag = Point(event.x, event.y)
+                    drag = touchPoint
                     invalidate()
                 }
                 // notify selection
@@ -320,22 +346,35 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
         super.onDraw(canvas)
         activeRoi?.draw(canvas, activeRoiPaint)
         for(roi in savedRois) roi.draw(canvas, savedRoiPaint)
+        ruler?.draw(canvas, rulerPaint)
         thresholdBitmap?.draw(canvas)
     }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
         if(!changed) return
-        // If this is not the first time the view has been laid out (frame != null), then
-        // transform the ROI to any new orientation.
         val newFrame = Frame.fromView(this, display)
+        // Create the ruler upon the first layout.
+        if(ruler == null) initiateRuler(newFrame)
+        // Transform the ROIs and ruler to any new orientation.
         frame?.let {
             activeRoi?.changeFrame(newFrame)
             for(roi in savedRois) roi.changeFrame(newFrame)
+            ruler?.changeFrame(newFrame)
             invalidate()
         }
         // Update the view frame.
         frame = newFrame
+    }
+
+    private fun initiateRuler(frame: Frame) {
+        val s = frame.size
+        ruler = Ruler(
+            frame=frame,
+            p0 = Point(s.x * 0.9f, s.y * 0.1f),
+            p1 = Point(s.x * 0.9f, s.y * 0.9f),
+            end = 0.05f * minOf(s.x, s.y)
+        )
     }
 
     // ---------------------------------------------------------------------------------------------
