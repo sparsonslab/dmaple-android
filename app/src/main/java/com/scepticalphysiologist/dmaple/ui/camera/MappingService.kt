@@ -226,26 +226,31 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         creators = rois.map { SubstituteMapCreator(it.inNewFrame(imageFrame)) }.toMutableList()
 
         // Allocate memory to the creators.
-        // ... allocate to the maps at most half of the memory available from the heap.
-        val heapMegaBytes = (this.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).memoryClass
-        val maxTotalAllocationBytes = 0.5 * 1e6 * heapMegaBytes
-        // ... to each creator allocate the minimum of:
-        //      - the fraction of the total memory, in proportion to the maps requirement per time sample.
-        //      - the memory required for 10 minutes of recording.
-        val maxAllocationMinutes = 10
-        val maxAllocationTimeSamples = (maxAllocationMinutes * 60 * 1000 / APPROX_FRAME_INTERVAL_MS).toInt()
-        val totalBytesPerTimeSample = creators.map{it.bytesPerTimeSample()}.sum().toFloat()
-        for(creator in creators) {
-            val fractionOfMemory = creator.bytesPerTimeSample().toFloat() / totalBytesPerTimeSample
-            val memoryAllocation = (fractionOfMemory * maxTotalAllocationBytes).toInt()
-            val maxAllocation = maxAllocationTimeSamples * creator.bytesPerTimeSample()
-            creator.allocateMemory(minOf(memoryAllocation, maxAllocation))
-        }
+        val timeSamples = timeSampleAllocation(
+            bytesPerTimeSample = creators.map{it.bytesPerTimeSample()}.sum(),
+            maxAllocationMinutes = 1f
+        )
+        for(creator in creators) creator.allocateMemory(timeSamples)
 
         // State
         creating = true
         startTime = Instant.now()
         return warning
+    }
+
+    /** Calculate the number of time samples that be allocated buffer memory.
+     * @param bytesPerTimeSample The number of bytes required per time sample across all maps.
+     * @param maxAllocationMinutes The maximum length of time for which memory should be allocated.
+     * */
+    private fun timeSampleAllocation(bytesPerTimeSample: Int, maxAllocationMinutes: Float): Int {
+        // Allocate to the maps at most half of the memory available from the heap.
+        val heapMegaBytes = (this.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).memoryClass
+        val totalAllocationBytes = 0.5 * 1e6 * heapMegaBytes
+        // The total time samples that can be allocated based on that allocation.
+        val totalTimeSamples = (totalAllocationBytes / bytesPerTimeSample).toInt()
+        // The max time sample that should be allocated for the time.
+        val maxTimeSamples =(maxAllocationMinutes * 60 * 1000 / APPROX_FRAME_INTERVAL_MS).toInt()
+        return minOf(totalTimeSamples, maxTimeSamples)
     }
 
     /** Stop creating maps. */

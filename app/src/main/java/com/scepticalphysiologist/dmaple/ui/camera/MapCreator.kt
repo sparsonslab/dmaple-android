@@ -18,7 +18,7 @@ abstract class MapCreator(val roi: MappingRoi) {
 
     abstract fun bytesPerTimeSample(): Int
 
-    abstract fun allocateMemory(nBytes: Int)
+    abstract fun allocateMemory(timeSamples: Int)
 
     abstract fun size(): Size
 
@@ -71,11 +71,9 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
 
     override fun bytesPerTimeSample(): Int { return ns * 4 }
 
-    override fun allocateMemory(nBytes: Int) {
-        // Allocate the nearest number of samples that is a multiple of the number of spatial samples.
-        val sampleCapacity = ns * floor(nBytes.toFloat() / (4f * ns)).toInt()
+    override fun allocateMemory(timeSamples: Int) {
         mapBuffer = FileBackedBuffer(
-            capacity = sampleCapacity,
+            capacity = timeSamples * ns,
             directory = MainActivity.storageDirectory!!,
             default = Color.BLACK,
             backUpFraction = 0.2f
