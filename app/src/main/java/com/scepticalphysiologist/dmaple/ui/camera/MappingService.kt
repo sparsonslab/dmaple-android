@@ -1,5 +1,6 @@
 package com.scepticalphysiologist.dmaple.ui.camera
 
+import android.app.ActivityManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
@@ -57,6 +58,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         /** Upper limit on the minute length of maps. */
         var MAX_MAP_LENGTH_MINUTES: Int = 60
 
+        // todo - need to adjust the buffer size for each creator according to the total
+        //      heap available and the number of creators (total pixel width of all creators).
         /** Required buffer size per map spatial pixel. */
         val BUFFER_SIZE_PER_PIXEL: Int
             get() = MAX_MAP_LENGTH_MINUTES * 60 * (1000f / APPROX_FRAME_INTERVAL_MS.toFloat()).toInt()
@@ -120,6 +123,10 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA,
             useCaseGroup = useCaseGroup.build()
         )
+
+        val aman = this.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        println("memory = ${aman.memoryClass} MB")
+
     }
 
     // ---------------------------------------------------------------------------------------------
