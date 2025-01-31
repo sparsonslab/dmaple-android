@@ -220,17 +220,17 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             return warning
         }
 
-        // Convert the frame of the mapping ROIs to the frame of the camera.
+        // Create map creators.
         // todo - MappingRois should include the MapCreator class to which they are used for.
+        // ... create from the ROIs, adjusting to the image analysis frame.
         val imageFrame = imageAnalysisFrame() ?: return warning
         creators = rois.map { SubstituteMapCreator(it.inNewFrame(imageFrame)) }.toMutableList()
-
-        // Allocate memory to the creators.
+        // ... allocate buffering memory.
         val timeSamples = timeSampleAllocation(
             bytesPerTimeSample = creators.map{it.bytesPerTimeSample()}.sum(),
-            maxAllocationMinutes = 1f
+            maxAllocationMinutes = 10f
         )
-        for(creator in creators) creator.allocateMemory(timeSamples)
+        for(creator in creators) creator.allocateBufferedTimeSamples(timeSamples)
 
         // State
         creating = true

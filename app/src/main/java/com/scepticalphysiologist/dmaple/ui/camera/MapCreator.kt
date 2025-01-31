@@ -11,14 +11,13 @@ import java.lang.IllegalArgumentException
 import java.lang.IndexOutOfBoundsException
 import kotlin.math.abs
 import kotlin.math.ceil
-import kotlin.math.floor
 
 
 abstract class MapCreator(val roi: MappingRoi) {
 
     abstract fun bytesPerTimeSample(): Int
 
-    abstract fun allocateMemory(timeSamples: Int)
+    abstract fun allocateBufferedTimeSamples(timeSamples: Int)
 
     abstract fun size(): Size
 
@@ -71,7 +70,7 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
 
     override fun bytesPerTimeSample(): Int { return ns * 4 }
 
-    override fun allocateMemory(timeSamples: Int) {
+    override fun allocateBufferedTimeSamples(timeSamples: Int) {
         mapBuffer = FileBackedBuffer(
             capacity = timeSamples * ns,
             directory = MainActivity.storageDirectory!!,
