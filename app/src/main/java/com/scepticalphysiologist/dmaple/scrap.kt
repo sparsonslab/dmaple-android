@@ -2,7 +2,7 @@ package com.scepticalphysiologist.dmaple
 
 import com.scepticalphysiologist.dmaple.io.FileBackedBuffer
 import java.io.File
-
+import kotlin.random.Random
 
 
 fun main() {
@@ -12,10 +12,14 @@ fun main() {
 
 
     val buffer = FileBackedBuffer<Int>(
-        100,
-        File("/Users/senparsons/Documents/programming/personal/dmaple_android")
+        capacity = 100,
+        default = 0,
+        directory = File("/Users/senparsons/Documents/programming/personal/dmaple_android")
     )
-    for(i in 0..450) buffer.add(i)
+    for(i in 0..450) {
+        buffer.add(i)
+        println("size = ${buffer.nBuffer()}")
+    }
 
     println(buffer.nSamples())
     println(buffer.read(90, 1000))

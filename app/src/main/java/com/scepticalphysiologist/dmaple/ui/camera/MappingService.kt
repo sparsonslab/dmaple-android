@@ -240,11 +240,11 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     private fun stop(): Warnings {
         val warnings = Warnings("Stop Recording")
 
-        // Save maps.
-        // ?????????
+        // Save and clear maps.
+        for(creator in creators) creator.saveAndClose()
+        creators.clear()
 
         // State
-        creators.clear()
         creating = false
         startTime = null
         return warnings

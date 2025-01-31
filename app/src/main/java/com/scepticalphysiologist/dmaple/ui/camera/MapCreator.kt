@@ -1,12 +1,15 @@
 package com.scepticalphysiologist.dmaple.ui.camera
 
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.graphics.Rect
 import android.util.Size
+import com.scepticalphysiologist.dmaple.MainActivity
+import com.scepticalphysiologist.dmaple.io.FileBackedBuffer
+import java.io.File
 import java.lang.IllegalArgumentException
 import java.lang.IndexOutOfBoundsException
 import java.nio.BufferOverflowException
-import java.nio.IntBuffer
 import kotlin.math.abs
 import kotlin.math.ceil
 
@@ -18,6 +21,8 @@ abstract class MapCreator(val roi: MappingRoi) {
     abstract fun updateWithCameraBitmap(bitmap: Bitmap)
 
     abstract fun getMapBitmap(crop: Rect?, stepX: Int = 1, stepY: Int = 1): Bitmap?
+
+    abstract fun saveAndClose(file: File? = null)
 
 }
 
@@ -42,9 +47,7 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
     // I did try using an ArrayDeque, but after 10+ minutes the dynamic memory allocation starts
     // to slow things (map update and image show) to a crawl.
     /** The buffer for incoming map data. */
-    private val mapBuffer: IntBuffer
-    /** If the end of the buffer has been reached. */
-    private var reachedEndOfBuffer = false
+    private val mapBuffer: FileBackedBuffer<Int>
 
     init {
         val edge = Point.ofRectEdge(roi, roi.seedingEdge)
@@ -56,7 +59,14 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
             pL = edge.first.y.toInt()
         }
         ns = abs(pE.first - pE.second)
-        mapBuffer = IntBuffer.allocate(ns * MappingService.BUFFER_SIZE_PER_PIXEL)
+
+        val bs = (1 * 60 * 1000 / MappingService.APPROX_FRAME_INTERVAL_MS).toInt()
+        mapBuffer = FileBackedBuffer(
+            capacity = ns * bs,
+            directory = MainActivity.storageDirectory!!,
+            default = Color.BLACK,
+            backUpFraction = 0.2f
+        )
     }
 
     /** The space-time size of the map (samples). */
@@ -64,13 +74,12 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
 
     /** Update the map with a new camera frame. */
     override fun updateWithCameraBitmap(bitmap: Bitmap) {
-        if(reachedEndOfBuffer) return
         try {
-            (pE.first until pE.second).map { mapBuffer.put(
+            (pE.first until pE.second).map { mapBuffer.add(
                 if(isVertical) bitmap.getPixel(pL, it) else bitmap.getPixel(it, pL)
             ) }
             nt += 1
-        } catch(e: BufferOverflowException) { reachedEndOfBuffer = true }
+        } catch(e: BufferOverflowException) { println("overflow")}
     }
 
     /** Get the map as a bitmap (space = x/width, time = y/height).
@@ -88,7 +97,7 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
             var k = 0
             for(j in area.top until area.bottom step stepY)
                 for(i in area.left until area.right step stepX) {
-                    arr[k] = mapBuffer[j * ns + i]
+                    arr[k] = mapBuffer.get(j * ns + i)
                     k += 1
                 }
             return Bitmap.createBitmap(arr, bs.width, bs.height, Bitmap.Config.ARGB_8888)
@@ -96,6 +105,18 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
         catch (e: IndexOutOfBoundsException) { return null }
         catch (e: IllegalArgumentException) { return null }
     }
+
+    override fun saveAndClose(file: File?) {
+
+        // save
+        mapBuffer.writeRemainingSamples()
+        // stream samples from the buffer file into a jpeg/etc.
+        // ?????
+
+        // Release the buffer.
+        mapBuffer.release()
+    }
+
 }
 
 private fun rangeSize(range: Int, step: Int): Int {

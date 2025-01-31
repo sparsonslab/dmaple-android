@@ -2,35 +2,44 @@ package com.scepticalphysiologist.dmaple.io
 
 import androidx.collection.CircularArray
 import java.io.File
+import kotlin.random.Random
 
 /** A buffer that backs-up data to a file as the buffer approaches its capacity.
  *
- * @param T The numeric type of the samples in the buffer.
- * @property capacity The capacity of the buffer (samples).
- * @property directory The directory in which to write the backing file.
- * @param backUpThreshold The fraction of the capacity at which the buffer is backed-up.
- * @param backUpFraction The fraction of the capacity to be backed-up at each back-up event.
+ * This is used for recording maps. Bu occasionally backing up to file, maps can be
+ * recorded in access of the heap size of the app.
  */
 class FileBackedBuffer<T : Number>(
+    /** The capacity of the buffer (samples). */
     private val capacity: Int,
+    /** The directory in which to write the backing file. */
     private var directory: File,
+    /**A default value to return from the buffer if a get() index is out of range of the buffer.*/
+    private val default: T,
+    /** The fraction of the capacity at which the buffer is backed-up. */
     backUpThreshold: Float = 0.95f,
+    /** The fraction of the capacity to be backed-up at each back-up event. */
     backUpFraction: Float = 0.4f,
-){
+) {
 
-    private val wf: Int = (backUpFraction * capacity).toInt()
+    /** The number of samples in the buffer at which back-up is initiated. */
     private val wt: Int = (backUpThreshold * capacity).toInt()
-
+    /** The number of samples written to file at each back-up event. */
+    private val wf: Int = (backUpFraction * capacity).toInt()
+    /** A circular array that acts as the buffer. */
     private val buffer = CircularArray<T>(minCapacity = capacity)
+    /** A file into which [wf] samples are written each time the buffer size reaches [wt]. */
     private var file: NumericFile<T>? = null
+    /** The number of samples in the file. */
+    private var nf: Int = 0
 
     init {
-        if((!directory.isDirectory) || (!directory.exists()))
-            directory = File("")
+        if((!directory.isDirectory) || (!directory.exists())) directory = File("")
     }
 
+    /** Initiate the back-up file. */
     private fun initiateFile(value: T) {
-        val path = File(directory, "buffer.dat")
+        val path = File(directory, "buffer_${randomAlphaString(20)}.dat")
         if(path.exists()) path.delete()
         file = NumericFile(path, value)
     }
@@ -39,7 +48,7 @@ class FileBackedBuffer<T : Number>(
     fun nBuffer(): Int { return buffer.size() }
 
     /** The number of samples in the back-up and buffer. */
-    fun nSamples(): Long { return (file?.size() ?: 0) + buffer.size() }
+    fun nSamples(): Long { return (file?.nSamples() ?: 0) + buffer.size() }
 
     /** Add a sample to the buffer. */
     fun add(value: T) {
@@ -47,19 +56,23 @@ class FileBackedBuffer<T : Number>(
         if(file == null) initiateFile(value)
         // Buffer size has surpassed threshold - back-up.
         if(buffer.size() >= wt) {
-            file?.write((0 until wf).map { buffer[it] })
+            // ... write file.
+            file?.let{
+                it.write((0 until wf).map { buffer[it] }, append = true)
+                nf = it.nSamples().toInt()
+            }
+            // ... remove from buffer.
             buffer.removeFromStart(wf)
         }
         // Add value to buffer.
         buffer.addLast(value)
     }
 
-    /** Get the ith sample of the buffer. */
-    fun get(i: Int): T { return buffer[i] }
+    /** Get the ith sample of the buffer. If the sample is in the file, return the default value. */
+    fun get(i: Int): T { return if(i >= nf) buffer[i - nf] else default }
 
     /** Read a selection of samples contiguous across the back-up and buffer. */
     fun read(offset: Long = 0, length: Int? = null): List<T> {
-
         file?.let {
             val (off, len) = constrainedOffsetAndLength(nSamples(), offset, length)
             val arr = it.read(off, len)
@@ -70,4 +83,25 @@ class FileBackedBuffer<T : Number>(
         return listOf()
     }
 
+    /** Back-up whatever samples are remaining in the buffer to the file. */
+    fun writeRemainingSamples() {
+        file?.let {
+            it.write((0 until buffer.size()).map{buffer[it]}, append = true)
+            buffer.clear()
+            nf = it.nSamples().toInt()
+        }
+    }
+
+    /** Release the buffer's resources. */
+    fun release() {
+        buffer.clear()
+        file?.delete()
+    }
+
 }
+
+fun randomAlphaString(n: Int): String {
+    val alphas = ('a'..'z').map{it} + ('A'..'Z').map{it}
+    return (0 until n).map{alphas[Random.nextInt(alphas.size)]}.joinToString("")
+}
+
