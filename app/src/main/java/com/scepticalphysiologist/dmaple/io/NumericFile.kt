@@ -35,6 +35,7 @@ class NumericFile<T : Number>(
 
     /** Write sample to the file. */
     fun write(values: List<T>, append: Boolean = true) {
+        println("writing: ${path()}")
         // Write to a byte buffer.
         val buffer = ByteBuffer.allocate(values.size * byteWidth)
         when(example) {

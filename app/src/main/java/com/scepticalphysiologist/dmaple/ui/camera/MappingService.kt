@@ -124,9 +124,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             useCaseGroup = useCaseGroup.build()
         )
 
-        val aman = this.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        println("memory = ${aman.memoryClass} MB")
-
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -226,9 +223,24 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         // Convert the frame of the mapping ROIs to the frame of the camera.
         // todo - MappingRois should include the MapCreator class to which they are used for.
         val imageFrame = imageAnalysisFrame() ?: return warning
-        creators = rois.map {
-            SubstituteMapCreator(it.inNewFrame(imageFrame))
-        }.toMutableList()
+        creators = rois.map { SubstituteMapCreator(it.inNewFrame(imageFrame)) }.toMutableList()
+
+        // Allocate memory to the creators.
+        // ... allocate to the maps at most half of the memory available from the heap.
+        val heapMegaBytes = (this.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).memoryClass
+        val maxTotalAllocationBytes = 0.5 * 1e6 * heapMegaBytes
+        // ... to each creator allocate the minimum of:
+        //      - the fraction of the total memory, in proportion to the maps requirement per time sample.
+        //      - the memory required for 10 minutes of recording.
+        val maxAllocationMinutes = 10
+        val maxAllocationTimeSamples = (maxAllocationMinutes * 60 * 1000 / APPROX_FRAME_INTERVAL_MS).toInt()
+        val totalBytesPerTimeSample = creators.map{it.bytesPerTimeSample()}.sum().toFloat()
+        for(creator in creators) {
+            val fractionOfMemory = creator.bytesPerTimeSample().toFloat() / totalBytesPerTimeSample
+            val memoryAllocation = (fractionOfMemory * maxTotalAllocationBytes).toInt()
+            val maxAllocation = maxAllocationTimeSamples * creator.bytesPerTimeSample()
+            creator.allocateMemory(minOf(memoryAllocation, maxAllocation))
+        }
 
         // State
         creating = true
