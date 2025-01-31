@@ -74,12 +74,10 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
 
     /** Update the map with a new camera frame. */
     override fun updateWithCameraBitmap(bitmap: Bitmap) {
-        try {
-            (pE.first until pE.second).map { mapBuffer.add(
-                if(isVertical) bitmap.getPixel(pL, it) else bitmap.getPixel(it, pL)
-            ) }
-            nt += 1
-        } catch(e: BufferOverflowException) { println("overflow")}
+        (pE.first until pE.second).map { mapBuffer.add(
+            if(isVertical) bitmap.getPixel(pL, it) else bitmap.getPixel(it, pL)
+        ) }
+        nt += 1
     }
 
     /** Get the map as a bitmap (space = x/width, time = y/height).
@@ -89,8 +87,10 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
      * @param stepY A step in the time pixels (for pixel skip).
      * */
     override fun getMapBitmap(crop: Rect?, stepX: Int, stepY: Int): Bitmap? {
+        // Only allow a valid area of the map to be returned,
         val area = Rect(0, 0, ns, nt)
         crop?.let { area.intersect(crop) }
+        // Convert that area to a bitmap.
         try {
             val bs = Size(rangeSize(area.width(), stepX), rangeSize(area.height(), stepY))
             val arr = IntArray(bs.width * bs.height)
@@ -102,6 +102,7 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
                 }
             return Bitmap.createBitmap(arr, bs.width, bs.height, Bitmap.Config.ARGB_8888)
         }
+        // On start and rare occasions these might be thrown.
         catch (e: IndexOutOfBoundsException) { return null }
         catch (e: IllegalArgumentException) { return null }
     }
