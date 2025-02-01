@@ -224,6 +224,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             maxBufferingMinutes = 10f
         )
         for(creator in creators) creator.allocateBufferAndBackUp(timeSamples, writeFraction)
+        val bufferMin = String.format("%.1f", timeSamples.toFloat() / (60f  * APPROX_FRAME_RATE_HZ))
+        warning.add("Maps will be buffered to ~$bufferMin minutes", false)
 
         // State
         creating = true
