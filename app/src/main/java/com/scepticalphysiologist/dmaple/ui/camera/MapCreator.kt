@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Rect
 import android.util.Size
+import androidx.core.graphics.set
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.io.FileBackedBuffer
 import java.io.File
@@ -94,6 +95,10 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
         nt += 1
     }
 
+    var currentBitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888)
+
+    val bitmapBacking = IntArray(1_000_000)
+
     /** Get the map as a bitmap (space = x/width, time = y/height).
      *
      * @param crop The area of the map to return.
@@ -107,14 +112,24 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
         // Convert that area to a bitmap.
         try {
             val bs = Size(rangeSize(area.width(), stepX), rangeSize(area.height(), stepY))
-            val arr = IntArray(bs.width * bs.height)
-            var k = 0
+            // todo - this line (below) caused crash by throwing java.lang.OutOfMemoryError
+            // java.lang.OutOfMemoryError: Failed to allocate a 1276248 byte allocation with 1794752 free bytes and 1752KB until OOM, target footprint 268435456
+            var x = 0
+            var y = 0
+            if((bs.width != currentBitmap.width) || (bs.height != currentBitmap.height)) {
+                currentBitmap.recycle()
+                currentBitmap = Bitmap.createBitmap(bs.width, bs.height, Bitmap.Config.ARGB_8888)
+            }
             for(j in area.top until area.bottom step stepY)
                 for(i in area.left until area.right step stepX) {
-                    arr[k] = mapBuffer?.get(j * ns + i) ?: 0
-                    k += 1
+                    currentBitmap[x, y] = mapBuffer?.get(j * ns + i) ?: 0
+                    x += 1
+                    if(x >= bs.width) {
+                        x = 0
+                        y += 1
+                    }
                 }
-            return Bitmap.createBitmap(arr, bs.width, bs.height, Bitmap.Config.ARGB_8888)
+            return currentBitmap
         }
         // On start and rare occasions these might be thrown.
         catch (e: IndexOutOfBoundsException) { return null }
