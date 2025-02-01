@@ -64,7 +64,7 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
      * https://developer.android.com/topic/performance/graphics/manage-memory
      * https://stackoverflow.com/questions/4959485/bitmap-bitmap-recycle-weakreferences-and-garbage-collection
      * */
-    val backing: IntArray
+    private var backing: IntArray? = null
 
     // ---------------------------------------------------------------------------------------------
     // Creation and memory allocation
@@ -80,20 +80,21 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
             pL = edge.first.y.toInt()
         }
         ns = abs(pE.first - pE.second)
-
-        // ~ 5 minutes worth of backing.
-        // todo - more intelligent allocation of backing.
-        backing = IntArray(ns * 5 * 60 * 30)
     }
 
     override fun bytesPerTimeSample(): Int { return ns * 4 }
 
     override fun allocateBufferedTimeSamples(timeSamples: Int) {
+
+        backing = IntArray(ns * timeSamples)
+
+        val bfrac = minOf(0.2f, (20 * 30).toFloat() / timeSamples )
+        println("time sample allocation ${timeSamples}, write fraction = $bfrac")
         mapBuffer = FileBackedBuffer(
             capacity = timeSamples * ns,
             directory = MainActivity.storageDirectory!!,
             default = Color.BLACK,
-            backUpFraction = 0.2f
+            backUpFraction = bfrac
         )
     }
 
@@ -120,24 +121,27 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
      * @param stepY A step in the time pixels (for pixel skip).
      * */
     override fun getMapBitmap(crop: Rect?, stepX: Int, stepY: Int): Bitmap? {
-        // Only allow a valid area of the map to be returned,
-        val area = Rect(0, 0, ns, nt)
-        crop?.let { area.intersect(crop) }
-        val bs = Size(rangeSize(area.width(), stepX), rangeSize(area.height(), stepY))
-        if(bs.width * bs.height > backing.size) return null
-        // Convert that area to a bitmap.
+        if((backing == null) || (mapBuffer == null)) return null
         try {
+            // Only allow a valid area of the map to be returned,
+            val area = Rect(0, 0, ns, nt)
+            crop?.let { area.intersect(crop) }
+            val bs = Size(rangeSize(area.width(), stepX), rangeSize(area.height(), stepY))
+            if(bs.width * bs.height > backing!!.size) return null
+            // Pass values from buffer to bitmap backing and return bitmap.
             var k = 0
             for(j in area.top until area.bottom step stepY)
                 for(i in area.left until area.right step stepX) {
-                    backing[k] = mapBuffer?.get(j * ns + i) ?: 0
+                    backing!![k] = mapBuffer!!.get(j * ns + i)
                     k += 1
                 }
-            return Bitmap.createBitmap(backing, bs.width, bs.height, Bitmap.Config.ARGB_8888)
+            return Bitmap.createBitmap(backing!!, bs.width, bs.height, Bitmap.Config.ARGB_8888)
         }
         // On start and rare occasions these might be thrown.
-        catch (e: IndexOutOfBoundsException) { return null }
-        catch (e: IllegalArgumentException) { return null }
+        catch (_: IndexOutOfBoundsException) {}
+        catch (_: IllegalArgumentException) {}
+        catch (_: NullPointerException) {}
+        return null
     }
 
     // ---------------------------------------------------------------------------------------------

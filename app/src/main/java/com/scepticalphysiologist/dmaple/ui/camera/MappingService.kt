@@ -228,7 +228,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         // ... allocate buffering memory.
         val timeSamples = timeSampleAllocation(
             bytesPerTimeSample = creators.map{it.bytesPerTimeSample()}.sum(),
-            maxAllocationMinutes = 1f
+            maxAllocationMinutes = 5f
         )
         for(creator in creators) creator.allocateBufferedTimeSamples(timeSamples)
 
@@ -243,9 +243,15 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
      * @param maxAllocationMinutes The maximum length of time for which memory should be allocated.
      * */
     private fun timeSampleAllocation(bytesPerTimeSample: Int, maxAllocationMinutes: Float): Int {
-        // Allocate to the maps at most half of the memory available from the heap.
-        val heapMegaBytes = (this.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).memoryClass
-        val totalAllocationBytes = 0.5 * 1e6 * heapMegaBytes
+        // Allocate to the maps at most 80% of the current free memory.
+        // The loop is needed because sometimes the runtime return 0 free memory.
+        var totalAllocationBytes = 0.0
+        while(totalAllocationBytes <= 0.0)
+            totalAllocationBytes = 0.8 * Runtime.getRuntime().freeMemory().toDouble()
+
+        totalAllocationBytes = 0.2 * 1e6 * (this.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).memoryClass
+
+        println("free memory = $totalAllocationBytes")
         // The total time samples that can be allocated based on that allocation.
         val totalTimeSamples = (totalAllocationBytes / bytesPerTimeSample).toInt()
         // The max time sample that should be allocated for the time.
