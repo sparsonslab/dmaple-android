@@ -63,13 +63,20 @@ class FileBackedBuffer<T : Number>(
             }
             // ... remove from buffer.
             buffer.removeFromStart(wf)
+            val mem = Runtime.getRuntime().freeMemory().toFloat() * 1e-6
+            println("buffer > file: buffer = ${buffer.size()}, file = ${file?.nSamples()}, free = $mem")
         }
         // Add value to buffer.
         buffer.addLast(value)
     }
 
     /** Get the ith sample of the buffer. If the sample is in the file, return the default value. */
-    fun get(i: Int): T { return if(i >= nf) buffer[i - nf] else default }
+    fun get(i: Int): T {
+        try { return if(i >= nf) buffer[i - nf] else default }
+        // Null exception is sometimes called at the end (stop) of a long recording.
+        catch(_: NullPointerException) {}
+        return default
+    }
 
     /** Read a selection of samples contiguous across the back-up and buffer. */
     fun read(offset: Long = 0, length: Int? = null): List<T> {

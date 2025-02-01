@@ -228,7 +228,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         // ... allocate buffering memory.
         val timeSamples = timeSampleAllocation(
             bytesPerTimeSample = creators.map{it.bytesPerTimeSample()}.sum(),
-            maxAllocationMinutes = 10f
+            maxAllocationMinutes = 1f
         )
         for(creator in creators) creator.allocateBufferedTimeSamples(timeSamples)
 

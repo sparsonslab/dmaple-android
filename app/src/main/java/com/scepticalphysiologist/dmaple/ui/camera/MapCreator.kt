@@ -48,10 +48,23 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
 
     // Map data
     // --------
-    // I did try using an ArrayDeque, but after 10+ minutes the dynamic memory allocation starts
-    // to slow things (map update and image show) to a crawl.
-    /** The buffer for incoming map data. */
+    /** The buffer for incoming map data.
+     *
+     * I did try using an ArrayDeque, but after 10+ minutes the dynamic memory allocation starts
+     * to slow things (map update and image show) to a crawl.
+     * */
     private var mapBuffer: FileBackedBuffer<Int>? = null
+    /** Backing array for bitmaps created from the map.
+     *
+     * Originally I had [getMapBitmap] create a backing IntArray each time. However this caused
+     * an out-of-memory exception after a few minutes. After profiling the app, it was found that
+     * multiple instances of the array were accumulating. This is prob due to Android's awful
+     * garbage collection of bitmaps. Using a backing array attribute avoids memory allocation
+     * on each call and then releasing the backing with bitmap.release().
+     * https://developer.android.com/topic/performance/graphics/manage-memory
+     * https://stackoverflow.com/questions/4959485/bitmap-bitmap-recycle-weakreferences-and-garbage-collection
+     * */
+    val backing: IntArray
 
     // ---------------------------------------------------------------------------------------------
     // Creation and memory allocation
@@ -67,6 +80,10 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
             pL = edge.first.y.toInt()
         }
         ns = abs(pE.first - pE.second)
+
+        // ~ 5 minutes worth of backing.
+        // todo - more intelligent allocation of backing.
+        backing = IntArray(ns * 5 * 60 * 30)
     }
 
     override fun bytesPerTimeSample(): Int { return ns * 4 }
@@ -95,9 +112,6 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
         nt += 1
     }
 
-    var currentBitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888)
-
-    val bitmapBacking = IntArray(1_000_000)
 
     /** Get the map as a bitmap (space = x/width, time = y/height).
      *
@@ -109,27 +123,17 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
         // Only allow a valid area of the map to be returned,
         val area = Rect(0, 0, ns, nt)
         crop?.let { area.intersect(crop) }
+        val bs = Size(rangeSize(area.width(), stepX), rangeSize(area.height(), stepY))
+        if(bs.width * bs.height > backing.size) return null
         // Convert that area to a bitmap.
         try {
-            val bs = Size(rangeSize(area.width(), stepX), rangeSize(area.height(), stepY))
-            // todo - this line (below) caused crash by throwing java.lang.OutOfMemoryError
-            // java.lang.OutOfMemoryError: Failed to allocate a 1276248 byte allocation with 1794752 free bytes and 1752KB until OOM, target footprint 268435456
-            var x = 0
-            var y = 0
-            if((bs.width != currentBitmap.width) || (bs.height != currentBitmap.height)) {
-                currentBitmap.recycle()
-                currentBitmap = Bitmap.createBitmap(bs.width, bs.height, Bitmap.Config.ARGB_8888)
-            }
+            var k = 0
             for(j in area.top until area.bottom step stepY)
                 for(i in area.left until area.right step stepX) {
-                    currentBitmap[x, y] = mapBuffer?.get(j * ns + i) ?: 0
-                    x += 1
-                    if(x >= bs.width) {
-                        x = 0
-                        y += 1
-                    }
+                    backing[k] = mapBuffer?.get(j * ns + i) ?: 0
+                    k += 1
                 }
-            return currentBitmap
+            return Bitmap.createBitmap(backing, bs.width, bs.height, Bitmap.Config.ARGB_8888)
         }
         // On start and rare occasions these might be thrown.
         catch (e: IndexOutOfBoundsException) { return null }
