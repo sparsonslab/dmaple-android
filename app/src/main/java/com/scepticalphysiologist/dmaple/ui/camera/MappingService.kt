@@ -1,6 +1,5 @@
 package com.scepticalphysiologist.dmaple.ui.camera
 
-import android.app.ActivityManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
@@ -25,6 +24,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.lifecycle.LifecycleService
+import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.ui.helper.Warnings
 import java.time.Duration
 import java.time.Instant
@@ -55,14 +55,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         /** Approximate interval between frames (milliseconds). */
         const val APPROX_FRAME_INTERVAL_MS: Long = 33
 
-        /** Upper limit on the minute length of maps. */
-        var MAX_MAP_LENGTH_MINUTES: Int = 60
-
-        // todo - need to adjust the buffer size for each creator according to the total
-        //      heap available and the number of creators (total pixel width of all creators).
-        /** Required buffer size per map spatial pixel. */
-        val BUFFER_SIZE_PER_PIXEL: Int
-            get() = MAX_MAP_LENGTH_MINUTES * 60 * (1000f / APPROX_FRAME_INTERVAL_MS.toFloat()).toInt()
+        const val APPROX_FRAME_RATE_HZ: Float = 1000f / APPROX_FRAME_INTERVAL_MS.toFloat()
 
     }
 
@@ -222,15 +215,15 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
         // Create map creators.
         // todo - MappingRois should include the MapCreator class to which they are used for.
-        // ... create from the ROIs, adjusting to the image analysis frame.
         val imageFrame = imageAnalysisFrame() ?: return warning
         creators = rois.map { SubstituteMapCreator(it.inNewFrame(imageFrame)) }.toMutableList()
-        // ... allocate buffering memory.
-        val timeSamples = timeSampleAllocation(
+
+        // Allocate creator buffering and back-up.
+        val (timeSamples, writeFraction) = timeSampleAllocation(
             bytesPerTimeSample = creators.map{it.bytesPerTimeSample()}.sum(),
-            maxAllocationMinutes = 5f
+            maxBufferingMinutes = 10f
         )
-        for(creator in creators) creator.allocateBufferedTimeSamples(timeSamples)
+        for(creator in creators) creator.allocateBufferAndBackUp(timeSamples, writeFraction)
 
         // State
         creating = true
@@ -238,25 +231,34 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         return warning
     }
 
-    /** Calculate the number of time samples that be allocated buffer memory.
+    /** Calculate the number of time samples that be allocated to buffer memory of the creators
+     * and the fraction of these time samples that will be written at each buffer-write event.
+     *
      * @param bytesPerTimeSample The number of bytes required per time sample across all maps.
-     * @param maxAllocationMinutes The maximum length of time for which memory should be allocated.
+     * @param maxBufferingMinutes The maximum length of time for which buffer memory should be allocated.
      * */
-    private fun timeSampleAllocation(bytesPerTimeSample: Int, maxAllocationMinutes: Float): Int {
+    private fun timeSampleAllocation(
+        bytesPerTimeSample: Int, maxBufferingMinutes: Float
+    ): Pair<Int, Float> {
         // Allocate to the maps at most 80% of the current free memory.
-        // The loop is needed because sometimes the runtime return 0 free memory.
-        var totalAllocationBytes = 0.0
-        while(totalAllocationBytes <= 0.0)
-            totalAllocationBytes = 0.8 * Runtime.getRuntime().freeMemory().toDouble()
+        //val maxAllocationBytes = 0.8f * MainActivity.freeBytes().toFloat()
+        // or 20% of the memory allocated to the app.
+        val maxAllocatedBytes = 0.2f * MainActivity.allocatedBytes(this).toFloat()
+        println("allocated mem = $maxAllocatedBytes, frate = $APPROX_FRAME_RATE_HZ")
 
-        totalAllocationBytes = 0.2 * 1e6 * (this.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).memoryClass
+        // The number of time samples buffered should be the minimum of ...
+        val timeSamples = minOf(
+            // ... the number that takes up the byte allocation
+            (maxAllocatedBytes / bytesPerTimeSample).toInt(),
+            // ... the number that takes the maximum time allowed.
+            (maxBufferingMinutes * 60f * APPROX_FRAME_RATE_HZ).toInt()
+        )
 
-        println("free memory = $totalAllocationBytes")
-        // The total time samples that can be allocated based on that allocation.
-        val totalTimeSamples = (totalAllocationBytes / bytesPerTimeSample).toInt()
-        // The max time sample that should be allocated for the time.
-        val maxTimeSamples =(maxAllocationMinutes * 60 * 1000 / APPROX_FRAME_INTERVAL_MS).toInt()
-        return minOf(totalTimeSamples, maxTimeSamples)
+        // The fraction of time samples written everytime the buffer reaches near-capacity.
+        // The minimum of 20 seconds or 0.2.
+        // Short (at most 20 second) writes will improve performance.
+        val fileWriteFraction = minOf(20f * APPROX_FRAME_RATE_HZ /  timeSamples, 0.2f)
+        return Pair(timeSamples, fileWriteFraction)
     }
 
     /** Stop creating maps. */

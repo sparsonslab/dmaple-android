@@ -4,7 +4,6 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Rect
 import android.util.Size
-import androidx.core.graphics.set
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.io.FileBackedBuffer
 import java.io.File
@@ -18,7 +17,7 @@ abstract class MapCreator(val roi: MappingRoi) {
 
     abstract fun bytesPerTimeSample(): Int
 
-    abstract fun allocateBufferedTimeSamples(timeSamples: Int)
+    abstract fun allocateBufferAndBackUp(timeSamples: Int, writeFraction: Float)
 
     abstract fun size(): Size
 
@@ -53,7 +52,7 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
      * I did try using an ArrayDeque, but after 10+ minutes the dynamic memory allocation starts
      * to slow things (map update and image show) to a crawl.
      * */
-    private var mapBuffer: FileBackedBuffer<Int>? = null
+    private lateinit var mapBuffer: FileBackedBuffer<Int>
     /** Backing array for bitmaps created from the map.
      *
      * Originally I had [getMapBitmap] create a backing IntArray each time. However this caused
@@ -64,7 +63,7 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
      * https://developer.android.com/topic/performance/graphics/manage-memory
      * https://stackoverflow.com/questions/4959485/bitmap-bitmap-recycle-weakreferences-and-garbage-collection
      * */
-    private var backing: IntArray? = null
+    private lateinit var backing: IntArray
 
     // ---------------------------------------------------------------------------------------------
     // Creation and memory allocation
@@ -82,20 +81,20 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
         ns = abs(pE.first - pE.second)
     }
 
-    override fun bytesPerTimeSample(): Int { return ns * 4 }
+    override fun bytesPerTimeSample(): Int {
+        // no. space samples x  bytes/int x map buffer + back-up
+        return ns * 4 * 2
+    }
 
-    override fun allocateBufferedTimeSamples(timeSamples: Int) {
-
-        backing = IntArray(ns * timeSamples)
-
-        val bfrac = minOf(0.2f, (20 * 30).toFloat() / timeSamples )
-        println("time sample allocation ${timeSamples}, write fraction = $bfrac")
+    override fun allocateBufferAndBackUp(timeSamples: Int, writeFraction: Float) {
+        println("allocation: samples = $timeSamples, fraction = $writeFraction")
         mapBuffer = FileBackedBuffer(
             capacity = timeSamples * ns,
             directory = MainActivity.storageDirectory!!,
             default = Color.BLACK,
-            backUpFraction = bfrac
+            backUpFraction = writeFraction
         )
+        backing = IntArray(ns * timeSamples)
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -121,21 +120,21 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
      * @param stepY A step in the time pixels (for pixel skip).
      * */
     override fun getMapBitmap(crop: Rect?, stepX: Int, stepY: Int): Bitmap? {
-        if((backing == null) || (mapBuffer == null)) return null
+        if(!this::backing.isInitialized) return null
         try {
             // Only allow a valid area of the map to be returned,
             val area = Rect(0, 0, ns, nt)
             crop?.let { area.intersect(crop) }
             val bs = Size(rangeSize(area.width(), stepX), rangeSize(area.height(), stepY))
-            if(bs.width * bs.height > backing!!.size) return null
+            if(bs.width * bs.height > backing.size) return null
             // Pass values from buffer to bitmap backing and return bitmap.
             var k = 0
             for(j in area.top until area.bottom step stepY)
                 for(i in area.left until area.right step stepX) {
-                    backing!![k] = mapBuffer!!.get(j * ns + i)
+                    backing[k] = mapBuffer.get(j * ns + i)
                     k += 1
                 }
-            return Bitmap.createBitmap(backing!!, bs.width, bs.height, Bitmap.Config.ARGB_8888)
+            return Bitmap.createBitmap(backing, bs.width, bs.height, Bitmap.Config.ARGB_8888)
         }
         // On start and rare occasions these might be thrown.
         catch (_: IndexOutOfBoundsException) {}
@@ -151,12 +150,12 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
     override fun saveAndClose(file: File?) {
 
         // save
-        mapBuffer?.writeRemainingSamples()
+        mapBuffer.writeRemainingSamples()
         // stream samples from the buffer file into a jpeg/etc.
         // ?????
 
         // Release the buffer.
-        mapBuffer?.release()
+        mapBuffer.release()
     }
 
 }

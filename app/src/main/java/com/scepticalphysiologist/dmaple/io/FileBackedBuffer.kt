@@ -1,6 +1,7 @@
 package com.scepticalphysiologist.dmaple.io
 
 import androidx.collection.CircularArray
+import com.scepticalphysiologist.dmaple.MainActivity
 import java.io.File
 import kotlin.random.Random
 
@@ -63,7 +64,7 @@ class FileBackedBuffer<T : Number>(
             }
             // ... remove from buffer.
             buffer.removeFromStart(wf)
-            val mem = Runtime.getRuntime().freeMemory().toFloat() * 1e-6
+            val mem = MainActivity.freeBytes()
             println("buffer > file: buffer = ${buffer.size()}, file = ${file?.nSamples()}, free = $mem")
         }
         // Add value to buffer.
