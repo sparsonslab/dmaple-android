@@ -29,6 +29,13 @@ class MapView(context: Context, attributeSet: AttributeSet):
     GestureDetector.OnGestureListener,
     ScaleGestureDetector.OnScaleGestureListener
 {
+
+    companion object {
+
+        val bitmapBacking = IntArray(1_000_000)
+
+    }
+
     // Map creation
     // -------------
     /** The creator of the map being shown by this view. */
