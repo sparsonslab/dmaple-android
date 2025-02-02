@@ -244,8 +244,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     ): Pair<Int, Float> {
         // Allocate to the maps at most 80% of the current free memory.
         //val maxAllocationBytes = 0.8f * MainActivity.freeBytes().toFloat()
-        // or 20% of the memory allocated to the app.
-        val maxAllocatedBytes = 0.2f * MainActivity.allocatedBytes(this).toFloat()
+        // or 10% of the memory allocated to the app.
+        val maxAllocatedBytes = 0.1f * MainActivity.allocatedBytes(this).toFloat()
         println("allocated mem = $maxAllocatedBytes, frate = $APPROX_FRAME_RATE_HZ")
 
         // The number of time samples buffered should be the minimum of ...

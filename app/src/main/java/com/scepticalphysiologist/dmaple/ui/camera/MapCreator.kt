@@ -23,7 +23,7 @@ abstract class MapCreator(val roi: MappingRoi) {
 
     abstract fun updateWithCameraBitmap(bitmap: Bitmap)
 
-    abstract fun getMapBitmap(crop: Rect?, stepX: Int = 1, stepY: Int = 1): Bitmap?
+    abstract fun getMapBitmap(crop: Rect?, backing: IntArray, stepX: Int = 1, stepY: Int = 1): Bitmap?
 
     abstract fun saveAndClose(file: File? = null)
 
@@ -53,17 +53,6 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
      * to slow things (map update and image show) to a crawl.
      * */
     private lateinit var mapBuffer: FileBackedBuffer<Int>
-    /** Backing array for bitmaps created from the map.
-     *
-     * Originally I had [getMapBitmap] create a backing IntArray each time. However this caused
-     * an out-of-memory exception after a few minutes. After profiling the app, it was found that
-     * multiple instances of the array were accumulating. This is prob due to Android's awful
-     * garbage collection of bitmaps. Using a backing array attribute avoids memory allocation
-     * on each call and then releasing the backing with bitmap.release().
-     * https://developer.android.com/topic/performance/graphics/manage-memory
-     * https://stackoverflow.com/questions/4959485/bitmap-bitmap-recycle-weakreferences-and-garbage-collection
-     * */
-    private lateinit var backing: IntArray
 
     // ---------------------------------------------------------------------------------------------
     // Creation and memory allocation
@@ -81,10 +70,7 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
         ns = abs(pE.first - pE.second)
     }
 
-    override fun bytesPerTimeSample(): Int {
-        // no. space samples x  bytes/int x map buffer + back-up
-        return ns * 4 * 2
-    }
+    override fun bytesPerTimeSample(): Int { return ns * 4 }
 
     override fun allocateBufferAndBackUp(timeSamples: Int, writeFraction: Float) {
         println("allocation: samples = $timeSamples, fraction = $writeFraction")
@@ -94,7 +80,6 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
             default = Color.BLACK,
             backUpFraction = writeFraction
         )
-        backing = IntArray(ns * timeSamples)
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -106,12 +91,11 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
 
     /** Update the map with a new camera frame. */
     override fun updateWithCameraBitmap(bitmap: Bitmap) {
-        (pE.first until pE.second).map { mapBuffer?.add(
-            if(isVertical) bitmap.getPixel(pL, it) else bitmap.getPixel(it, pL)
-        ) }
+        (pE.first until pE.second).map { mapBuffer.add(
+                if(isVertical) bitmap.getPixel(pL, it) else bitmap.getPixel(it, pL)
+        )}
         nt += 1
     }
-
 
     /** Get the map as a bitmap (space = x/width, time = y/height).
      *
@@ -119,8 +103,12 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
      * @param stepX A step in the spatial pixels (for pixel skip).
      * @param stepY A step in the time pixels (for pixel skip).
      * */
-    override fun getMapBitmap(crop: Rect?, stepX: Int, stepY: Int): Bitmap? {
-        if(!this::backing.isInitialized) return null
+    override fun getMapBitmap(
+        crop: Rect?,
+        backing: IntArray,
+        stepX: Int, stepY: Int,
+    ): Bitmap? {
+        if(!this::mapBuffer.isInitialized) return null
         try {
             // Only allow a valid area of the map to be returned,
             val area = Rect(0, 0, ns, nt)

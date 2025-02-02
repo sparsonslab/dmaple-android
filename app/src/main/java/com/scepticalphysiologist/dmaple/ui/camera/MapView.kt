@@ -31,7 +31,17 @@ class MapView(context: Context, attributeSet: AttributeSet):
 {
 
     companion object {
-
+        /** Backing array for the shown map's bitmap.
+         *
+         * Originally I had each [MapCreator] create a backing IntArray each time it was called
+         * to create a bitmap. However this caused an out-of-memory exception after a few minutes.
+         * After profiling the app, it was found that multiple instances of the array were
+         * accumulating. This is prob due to Android's awful garbage collection of bitmaps. Using
+         * a backing array attribute avoids memory allocation on each call and then releasing the
+         * backing with bitmap.release().
+         * https://developer.android.com/topic/performance/graphics/manage-memory
+         * https://stackoverflow.com/questions/4959485/bitmap-bitmap-recycle-weakreferences-and-garbage-collection
+         * */
         val bitmapBacking = IntArray(1_000_000)
 
     }
@@ -195,10 +205,11 @@ class MapView(context: Context, attributeSet: AttributeSet):
                 val pE = Point.minOf(bitmapSize, viewSizeInBitmapPixels)
                 val p0 = Point.maxOf(bitmapSize - pE - offset, Point())
                 val p1 = p0 + pE
-                val bm = mapCreator.getMapBitmap(Rect(
-                    p0.x.toInt(), p0.y.toInt(),
-                    p1.x.toInt(), p1.y.toInt(),
-                ), stepX = pixelStep.x.toInt(), stepY = pixelStep.y.toInt())
+                val bm = mapCreator.getMapBitmap(
+                    Rect(p0.x.toInt(), p0.y.toInt(), p1.x.toInt(), p1.y.toInt()),
+                    bitmapBacking,
+                    stepX = pixelStep.x.toInt(), stepY = pixelStep.y.toInt()
+                )
                 // Rotate and scale the bitmap and post to the main thread for display.
                 bm?.let {
                     newBitmap.postValue(Bitmap.createBitmap(
