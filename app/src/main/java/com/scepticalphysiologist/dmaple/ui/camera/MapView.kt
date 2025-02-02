@@ -23,6 +23,16 @@ import kotlin.math.floor
 
 /** A view for live display of a spatio-temporal map.
  *
+ * For live update:
+ * - A static backing array is passed to a creator.
+ * - The creator produces a bitmap (backed by the passed array) of the area of the map to be viewed.
+ * - The bitmap returned by the creator is further transformed** (rotated and scaled) and passed
+ * to the view for display.
+ *
+ *  **NOTE: It would be nice to have the creator produce a scaled/rotated bitmap and then pass this
+ * straight to the view for display but unfortunately this causes all sorts of aliasing problems
+ * (I tried it!) because the backing array is being updated by the creator at the same time
+ * as being sent to the view.
  */
 class MapView(context: Context, attributeSet: AttributeSet):
     androidx.appcompat.widget.AppCompatImageView(context, attributeSet),
