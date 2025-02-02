@@ -71,6 +71,7 @@ class FileBackedBuffer<T : Number>(
         buffer.addLast(value)
     }
 
+    // todo - allow sample retreival from file stream - can then view maps as far back as needed.
     /** Get the ith sample of the buffer. If the sample is in the file, return the default value. */
     fun get(i: Int): T {
         try { return if(i >= nf) buffer[i - nf] else default }
