@@ -4,7 +4,9 @@ import android.app.ActivityManager
 import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import com.scepticalphysiologist.dmaple.map.MappingService
 import java.io.File
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -35,6 +37,10 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         storageDirectory = applicationContext.getExternalFilesDir(null)
+
+        // Initiate buffers for mapping service.
+        MappingService.initialiseBuffers()
+
     }
 
 }

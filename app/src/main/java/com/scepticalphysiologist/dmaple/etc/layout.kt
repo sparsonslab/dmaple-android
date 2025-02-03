@@ -1,4 +1,4 @@
-package com.scepticalphysiologist.dmaple.ui.helper
+package com.scepticalphysiologist.dmaple.etc
 
 import android.widget.FrameLayout
 import android.widget.LinearLayout

@@ -1,4 +1,4 @@
-package com.scepticalphysiologist.dmaple.ui.camera
+package com.scepticalphysiologist.dmaple.etc
 
 import android.graphics.Bitmap
 import android.graphics.Canvas

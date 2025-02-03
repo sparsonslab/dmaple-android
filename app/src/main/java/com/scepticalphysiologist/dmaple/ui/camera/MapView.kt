@@ -13,6 +13,8 @@ import android.view.Surface
 import android.view.WindowManager
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.findViewTreeLifecycleOwner
+import com.scepticalphysiologist.dmaple.etc.Point
+import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -210,7 +212,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
     private fun updateMap() = scope?.launch(Dispatchers.Default){
         while(true) {
             creator?.let { mapCreator ->
-                updateBitmapSize(mapCreator.size())
+                updateBitmapSize(mapCreator.spaceTimeSampleSize())
                 // Extract section of the map as a bitmap.
                 val pE = Point.minOf(bitmapSize, viewSizeInBitmapPixels)
                 val p0 = Point.maxOf(bitmapSize - pE - offset, Point())

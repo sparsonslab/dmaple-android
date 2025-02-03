@@ -1,4 +1,4 @@
-package com.scepticalphysiologist.dmaple.ui.helper
+package com.scepticalphysiologist.dmaple.etc
 
 import android.content.Context
 import android.content.DialogInterface

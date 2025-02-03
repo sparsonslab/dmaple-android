@@ -1,36 +1,25 @@
-package com.scepticalphysiologist.dmaple.ui.camera
+package com.scepticalphysiologist.dmaple.map.creator
 
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Rect
 import android.util.Size
 import com.scepticalphysiologist.dmaple.MainActivity
+import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.io.FileBackedBuffer
+import com.scepticalphysiologist.dmaple.map.MappingRoi
 import java.io.File
 import java.lang.IllegalArgumentException
 import java.lang.IndexOutOfBoundsException
 import kotlin.math.abs
-import kotlin.math.ceil
 
-
-abstract class MapCreator(val roi: MappingRoi) {
-
-    abstract fun bytesPerTimeSample(): Int
-
-    abstract fun allocateBufferAndBackUp(timeSamples: Int, writeFraction: Float)
-
-    abstract fun size(): Size
-
-    abstract fun updateWithCameraBitmap(bitmap: Bitmap)
-
-    abstract fun getMapBitmap(crop: Rect?, backing: IntArray, stepX: Int = 1, stepY: Int = 1): Bitmap?
-
-    abstract fun saveAndClose(file: File? = null)
-
-}
 
 /** A map creator for development purposes, that simply creates the map from the pixels
- * along the seeding edge. */
+ * along the seeding edge.
+ *
+ * Used the "old" custom [FileBackedBuffer] for saving data, before using mapped byte buffers.
+ * Kept here interest.
+ * */
 class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
 
     // Map geometry
@@ -70,9 +59,9 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
         ns = abs(pE.first - pE.second)
     }
 
-    override fun bytesPerTimeSample(): Int { return ns * 4 }
+    fun bytesPerTimeSample(): Int { return ns * 4 }
 
-    override fun allocateBufferAndBackUp(timeSamples: Int, writeFraction: Float) {
+    fun allocateBufferAndBackUp(timeSamples: Int, writeFraction: Float) {
         println("allocation: samples = $timeSamples, fraction = $writeFraction")
         mapBuffer = FileBackedBuffer(
             capacity = timeSamples * ns,
@@ -87,12 +76,12 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
     // ---------------------------------------------------------------------------------------------
 
     /** The space-time size of the map (samples). */
-    override fun size(): Size { return Size(ns, nt) }
+    override fun spaceTimeSampleSize(): Size { return Size(ns, nt) }
 
     /** Update the map with a new camera frame. */
     override fun updateWithCameraBitmap(bitmap: Bitmap) {
         (pE.first until pE.second).map { mapBuffer.add(
-                if(isVertical) bitmap.getPixel(pL, it) else bitmap.getPixel(it, pL)
+            if(isVertical) bitmap.getPixel(pL, it) else bitmap.getPixel(it, pL)
         )}
         nt += 1
     }
@@ -147,24 +136,4 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
     }
 
 }
-
-private fun rangeSize(range: Int, step: Int): Int {
-    //return range.floorDiv(step)
-    return ceil(range.toFloat() / step.toFloat()).toInt()
-}
-
-
-private fun orderedX(pp: Pair<Point, Point>): Pair<Int, Int> {
-    val p0 = pp.first.x.toInt()
-    val p1 = pp.second.x.toInt()
-    return Pair(minOf(p0, p1), maxOf(p0, p1))
-}
-
-private fun orderedY(pp: Pair<Point, Point>): Pair<Int, Int> {
-    val p0 = pp.first.y.toInt()
-    val p1 = pp.second.y.toInt()
-    return Pair(minOf(p0, p1), maxOf(p0, p1))
-}
-
-
 

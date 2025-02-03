@@ -12,7 +12,11 @@ import android.view.WindowManager
 import androidx.core.view.updateLayoutParams
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
-import com.scepticalphysiologist.dmaple.ui.VerticalSlider
+import com.scepticalphysiologist.dmaple.etc.Point
+import com.scepticalphysiologist.dmaple.map.MappingRoi
+import com.scepticalphysiologist.dmaple.map.MappingService
+import com.scepticalphysiologist.dmaple.etc.VerticalSlider
+import com.scepticalphysiologist.dmaple.etc.aspectRatioRatio
 
 /** The mapping field of view. The camera feed and overlays for:
  * - drawing mapping ROIs and thresholding them.

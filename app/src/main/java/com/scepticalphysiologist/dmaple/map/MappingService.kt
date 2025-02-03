@@ -1,4 +1,4 @@
-package com.scepticalphysiologist.dmaple.ui.camera
+package com.scepticalphysiologist.dmaple.map
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -25,7 +25,15 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.lifecycle.LifecycleService
 import com.scepticalphysiologist.dmaple.MainActivity
-import com.scepticalphysiologist.dmaple.ui.helper.Warnings
+import com.scepticalphysiologist.dmaple.etc.Frame
+import com.scepticalphysiologist.dmaple.etc.surfaceRotationDegrees
+import com.scepticalphysiologist.dmaple.etc.Warnings
+import com.scepticalphysiologist.dmaple.map.creator.BufferedExampleMap
+import com.scepticalphysiologist.dmaple.map.creator.MapCreator
+import java.io.File
+import java.io.RandomAccessFile
+import java.nio.MappedByteBuffer
+import java.nio.channels.FileChannel
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.Executors
@@ -49,14 +57,72 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     companion object {
 
+        // Camera
+        // ------
         /** The aspect ratio of the camera. */
         const val CAMERA_ASPECT_RATIO = AspectRatio.RATIO_16_9
-
         /** Approximate interval between frames (milliseconds). */
         const val APPROX_FRAME_INTERVAL_MS: Long = 33
 
-        const val APPROX_FRAME_RATE_HZ: Float = 1000f / APPROX_FRAME_INTERVAL_MS.toFloat()
+        // Map data buffering
+        // ------------------
+        /** A set of files in the app's storage used to create "mapped byte buffers" for
+         * storing map data as it is created. The names of the files mapped to their random access
+         * streams or null, if the file is not being used for buffering.
+         *
+         * Mapped byte buffers can be very large (up to 2GB) without taking up any actual
+         * heap memory.
+         * https://developer.android.com/reference/java/nio/MappedByteBuffer
+         * */
+        private val mapBuffers = mutableMapOf<String, RandomAccessFile?>(
+            "buffer_1.dat" to null,
+            "buffer_2.dat" to null,
+            "buffer_3.dat" to null,
+            "buffer_4.dat" to null,
+            "buffer_5.dat" to null,
+        )
 
+        /** The size (bytes) of each buffering file listed in [mapBuffers]. */
+        private const val MAP_BUFFER_SIZE: Long = 100_000_000L
+
+        /** Initialise the buffering files.
+         *
+         * This must be called by the main activity at creation.
+         * */
+        fun initialiseBuffers() {
+            for((bufferFile, accessStream) in mapBuffers) {
+                if(accessStream == null) continue
+                val file = File(MainActivity.storageDirectory, bufferFile)
+                if(!file.exists()) file.createNewFile()
+                val fileSize = file.length()
+                if(fileSize < MAP_BUFFER_SIZE) {
+                    val strm = RandomAccessFile(file, "rw")
+                    strm.setLength(MAP_BUFFER_SIZE)
+                    strm.close()
+                }
+            }
+        }
+
+        /** Get a free buffer or null if no buffers are free. */
+        fun getFreeBuffer(): MappedByteBuffer? {
+            for((bufferFile, accessStream) in mapBuffers) {
+                if(accessStream != null) continue
+                val file = File(MainActivity.storageDirectory, bufferFile)
+                val strm = RandomAccessFile(file, "rw")
+                mapBuffers[bufferFile] = strm
+                return strm.channel.map(FileChannel.MapMode.READ_WRITE, 0, file.length())
+            }
+            return null
+        }
+
+        /** Free all buffers. */
+        fun freeAllBuffers() {
+            for((bufferFile, accessStream) in mapBuffers) {
+                accessStream?.channel?.close()
+                accessStream?.close()
+                mapBuffers[bufferFile] = null
+            }
+        }
     }
 
     // Camera
@@ -116,7 +182,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA,
             useCaseGroup = useCaseGroup.build()
         )
-
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -216,51 +281,19 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         // Create map creators.
         // todo - MappingRois should include the MapCreator class to which they are used for.
         val imageFrame = imageAnalysisFrame() ?: return warning
-        creators = rois.map { SubstituteMapCreator(it.inNewFrame(imageFrame)) }.toMutableList()
-
-        // Allocate creator buffering and back-up.
-        val (timeSamples, writeFraction) = timeSampleAllocation(
-            bytesPerTimeSample = creators.map{it.bytesPerTimeSample()}.sum(),
-            maxBufferingMinutes = 10f
-        )
-        for(creator in creators) creator.allocateBufferAndBackUp(timeSamples, writeFraction)
-        val bufferMin = String.format("%.1f", timeSamples.toFloat() / (60f  * APPROX_FRAME_RATE_HZ))
-        warning.add("Maps will viewable live to ~$bufferMin minutes", false)
+        creators = rois.mapNotNull { roi ->
+            getFreeBuffer()?.let { buff -> BufferedExampleMap(roi.inNewFrame(imageFrame), buff) }
+        }.toMutableList()
+        if(creators.size < rois.size) {
+            val nNotCreated = rois.size - creators.size
+            warning.add("There are not enough buffers to process all maps.\n" +
+                    "The last $nNotCreated maps will not be created.", false)
+        }
 
         // State
         creating = true
         startTime = Instant.now()
         return warning
-    }
-
-    /** Calculate the number of time samples that be allocated to buffer memory of the creators
-     * and the fraction of these time samples that will be written at each buffer-write event.
-     *
-     * @param bytesPerTimeSample The number of bytes required per time sample across all maps.
-     * @param maxBufferingMinutes The maximum length of time for which buffer memory should be allocated.
-     * */
-    private fun timeSampleAllocation(
-        bytesPerTimeSample: Int, maxBufferingMinutes: Float
-    ): Pair<Int, Float> {
-        // Allocate to the maps at most 80% of the current free memory.
-        //val maxAllocationBytes = 0.8f * MainActivity.freeBytes().toFloat()
-        // or 10% of the memory allocated to the app.
-        val maxAllocatedBytes = 0.1f * MainActivity.allocatedBytes(this).toFloat()
-        println("allocated mem = $maxAllocatedBytes, frate = $APPROX_FRAME_RATE_HZ")
-
-        // The number of time samples buffered should be the minimum of ...
-        val timeSamples = minOf(
-            // ... the number that takes up the byte allocation
-            (maxAllocatedBytes / bytesPerTimeSample).toInt(),
-            // ... the number that takes the maximum time allowed.
-            (maxBufferingMinutes * 60f * APPROX_FRAME_RATE_HZ).toInt()
-        )
-
-        // The fraction of time samples written everytime the buffer reaches near-capacity.
-        // The minimum of 20 seconds or 0.2.
-        // Short (at most 20 second) writes will improve performance.
-        val fileWriteFraction = minOf(20f * APPROX_FRAME_RATE_HZ /  timeSamples, 0.2f)
-        return Pair(timeSamples, fileWriteFraction)
     }
 
     /** Stop creating maps. */
@@ -270,6 +303,10 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         // Save and clear maps.
         for(creator in creators) creator.saveAndClose()
         creators.clear()
+
+        // Close buffers.
+        freeAllBuffers()
+        System.gc()
 
         // State
         creating = false

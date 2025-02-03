@@ -35,7 +35,7 @@
             android:name="preloaded_fonts"
             android:resource="@array/preloaded_fonts" />
 
-        <service android:name=".ui.camera.MappingService"
+        <service android:name=".map.MappingService"
             android:foregroundServiceType="camera"
             android:exported="false">
         </service>

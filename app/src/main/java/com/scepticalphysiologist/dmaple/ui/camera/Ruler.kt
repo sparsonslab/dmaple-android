@@ -6,18 +6,10 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.text.InputType
 import android.widget.EditText
-import android.widget.FrameLayout.LayoutParams
-import android.widget.LinearLayout
-import android.widget.RelativeLayout
-import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
-import androidx.core.view.marginLeft
-import androidx.core.view.marginRight
-import androidx.core.view.updateLayoutParams
 import com.scepticalphysiologist.dmaple.R
-import com.scepticalphysiologist.dmaple.ui.helper.marginedLayoutParams
-import com.scepticalphysiologist.dmaple.ui.helper.paddedFrameLayout
-import com.scepticalphysiologist.dmaple.ui.helper.sidePaddedLayout
+import com.scepticalphysiologist.dmaple.etc.Frame
+import com.scepticalphysiologist.dmaple.etc.Point
 import kotlin.math.PI
 
 /** A ruler shown on a view used for calibration between pixel units and some measurement unit. */

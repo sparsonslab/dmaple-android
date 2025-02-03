@@ -9,10 +9,10 @@ import android.os.IBinder
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
-import com.scepticalphysiologist.dmaple.ui.camera.MappingService
-import com.scepticalphysiologist.dmaple.ui.camera.MapCreator
-import com.scepticalphysiologist.dmaple.ui.camera.MappingRoi
-import com.scepticalphysiologist.dmaple.ui.helper.Warnings
+import com.scepticalphysiologist.dmaple.map.MappingService
+import com.scepticalphysiologist.dmaple.map.creator.MapCreator
+import com.scepticalphysiologist.dmaple.map.MappingRoi
+import com.scepticalphysiologist.dmaple.etc.Warnings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope

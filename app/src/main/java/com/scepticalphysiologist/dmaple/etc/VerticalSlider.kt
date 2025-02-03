@@ -1,4 +1,4 @@
-package com.scepticalphysiologist.dmaple.ui
+package com.scepticalphysiologist.dmaple.etc
 
 import android.content.Context
 import android.util.AttributeSet
@@ -37,7 +37,7 @@ class VerticalSlider(
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
-        val layout = FrameLayout.LayoutParams(this.height, this.width)
+        val layout = LayoutParams(this.height, this.width)
         layout.gravity = Gravity.CENTER
         layout.setMargins(20, 20, 20, 20)
         slider.layoutParams = layout
