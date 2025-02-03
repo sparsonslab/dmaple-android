@@ -57,18 +57,16 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     companion object {
 
+        // Camera
+        // ------
         /** The aspect ratio of the camera. */
         const val CAMERA_ASPECT_RATIO = AspectRatio.RATIO_16_9
-
         /** Approximate interval between frames (milliseconds). */
         const val APPROX_FRAME_INTERVAL_MS: Long = 33
 
-        const val APPROX_FRAME_RATE_HZ: Float = 1000f / APPROX_FRAME_INTERVAL_MS.toFloat()
-
-
         // Buffers
         // -------
-        const val MAP_BUFFER_SIZE: Long = 100_000_000L
+        private const val MAP_BUFFER_SIZE: Long = 100_000_000L
 
         private val mapBuffers = mutableMapOf<String, RandomAccessFile?>(
             "buffer_1.dat" to null,
@@ -168,7 +166,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA,
             useCaseGroup = useCaseGroup.build()
         )
-
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -265,56 +262,17 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             return warning
         }
 
-
-
-
         // Create map creators.
         // todo - MappingRois should include the MapCreator class to which they are used for.
         val imageFrame = imageAnalysisFrame() ?: return warning
-        //creators = rois.map { SubstituteMapCreator(it.inNewFrame(imageFrame)) }.toMutableList()
-
         creators = rois.mapNotNull { roi ->
-            getBuffer()?.let { buff ->
-                BufferedExampleMap(roi.inNewFrame(imageFrame), buff)
-            }
-            //SubstituteMapCreator(it.inNewFrame(imageFrame))
+            getBuffer()?.let { buff -> BufferedExampleMap(roi.inNewFrame(imageFrame), buff) }
         }.toMutableList()
-        println("n creators = ${creators.size}")
 
         // State
         creating = true
         startTime = Instant.now()
         return warning
-    }
-
-    /** Calculate the number of time samples that be allocated to buffer memory of the creators
-     * and the fraction of these time samples that will be written at each buffer-write event.
-     *
-     * @param bytesPerTimeSample The number of bytes required per time sample across all maps.
-     * @param maxBufferingMinutes The maximum length of time for which buffer memory should be allocated.
-     * */
-    private fun timeSampleAllocation(
-        bytesPerTimeSample: Int, maxBufferingMinutes: Float
-    ): Pair<Int, Float> {
-        // Allocate to the maps at most 80% of the current free memory.
-        //val maxAllocationBytes = 0.8f * MainActivity.freeBytes().toFloat()
-        // or 10% of the memory allocated to the app.
-        val maxAllocatedBytes = 0.1f * MainActivity.allocatedBytes(this).toFloat()
-        println("allocated mem = $maxAllocatedBytes, frate = $APPROX_FRAME_RATE_HZ")
-
-        // The number of time samples buffered should be the minimum of ...
-        val timeSamples = minOf(
-            // ... the number that takes up the byte allocation
-            (maxAllocatedBytes / bytesPerTimeSample).toInt(),
-            // ... the number that takes the maximum time allowed.
-            (maxBufferingMinutes * 60f * APPROX_FRAME_RATE_HZ).toInt()
-        )
-
-        // The fraction of time samples written everytime the buffer reaches near-capacity.
-        // The minimum of 20 seconds or 0.2.
-        // Short (at most 20 second) writes will improve performance.
-        val fileWriteFraction = minOf(20f * APPROX_FRAME_RATE_HZ /  timeSamples, 0.2f)
-        return Pair(timeSamples, fileWriteFraction)
     }
 
     /** Stop creating maps. */

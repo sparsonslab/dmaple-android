@@ -14,7 +14,7 @@ import kotlin.math.ceil
 
 class BufferedExampleMap(
     roi: MappingRoi,
-    val mapBuffer: MappedByteBuffer
+    private val mapBuffer: MappedByteBuffer
 ): MapCreator(roi)  {
 
 
@@ -54,7 +54,7 @@ class BufferedExampleMap(
     // ---------------------------------------------------------------------------------------------
 
     /** The space-time size of the map (samples). */
-    override fun size(): Size { return Size(ns, nt) }
+    override fun spaceTimeSampleSize(): Size { return Size(ns, nt) }
 
     /** Update the map with a new camera frame. */
     override fun updateWithCameraBitmap(bitmap: Bitmap) {

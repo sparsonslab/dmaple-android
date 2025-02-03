@@ -15,7 +15,11 @@ import kotlin.math.abs
 
 
 /** A map creator for development purposes, that simply creates the map from the pixels
- * along the seeding edge. */
+ * along the seeding edge.
+ *
+ * Used the "old" custom [FileBackedBuffer] for saving data, before using mapped byte buffers.
+ * Kept here interest.
+ * */
 class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
 
     // Map geometry
@@ -72,7 +76,7 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
     // ---------------------------------------------------------------------------------------------
 
     /** The space-time size of the map (samples). */
-    override fun size(): Size { return Size(ns, nt) }
+    override fun spaceTimeSampleSize(): Size { return Size(ns, nt) }
 
     /** Update the map with a new camera frame. */
     override fun updateWithCameraBitmap(bitmap: Bitmap) {

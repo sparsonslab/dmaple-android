@@ -212,7 +212,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
     private fun updateMap() = scope?.launch(Dispatchers.Default){
         while(true) {
             creator?.let { mapCreator ->
-                updateBitmapSize(mapCreator.size())
+                updateBitmapSize(mapCreator.spaceTimeSampleSize())
                 // Extract section of the map as a bitmap.
                 val pE = Point.minOf(bitmapSize, viewSizeInBitmapPixels)
                 val p0 = Point.maxOf(bitmapSize - pE - offset, Point())
