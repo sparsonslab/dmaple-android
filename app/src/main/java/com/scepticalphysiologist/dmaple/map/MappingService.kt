@@ -31,6 +31,7 @@ import com.scepticalphysiologist.dmaple.etc.Warnings
 import com.scepticalphysiologist.dmaple.map.creator.BufferedExampleMap
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import java.io.File
+import java.io.IOException
 import java.io.RandomAccessFile
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
@@ -82,7 +83,10 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             "buffer_5.dat" to null,
         )
 
-        /** The size (bytes) of each buffering file listed in [mapBuffers]. */
+        /** The size (bytes) of each buffering file listed in [mapBuffers].
+         *
+         * 100 MB ~= 60 min x 60 sec/min x 30 frame/sec x 1000 bytes/frame.
+         * */
         private const val MAP_BUFFER_SIZE: Long = 100_000_000L
 
         /** Initialise the buffering files.
@@ -91,13 +95,18 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
          * */
         fun initialiseBuffers() {
             for((bufferFile, accessStream) in mapBuffers) {
-                if(accessStream == null) continue
+                if(accessStream != null) continue
                 val file = File(MainActivity.storageDirectory, bufferFile)
                 if(!file.exists()) file.createNewFile()
                 val fileSize = file.length()
                 if(fileSize < MAP_BUFFER_SIZE) {
                     val strm = RandomAccessFile(file, "rw")
-                    strm.setLength(MAP_BUFFER_SIZE)
+                    try { strm.setLength(MAP_BUFFER_SIZE) }
+                    // ... in case there isn't enough memory available.
+                    catch (_: IOException) {
+                        strm.close()
+                        return
+                    }
                     strm.close()
                 }
             }
@@ -273,7 +282,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         val warning = Warnings("Start Recording")
         if(rois.isEmpty()) {
             val msg = "There are no areas to map (dashed rectangles).\n" +
-                    "Make a mapping area by double tapping a selection."
+                      "Make a mapping area by double tapping a selection."
             warning.add(msg, true)
             return warning
         }
@@ -286,8 +295,9 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         }.toMutableList()
         if(creators.size < rois.size) {
             val nNotCreated = rois.size - creators.size
-            warning.add("There are not enough buffers to process all maps.\n" +
-                    "The last $nNotCreated maps will not be created.", false)
+            val msg = "There are not enough buffers to process all maps.\n" +
+                      "The last $nNotCreated maps will not be created."
+            warning.add(msg, false)
         }
 
         // State
