@@ -1,4 +1,4 @@
-package com.scepticalphysiologist.dmaple.ui.camera
+package com.scepticalphysiologist.dmaple.etc
 
 import android.graphics.Rect
 import android.graphics.RectF
@@ -189,7 +189,7 @@ class Point(var x: Float = 0f, var y: Float = 0f) {
             return Point(view.width.toFloat(), view.height.toFloat())
         }
 
-        fun ofMotionEvent(event: MotionEvent): Point{ return Point(event.x, event.y) }
+        fun ofMotionEvent(event: MotionEvent): Point { return Point(event.x, event.y) }
 
     }
 
@@ -216,7 +216,7 @@ class Frame(width: Float, height: Float, val orientation: Int = 0) {
         }
 
         /** Get an image's frame. */
-        fun fromImage(image: ImageProxy): Frame{
+        fun fromImage(image: ImageProxy): Frame {
             return Frame(
                 width=image.width.toFloat(),
                 height=image.height.toFloat(),

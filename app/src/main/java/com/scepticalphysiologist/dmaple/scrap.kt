@@ -1,41 +1,56 @@
 package com.scepticalphysiologist.dmaple
 
+import android.os.SystemClock.sleep
 import com.scepticalphysiologist.dmaple.io.FileBackedBuffer
 import java.io.File
+import java.io.FileOutputStream
+import java.io.RandomAccessFile
+import java.nio.channels.FileChannel
+import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
 
 fun main() {
 
 
-    val dir = File("/Users/senparsons/Documents/programming/personal/dmaple_android/buffer.dat")
+    val dirName = "/Users/senparsons/Documents/programming/personal/dmaple_android"
+    val fileName = "large_buffer.dat"
 
+    // Check for file.
+    val file = File(dirName, fileName)
+    if(!file.exists()) file.createNewFile()
 
-    val buffer = FileBackedBuffer<Int>(
-        capacity = 100,
-        default = 0,
-        directory = File("/Users/senparsons/Documents/programming/personal/dmaple_android")
-    )
-    for(i in 0..450) {
-        buffer.add(i)
-        println("size = ${buffer.nBuffer()}")
+    // Make sure file is large enough.
+    val targetSize = 10_000_000L
+    val fileSize = file.length()
+    if(fileSize < targetSize) {
+        /*
+        val strm = FileOutputStream(file, true)
+        val n = targetSize - fileSize
+        for(i in 1..n) strm.write(0)
+        strm.close()
+         */
+
+        val strm = RandomAccessFile(file, "rw")
+        strm.setLength(targetSize)
+        strm.close()
     }
 
-    println(buffer.nSamples())
-    println(buffer.read(90, 1000))
+    //
+    val strm = RandomAccessFile(file, "rw")
+    val buffer = strm.channel.map(FileChannel.MapMode.READ_WRITE, 0, 11_000)
 
 
-    /*
-    val numbFile = NumericFile(dir, 0f)
-    numbFile.write((0..10).map{it * 0.1f}.toList(), append = false)
+    //
+    buffer.putDouble(10_450, 1.2345678)
+    println(buffer.getDouble(10_450))
+    println(buffer.getDouble(10_449))
+    println(buffer.getDouble(10_400))
 
-    var arr = numbFile.read()
-    println(arr)
 
-    numbFile.write((0..10).map{it * 1.2f}.toList(), append = true)
-    arr = numbFile.read(3, 10)
-    println(arr)
-    */
+    strm.close()
+
+    //TimeUnit.SECONDS.sleep(30)
 
 }
 

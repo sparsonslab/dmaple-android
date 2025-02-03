@@ -1,8 +1,11 @@
-package com.scepticalphysiologist.dmaple.ui.camera
+package com.scepticalphysiologist.dmaple.map
 
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
+import com.scepticalphysiologist.dmaple.etc.Edge
+import com.scepticalphysiologist.dmaple.etc.Frame
+import com.scepticalphysiologist.dmaple.etc.Point
 
 /** An ROI used for creating a spatio-temporal map.
  *

@@ -14,6 +14,11 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import androidx.lifecycle.MutableLiveData
+import com.scepticalphysiologist.dmaple.etc.Edge
+import com.scepticalphysiologist.dmaple.etc.Frame
+import com.scepticalphysiologist.dmaple.etc.Point
+import com.scepticalphysiologist.dmaple.etc.ThresholdBitmap
+import com.scepticalphysiologist.dmaple.map.MappingRoi
 
 /** Gesture states for [MappingRoiOverlay]. */
 enum class GestureState {

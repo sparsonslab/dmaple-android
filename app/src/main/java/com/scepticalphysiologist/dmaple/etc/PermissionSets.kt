@@ -1,5 +1,4 @@
-package com.scepticalphysiologist.dmaple.ui
-
+package com.scepticalphysiologist.dmaple.etc
 
 import android.Manifest
 

@@ -1,4 +1,4 @@
-package com.scepticalphysiologist.dmaple.ui.camera
+package com.scepticalphysiologist.dmaple.map
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -25,7 +25,15 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.lifecycle.LifecycleService
 import com.scepticalphysiologist.dmaple.MainActivity
-import com.scepticalphysiologist.dmaple.ui.helper.Warnings
+import com.scepticalphysiologist.dmaple.etc.Frame
+import com.scepticalphysiologist.dmaple.etc.surfaceRotationDegrees
+import com.scepticalphysiologist.dmaple.etc.Warnings
+import com.scepticalphysiologist.dmaple.map.creator.BufferedExampleMap
+import com.scepticalphysiologist.dmaple.map.creator.MapCreator
+import java.io.File
+import java.io.RandomAccessFile
+import java.nio.MappedByteBuffer
+import java.nio.channels.FileChannel
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.Executors
@@ -56,6 +64,50 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         const val APPROX_FRAME_INTERVAL_MS: Long = 33
 
         const val APPROX_FRAME_RATE_HZ: Float = 1000f / APPROX_FRAME_INTERVAL_MS.toFloat()
+
+
+        // Buffers
+        // -------
+        const val MAP_BUFFER_SIZE: Long = 100_000_000L
+
+        private val mapBuffers = mutableMapOf<String, RandomAccessFile?>(
+            "buffer_1.dat" to null,
+            "buffer_2.dat" to null,
+            "buffer_3.dat" to null
+        )
+
+        fun initialiseBuffers() {
+            for((bufferFile, accessStream) in mapBuffers) {
+                if(accessStream == null) continue
+                val file = File(MainActivity.storageDirectory, bufferFile)
+                if(!file.exists()) file.createNewFile()
+                val fileSize = file.length()
+                if(fileSize < MAP_BUFFER_SIZE) {
+                    val strm = RandomAccessFile(file, "rw")
+                    strm.setLength(MAP_BUFFER_SIZE)
+                    strm.close()
+                }
+            }
+        }
+
+        fun getBuffer(): MappedByteBuffer? {
+            for((bufferFile, accessStream) in mapBuffers) {
+                if(accessStream != null) continue
+                val file = File(MainActivity.storageDirectory, bufferFile)
+                val strm = RandomAccessFile(file, "rw")
+                mapBuffers[bufferFile] = strm
+                return strm.channel.map(FileChannel.MapMode.READ_WRITE, 0, file.length())
+            }
+            return null
+        }
+
+        fun closeAllBuffers() {
+            for((bufferFile, accessStream) in mapBuffers) {
+                accessStream?.channel?.close()
+                accessStream?.close()
+                mapBuffers[bufferFile] = null
+            }
+        }
 
     }
 
@@ -213,19 +265,21 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             return warning
         }
 
+
+
+
         // Create map creators.
         // todo - MappingRois should include the MapCreator class to which they are used for.
         val imageFrame = imageAnalysisFrame() ?: return warning
-        creators = rois.map { SubstituteMapCreator(it.inNewFrame(imageFrame)) }.toMutableList()
+        //creators = rois.map { SubstituteMapCreator(it.inNewFrame(imageFrame)) }.toMutableList()
 
-        // Allocate creator buffering and back-up.
-        val (timeSamples, writeFraction) = timeSampleAllocation(
-            bytesPerTimeSample = creators.map{it.bytesPerTimeSample()}.sum(),
-            maxBufferingMinutes = 10f
-        )
-        for(creator in creators) creator.allocateBufferAndBackUp(timeSamples, writeFraction)
-        val bufferMin = String.format("%.1f", timeSamples.toFloat() / (60f  * APPROX_FRAME_RATE_HZ))
-        warning.add("Maps will viewable live to ~$bufferMin minutes", false)
+        creators = rois.mapNotNull { roi ->
+            getBuffer()?.let { buff ->
+                BufferedExampleMap(roi.inNewFrame(imageFrame), buff)
+            }
+            //SubstituteMapCreator(it.inNewFrame(imageFrame))
+        }.toMutableList()
+        println("n creators = ${creators.size}")
 
         // State
         creating = true
@@ -270,6 +324,10 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         // Save and clear maps.
         for(creator in creators) creator.saveAndClose()
         creators.clear()
+
+        // Close buffers.
+        closeAllBuffers()
+        System.gc()
 
         // State
         creating = false

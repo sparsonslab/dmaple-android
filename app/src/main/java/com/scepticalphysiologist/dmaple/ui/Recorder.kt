@@ -8,7 +8,8 @@ import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.lifecycle.ViewModelProvider
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.databinding.RecorderBinding
-import com.scepticalphysiologist.dmaple.ui.camera.Point
+import com.scepticalphysiologist.dmaple.etc.PermissionSets
+import com.scepticalphysiologist.dmaple.etc.Point
 
 
 class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
