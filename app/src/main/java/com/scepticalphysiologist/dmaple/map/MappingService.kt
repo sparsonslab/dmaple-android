@@ -314,7 +314,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         for(creator in creators) creator.saveAndClose()
         creators.clear()
 
-        // Close buffers.
+        // Free buffers.
         freeAllBuffers()
         System.gc()
 

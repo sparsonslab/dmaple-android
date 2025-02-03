@@ -208,6 +208,10 @@ class MapView(context: Context, attributeSet: AttributeSet):
     /** Reset the map view. */
     fun reset() { updateZoom(Point(1f, 1f)) }
 
+    // ---------------------------------------------------------------------------------------------
+    // Live display.
+    // ---------------------------------------------------------------------------------------------
+
     /** Coroutine for updating the map. */
     private fun updateMap() = scope?.launch(Dispatchers.Default){
         while(true) {
