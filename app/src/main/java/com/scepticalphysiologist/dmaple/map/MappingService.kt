@@ -64,16 +64,31 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         /** Approximate interval between frames (milliseconds). */
         const val APPROX_FRAME_INTERVAL_MS: Long = 33
 
-        // Buffers
-        // -------
-        private const val MAP_BUFFER_SIZE: Long = 100_000_000L
-
+        // Map data buffering
+        // ------------------
+        /** A set of files in the app's storage used to create "mapped byte buffers" for
+         * storing map data as it is created. The names of the files mapped to their random access
+         * streams or null, if the file is not being used for buffering.
+         *
+         * Mapped byte buffers can be very large (up to 2GB) without taking up any actual
+         * heap memory.
+         * https://developer.android.com/reference/java/nio/MappedByteBuffer
+         * */
         private val mapBuffers = mutableMapOf<String, RandomAccessFile?>(
             "buffer_1.dat" to null,
             "buffer_2.dat" to null,
-            "buffer_3.dat" to null
+            "buffer_3.dat" to null,
+            "buffer_4.dat" to null,
+            "buffer_5.dat" to null,
         )
 
+        /** The size (bytes) of each buffering file listed in [mapBuffers]. */
+        private const val MAP_BUFFER_SIZE: Long = 100_000_000L
+
+        /** Initialise the buffering files.
+         *
+         * This must be called by the main activity at creation.
+         * */
         fun initialiseBuffers() {
             for((bufferFile, accessStream) in mapBuffers) {
                 if(accessStream == null) continue
@@ -88,7 +103,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             }
         }
 
-        fun getBuffer(): MappedByteBuffer? {
+        /** Get a free buffer or null if no buffers are free. */
+        fun getFreeBuffer(): MappedByteBuffer? {
             for((bufferFile, accessStream) in mapBuffers) {
                 if(accessStream != null) continue
                 val file = File(MainActivity.storageDirectory, bufferFile)
@@ -99,14 +115,14 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             return null
         }
 
-        fun closeAllBuffers() {
+        /** Free all buffers. */
+        fun freeAllBuffers() {
             for((bufferFile, accessStream) in mapBuffers) {
                 accessStream?.channel?.close()
                 accessStream?.close()
                 mapBuffers[bufferFile] = null
             }
         }
-
     }
 
     // Camera
@@ -266,8 +282,13 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         // todo - MappingRois should include the MapCreator class to which they are used for.
         val imageFrame = imageAnalysisFrame() ?: return warning
         creators = rois.mapNotNull { roi ->
-            getBuffer()?.let { buff -> BufferedExampleMap(roi.inNewFrame(imageFrame), buff) }
+            getFreeBuffer()?.let { buff -> BufferedExampleMap(roi.inNewFrame(imageFrame), buff) }
         }.toMutableList()
+        if(creators.size < rois.size) {
+            val nNotCreated = rois.size - creators.size
+            warning.add("There are not enough buffers to process all maps.\n" +
+                    "The last $nNotCreated maps will not be created.", false)
+        }
 
         // State
         creating = true
@@ -284,7 +305,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         creators.clear()
 
         // Close buffers.
-        closeAllBuffers()
+        freeAllBuffers()
         System.gc()
 
         // State
