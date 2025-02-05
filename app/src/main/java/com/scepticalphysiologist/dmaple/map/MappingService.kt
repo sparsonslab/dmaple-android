@@ -270,12 +270,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         camera.cameraControl.setExposureCompensationIndex(exposure)
     }
 
-    fun getExposure(): Float {
-        val range = camera.cameraInfo.exposureState.exposureCompensationRange
-        val exposure =  camera.cameraInfo.exposureState.exposureCompensationIndex
-        return (exposure - range.lower).toFloat() / (range.upper - range.lower).toFloat()
-    }
-
     /** Set the ROIs. e.g. when ROIs are updated in a view. */
     fun setRois(viewRois: List<MappingRoi>) {
         rois.clear()
