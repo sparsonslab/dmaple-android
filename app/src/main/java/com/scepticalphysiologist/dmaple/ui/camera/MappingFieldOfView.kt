@@ -104,6 +104,10 @@ class MappingFieldOfView(context: Context, attributeSet: AttributeSet?):
 
     fun getCameraPreview(): PreviewView { return cameraFeed }
 
+    fun setExposureSlider(fraction: Float) {
+        exposureSlider.setPosition((fraction * 100).toInt())
+    }
+
     // ---------------------------------------------------------------------------------------------
     // Layout
     // ---------------------------------------------------------------------------------------------

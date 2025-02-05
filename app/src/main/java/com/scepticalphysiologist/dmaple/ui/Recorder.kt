@@ -41,6 +41,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         model.mappingServiceConnected.observe(viewLifecycleOwner) { isConnected ->
             if(isConnected) {
                 model.setCameraPreviewSurface(binding.cameraAndRoi.getCameraPreview())
+                binding.cameraAndRoi.setExposureSlider(0.5f)
                 binding.cameraAndRoi.setSavedRois(model.getMappingRois())
                 setUIState()
             }

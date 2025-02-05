@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CaptureRequest
 import android.os.Binder
 import android.os.IBinder
@@ -145,7 +146,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     // ------
     /** The camera. */
     private lateinit var camera: Camera
-    private lateinit var interOperator: Camera2Interop.Extender<Preview>
     /** The device display. */
     private lateinit var display: Display
     /** The camera preview. */
@@ -182,7 +182,12 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         useCaseGroup.setViewPort(viewport)
         // ... preview
         val previewBuilder = Preview.Builder()
-        interOperator = Camera2Interop.Extender<Preview>(previewBuilder)
+        // Unfortunately google do not (yet) allow capture request options to vbe changed after binding.
+        // https://stackoverflow.com/questions/63770974/android-camerax-how-to-change-camera-parameters-after-capture-start
+        // https://groups.google.com/a/android.com/g/camerax-developers/c/vnvlYC24vug/m/h0rxYkmUBgAJ
+        var interOperator: Camera2Interop.Extender<Preview> = Camera2Interop.Extender<Preview>(previewBuilder)
+        interOperator.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_LOCK, true)
+        interOperator.setCaptureRequestOption(CaptureRequest.CONTROL_AE_LOCK, true)
         preview = previewBuilder.setTargetAspectRatio(CAMERA_ASPECT_RATIO).build()
         useCaseGroup.addUseCase(preview)
         // ... image analysis
@@ -263,8 +268,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         val range = camera.cameraInfo.exposureState.exposureCompensationRange
         val exposure = (range.lower + fraction * (range.upper - range.lower)).toInt()
         camera.cameraControl.setExposureCompensationIndex(exposure)
-        interOperator.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_LOCK, true)
-        interOperator.setCaptureRequestOption(CaptureRequest.CONTROL_AE_LOCK, true)
     }
 
     fun getExposure(): Float {
