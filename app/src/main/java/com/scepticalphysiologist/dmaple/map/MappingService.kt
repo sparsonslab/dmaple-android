@@ -182,23 +182,16 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         useCaseGroup.setViewPort(viewport)
         // ... preview
         val previewBuilder = Preview.Builder()
-        // Unfortunately google do not (yet) allow capture request options to vbe changed after binding.
-        // https://stackoverflow.com/questions/63770974/android-camerax-how-to-change-camera-parameters-after-capture-start
-        // https://groups.google.com/a/android.com/g/camerax-developers/c/vnvlYC24vug/m/h0rxYkmUBgAJ
-        var interOperator: Camera2Interop.Extender<Preview> = Camera2Interop.Extender<Preview>(previewBuilder)
+        val interOperator = Camera2Interop.Extender(previewBuilder)
         interOperator.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_LOCK, true)
         interOperator.setCaptureRequestOption(CaptureRequest.CONTROL_AE_LOCK, true)
         preview = previewBuilder.setTargetAspectRatio(CAMERA_ASPECT_RATIO).build()
         useCaseGroup.addUseCase(preview)
         // ... image analysis
-        // todo - bind/unbind during map creation start/stop.
         analyser =ImageAnalysis.Builder().also {
             it.setTargetAspectRatio(CAMERA_ASPECT_RATIO)
             it.setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             it.setImageQueueDepth(10)
-
-
-
         }.build()
         analyser.setAnalyzer(Executors.newFixedThreadPool(5), this)
         useCaseGroup.addUseCase(analyser)
