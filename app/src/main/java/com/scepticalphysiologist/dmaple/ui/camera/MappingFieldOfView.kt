@@ -35,10 +35,17 @@ class MappingFieldOfView(context: Context, attributeSet: AttributeSet?):
     /** An overlay over the camera feed unto which mapping processes *such as spines) can be drawn. */
     private val spineOverlay = SpineView(context, attributeSet)
 
-    // Other
-    // -----
+    // Controls
+    // --------
     /** A slider for thresholding mapping ROIs. */
     private val thresholdSlider = VerticalSlider(this.context, attributeSet, Pair(0, 255), Color.RED)
+    /** A slide for controlling exposure. */
+    private val exposureSlider = VerticalSlider(this.context, attributeSet, Pair(0, 100), Color.BLUE)
+    /** Indicate that exposure has changed - a value between 0 and 1. */
+    val exposure = MutableLiveData<Float>(0f)
+
+    // View
+    // ----
     /** Display information. */
     private val display = (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay
     /** The parent view. */
@@ -53,6 +60,7 @@ class MappingFieldOfView(context: Context, attributeSet: AttributeSet?):
         this.addView(cameraFeed)
         this.addView(spineOverlay)
         this.addView(roiOverlay)
+        this.addView(exposureSlider, LayoutParams(40, LayoutParams.MATCH_PARENT, Gravity.LEFT))
         this.addView(thresholdSlider, LayoutParams(40, LayoutParams.MATCH_PARENT, Gravity.RIGHT))
 
         // Layout.
@@ -72,6 +80,9 @@ class MappingFieldOfView(context: Context, attributeSet: AttributeSet?):
             threshold?.let { thresholdSlider.setPosition(it) }
             thresholdSlider.visibility = if(threshold != null) View.VISIBLE else View.INVISIBLE
         }
+
+        // Exposure control
+        exposureSlider.position.observe(owner) { exposure.postValue(it.toFloat() / 100f) }
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -86,7 +97,10 @@ class MappingFieldOfView(context: Context, attributeSet: AttributeSet?):
 
     fun savedRoisHaveChanged(): MutableLiveData<Boolean> { return roiOverlay.savedRoiChange }
 
-    fun allowEditing(allow: Boolean = true) { roiOverlay.allowEditing(allow) }
+    fun allowEditing(allow: Boolean = true) {
+        exposureSlider.visibility = if(allow) View.VISIBLE else View.INVISIBLE
+        roiOverlay.allowEditing(allow)
+    }
 
     fun getCameraPreview(): PreviewView { return cameraFeed }
 

@@ -76,6 +76,8 @@ class RecorderModel(application: Application) :
     /** Get the ROIs used for mapping. */
     fun getMappingRois(): List<MappingRoi> { return mapper?.getRois() ?: listOf() }
 
+    fun setExposure(fraction: Float) { mapper?.setExposure(fraction) }
+
     /** Switch the mapping state (start or stop) and return if it is then mapping. */
     fun startStop(): Boolean {
         return mapper?.let {

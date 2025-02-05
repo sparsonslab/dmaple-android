@@ -9,14 +9,18 @@ import androidx.lifecycle.MutableLiveData
 
 class VerticalSlider(
     context: Context, attributeSet: AttributeSet?,
-    range: Pair<Int, Int>,
+    private val range: Pair<Int, Int>,
     color: Int
 ):
     FrameLayout(context, attributeSet),
     SeekBar.OnSeekBarChangeListener
 {
 
-    val slider: SeekBar = SeekBar(context)
+    private val slider: SeekBar = SeekBar(context)
+
+    val offset: Float get() = range.first.toFloat()
+
+    val gain: Float get() = (range.second - range.first).toFloat()
 
     val onoff = MutableLiveData<Boolean>(false)
 
@@ -31,7 +35,6 @@ class VerticalSlider(
         slider.progressDrawable.setTint(color)
         this.addView(slider)
     }
-
 
     fun setPosition(p: Int) { this.slider.progress= p }
 

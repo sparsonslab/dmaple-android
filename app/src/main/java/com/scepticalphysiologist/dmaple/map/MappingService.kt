@@ -5,12 +5,16 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.hardware.camera2.CaptureRequest
 import android.os.Binder
 import android.os.IBinder
 import android.util.Rational
 import android.view.Display
 import android.view.Surface
 import android.view.WindowManager
+import androidx.annotation.OptIn
+import androidx.camera.camera2.interop.Camera2Interop
+import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
@@ -23,9 +27,11 @@ import androidx.camera.core.ViewPort
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleService
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.etc.Frame
+import com.scepticalphysiologist.dmaple.etc.VerticalSlider
 import com.scepticalphysiologist.dmaple.etc.surfaceRotationDegrees
 import com.scepticalphysiologist.dmaple.etc.Warnings
 import com.scepticalphysiologist.dmaple.map.creator.BufferedExampleMap
@@ -54,6 +60,7 @@ import java.util.concurrent.Executors
  * already handles).
  *
  */
+@OptIn(ExperimentalCamera2Interop::class)
 class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     companion object {
@@ -138,6 +145,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     // ------
     /** The camera. */
     private lateinit var camera: Camera
+    private lateinit var interOperator: Camera2Interop.Extender<Preview>
     /** The device display. */
     private lateinit var display: Display
     /** The camera preview. */
@@ -173,7 +181,9 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         ).setScaleType(ViewPort.FIT).build()
         useCaseGroup.setViewPort(viewport)
         // ... preview
-        preview = Preview.Builder().setTargetAspectRatio(CAMERA_ASPECT_RATIO).build()
+        val previewBuilder = Preview.Builder()
+        interOperator = Camera2Interop.Extender<Preview>(previewBuilder)
+        preview = previewBuilder.setTargetAspectRatio(CAMERA_ASPECT_RATIO).build()
         useCaseGroup.addUseCase(preview)
         // ... image analysis
         // todo - bind/unbind during map creation start/stop.
@@ -181,6 +191,9 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             it.setTargetAspectRatio(CAMERA_ASPECT_RATIO)
             it.setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             it.setImageQueueDepth(10)
+
+
+
         }.build()
         analyser.setAnalyzer(Executors.newFixedThreadPool(5), this)
         useCaseGroup.addUseCase(analyser)
@@ -191,6 +204,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA,
             useCaseGroup = useCaseGroup.build()
         )
+
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -243,6 +257,21 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     /** Set the surface provider (physical view) for the camera preview. */
     fun setSurface(provider: SurfaceProvider) { preview.surfaceProvider = provider }
+
+    /** Set the camera exposure (as a fraction of the available range). */
+    fun setExposure(fraction: Float) {
+        val range = camera.cameraInfo.exposureState.exposureCompensationRange
+        val exposure = (range.lower + fraction * (range.upper - range.lower)).toInt()
+        camera.cameraControl.setExposureCompensationIndex(exposure)
+        interOperator.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_LOCK, true)
+        interOperator.setCaptureRequestOption(CaptureRequest.CONTROL_AE_LOCK, true)
+    }
+
+    fun getExposure(): Float {
+        val range = camera.cameraInfo.exposureState.exposureCompensationRange
+        val exposure =  camera.cameraInfo.exposureState.exposureCompensationIndex
+        return (exposure - range.lower).toFloat() / (range.upper - range.lower).toFloat()
+    }
 
     /** Set the ROIs. e.g. when ROIs are updated in a view. */
     fun setRois(viewRois: List<MappingRoi>) {

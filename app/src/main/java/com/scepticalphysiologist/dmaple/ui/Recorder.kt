@@ -52,6 +52,9 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
             if(haveChanged) model.setMappingRois(binding.cameraAndRoi.getSavedRois())
         }
 
+        // Exposure control.
+        binding.cameraAndRoi.exposure.observe(viewLifecycleOwner) { model.setExposure(it) }
+
         // Start/stop recording.
         binding.recordButton.setOnClickListener {
             model.startStop()
