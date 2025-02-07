@@ -5,13 +5,10 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CaptureRequest
 import android.os.Binder
 import android.os.IBinder
-import android.util.Rational
 import android.view.Display
-import android.view.Surface
 import android.view.WindowManager
 import androidx.annotation.OptIn
 import androidx.camera.camera2.interop.Camera2Interop
@@ -23,16 +20,13 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.core.Preview.SurfaceProvider
-import androidx.camera.core.UseCaseGroup
-import androidx.camera.core.ViewPort
+import androidx.camera.core.UseCase
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleService
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.etc.Frame
-import com.scepticalphysiologist.dmaple.etc.VerticalSlider
 import com.scepticalphysiologist.dmaple.etc.surfaceRotationDegrees
 import com.scepticalphysiologist.dmaple.etc.Warnings
 import com.scepticalphysiologist.dmaple.map.creator.BufferedExampleMap
@@ -144,12 +138,16 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     // Camera
     // ------
+    /** The camera provider. */
+    private lateinit var cameraProvider: ProcessCameraProvider
     /** The camera. */
     private lateinit var camera: Camera
     /** The device display. */
     private lateinit var display: Display
     /** The camera preview. */
-    private lateinit var preview: Preview
+    private var preview: Preview? = null
+    /** The view ("surface provider") of the camera preview. */
+    private var surface: SurfaceProvider? = null
     /** The camera image analyser. */
     private lateinit var analyser: ImageAnalysis
 
@@ -167,42 +165,42 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** Set-up the camera. */
     override fun onCreate() {
         super.onCreate()
-
-        // Camera provider and display.
-        val cameraProvider = ProcessCameraProvider.getInstance(this).get()
-        cameraProvider.unbindAll()
         display = (this.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay
+        cameraProvider = ProcessCameraProvider.getInstance(this).get()
+        cameraProvider.unbindAll()
+        setPreview(freeze = false)
+        setImageAnalysis()
+    }
 
-        // Use cases.
-        val useCaseGroup= UseCaseGroup.Builder()
-        // ... view port
-        val viewport = ViewPort.Builder(
-            Rational(1, 1), Surface.ROTATION_0
-        ).setScaleType(ViewPort.FIT).build()
-        useCaseGroup.setViewPort(viewport)
-        // ... preview
+    /** Set the preview.
+     * @param freeze Turn off auto-focus, -exposure and -white-balance.
+     * */
+    private fun setPreview(freeze: Boolean) {
         val previewBuilder = Preview.Builder()
-        val interOperator = Camera2Interop.Extender(previewBuilder)
-        interOperator.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_LOCK, true)
-        interOperator.setCaptureRequestOption(CaptureRequest.CONTROL_AE_LOCK, true)
+        if(freeze) {
+            val interOperator = Camera2Interop.Extender(previewBuilder)
+            interOperator.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_LOCK, true)
+            interOperator.setCaptureRequestOption(CaptureRequest.CONTROL_AE_LOCK, true)
+            interOperator.setCaptureRequestOption(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF)
+        }
+        preview?.let{ cameraProvider.unbind(it) }
         preview = previewBuilder.setTargetAspectRatio(CAMERA_ASPECT_RATIO).build()
-        useCaseGroup.addUseCase(preview)
-        // ... image analysis
+        surface?.let {preview!!.surfaceProvider = it}
+        bindUseCase(preview!!)
+    }
+
+    private fun setImageAnalysis() {
         analyser =ImageAnalysis.Builder().also {
             it.setTargetAspectRatio(CAMERA_ASPECT_RATIO)
             it.setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             it.setImageQueueDepth(10)
         }.build()
         analyser.setAnalyzer(Executors.newFixedThreadPool(5), this)
-        useCaseGroup.addUseCase(analyser)
+        bindUseCase(analyser)
+    }
 
-        // Bind to this lifecycle.
-        camera = cameraProvider.bindToLifecycle(
-            lifecycleOwner = this,
-            cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA,
-            useCaseGroup = useCaseGroup.build()
-        )
-
+    private fun bindUseCase(use: UseCase) {
+        camera = cameraProvider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, use)
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -254,7 +252,10 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     // ---------------------------------------------------------------------------------------------
 
     /** Set the surface provider (physical view) for the camera preview. */
-    fun setSurface(provider: SurfaceProvider) { preview.surfaceProvider = provider }
+    fun setSurface(provider: SurfaceProvider) {
+        surface = provider
+        preview?.surfaceProvider = provider
+    }
 
     /** Set the camera exposure (as a fraction of the available range). */
     fun setExposure(fraction: Float) {
@@ -319,7 +320,10 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             warning.add(msg, false)
         }
 
+
+
         // State
+        setPreview(freeze = true)
         creating = true
         startTime = Instant.now()
         return warning
@@ -338,6 +342,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         System.gc()
 
         // State
+        setPreview(freeze = false)
         creating = false
         startTime = null
         return warnings
