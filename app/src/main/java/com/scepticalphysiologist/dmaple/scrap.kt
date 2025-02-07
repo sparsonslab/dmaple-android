@@ -1,17 +1,52 @@
 package com.scepticalphysiologist.dmaple
 
 
-import com.scepticalphysiologist.dmaple.io.createByteChannelTiff
+
+import android.graphics.Color
+import android.os.Build
+import androidx.annotation.RequiresApi
+import androidx.core.graphics.alpha
+import androidx.core.graphics.blue
+import androidx.core.graphics.green
+import androidx.core.graphics.red
+import com.scepticalphysiologist.dmaple.io.RGBView
+import com.scepticalphysiologist.dmaple.io.ShortView
+import mil.nga.tiff.TIFFImage
 import mil.nga.tiff.TiffWriter
 import java.io.File
 import java.nio.ByteBuffer
-import kotlin.math.PI
-import kotlin.math.sin
 
+fun printColor(color: Int) {
+    println("${color.alpha}, ${color.red}, ${color.green}, ${color.blue}")
+}
 
-
+@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 fun main() {
 
+
+    val nx = 100
+    val ny = 100
+    val buffer = RGBView(ByteBuffer.allocate(nx * ny * 3), nx)
+    for(i in 20..60)
+        for(j in 40..60)
+            buffer.set(i, j, Color.RED)
+
+    println(Color.BLUE)
+    println(buffer.getColorInt(50, 50))
+
+    val dir = buffer.tiffDirectory(ny)
+    val img = TIFFImage()
+    img.add(dir)
+
+    val path = "/Users/senparsons/Documents/programming/personal/dmaple_android/example6.tiff"
+    TiffWriter.writeTiff(File(path), img)
+
+
+    //val g: Int = (c shr 8).and(0xff)
+    //print(g)
+
+
+    /*
     val w = 100
     val h = 128
     val waveLength = 52f
@@ -38,7 +73,7 @@ fun main() {
     val img2 = createByteChannelTiff(buff, w, h, 3)
     path = "/Users/senparsons/Documents/programming/personal/dmaple_android/example2.tiff"
     TiffWriter.writeTiff(File(path), img2)
-
+*/
 
 
 }

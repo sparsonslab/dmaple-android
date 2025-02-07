@@ -2,15 +2,20 @@ package com.scepticalphysiologist.dmaple.map.creator
 
 import android.graphics.Bitmap
 import android.graphics.Rect
+import android.os.Build
+import android.os.Environment
 import android.util.Size
+import androidx.annotation.RequiresApi
 import com.scepticalphysiologist.dmaple.etc.Point
+import com.scepticalphysiologist.dmaple.io.ShortView
 import com.scepticalphysiologist.dmaple.map.MappingRoi
+import mil.nga.tiff.TIFFImage
+import mil.nga.tiff.TiffWriter
 import java.io.File
 import java.lang.IllegalArgumentException
 import java.lang.IndexOutOfBoundsException
 import java.nio.MappedByteBuffer
 import kotlin.math.abs
-import kotlin.math.ceil
 
 class BufferedExampleMap(
     roi: MappingRoi,
@@ -32,6 +37,8 @@ class BufferedExampleMap(
 
     private var reachedEnd = false
 
+    private var mapView: ShortView
+
     // ---------------------------------------------------------------------------------------------
     // Creation and memory allocation
     // ---------------------------------------------------------------------------------------------
@@ -46,6 +53,7 @@ class BufferedExampleMap(
             pL = edge.first.y.toInt()
         }
         ns = abs(pE.first - pE.second)
+        mapView = ShortView(mapBuffer, ns)
     }
 
 
@@ -60,9 +68,10 @@ class BufferedExampleMap(
     override fun updateWithCameraBitmap(bitmap: Bitmap) {
         if(reachedEnd) return
         try {
-            (pE.first until pE.second).map { mapBuffer.putInt(
-                if(isVertical) bitmap.getPixel(pL, it) else bitmap.getPixel(it, pL)
-            )}
+            (pE.first until pE.second).map {
+                //mapBuffer.putInt(if(isVertical) bitmap.getPixel(pL, it) else bitmap.getPixel(it, pL))
+                mapView.addNTSCGrey(if(isVertical) bitmap.getPixel(pL, it) else bitmap.getPixel(it, pL))
+            }
             nt += 1
         } catch (_: java.lang.IndexOutOfBoundsException) { reachedEnd = true }
     }
@@ -89,7 +98,8 @@ class BufferedExampleMap(
             var k = 0
             for(j in area.top until area.bottom step stepY)
                 for(i in area.left until area.right step stepX) {
-                    backing[k] = mapBuffer.getInt(4 * (j * ns + i))
+                    //backing[k] = mapBuffer.getInt(4 * (j * ns + i))
+                    backing[k] = mapView.getColorInt(i, j)
                     k += 1
                 }
             return Bitmap.createBitmap(backing, bs.width, bs.height, Bitmap.Config.ARGB_8888)
@@ -105,14 +115,17 @@ class BufferedExampleMap(
     // Map save.
     // ---------------------------------------------------------------------------------------------
 
+
     override fun saveAndClose(file: File?) {
 
         // save
-
-        // stream samples from the buffer file into a jpeg/etc.
-        // ?????
-
-        // Release the buffer.
+        val path = File(
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
+            "xxxxmap.tiff"
+        )
+        val img = TIFFImage()
+        img.add(mapView.tiffDirectory(nt))
+        TiffWriter.writeTiff(path, img)
 
     }
 }
