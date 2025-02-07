@@ -149,7 +149,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** The view ("surface provider") of the camera preview. */
     private var surface: SurfaceProvider? = null
     /** The camera image analyser. */
-    private lateinit var analyser: ImageAnalysis
+    private var analyser: ImageAnalysis? = null
 
     // State
     // -----
@@ -169,37 +169,45 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         cameraProvider = ProcessCameraProvider.getInstance(this).get()
         cameraProvider.unbindAll()
         setPreview(freeze = false)
-        setImageAnalysis()
+        setAnalyser()
     }
 
     /** Set the preview.
      * @param freeze Turn off auto-focus, -exposure and -white-balance.
      * */
     private fun setPreview(freeze: Boolean) {
-        val previewBuilder = Preview.Builder()
-        if(freeze) {
-            val interOperator = Camera2Interop.Extender(previewBuilder)
-            interOperator.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_LOCK, true)
-            interOperator.setCaptureRequestOption(CaptureRequest.CONTROL_AE_LOCK, true)
-            interOperator.setCaptureRequestOption(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF)
+        unBindUse(preview)
+        preview = Preview.Builder().also { builder ->
+            builder.setTargetAspectRatio(CAMERA_ASPECT_RATIO)
+            if(freeze) {
+                val interOperator = Camera2Interop.Extender(builder)
+                interOperator.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_LOCK, true)
+                interOperator.setCaptureRequestOption(CaptureRequest.CONTROL_AE_LOCK, true)
+                interOperator.setCaptureRequestOption(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF)
+            }
+        }.build().also { use ->
+            surface?.let {s -> use.surfaceProvider = s}
+            bindUse(use)
         }
-        preview?.let{ cameraProvider.unbind(it) }
-        preview = previewBuilder.setTargetAspectRatio(CAMERA_ASPECT_RATIO).build()
-        surface?.let {preview!!.surfaceProvider = it}
-        bindUseCase(preview!!)
     }
 
-    private fun setImageAnalysis() {
-        analyser =ImageAnalysis.Builder().also {
-            it.setTargetAspectRatio(CAMERA_ASPECT_RATIO)
-            it.setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-            it.setImageQueueDepth(10)
-        }.build()
-        analyser.setAnalyzer(Executors.newFixedThreadPool(5), this)
-        bindUseCase(analyser)
+    private fun setAnalyser() {
+        unBindUse(analyser)
+        analyser = ImageAnalysis.Builder().also { builder ->
+            builder.setTargetAspectRatio(CAMERA_ASPECT_RATIO)
+            builder.setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            builder.setImageQueueDepth(10)
+        }.build().also { use ->
+            use.setAnalyzer(Executors.newFixedThreadPool(5), this)
+            bindUse(use)
+        }
     }
 
-    private fun bindUseCase(use: UseCase) {
+    private fun unBindUse(use: UseCase?) {
+        cameraProvider.unbind(use)
+    }
+
+    private fun bindUse(use: UseCase?) {
         camera = cameraProvider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, use)
     }
 
@@ -309,7 +317,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
         // Create map creators.
         // todo - MappingRois should include the MapCreator class to which they are used for.
-        val imageFrame = imageAnalysisFrame() ?: return warning
+        val imageFrame = analyser?.let{imageAnalysisFrame(it)} ?: return warning
         creators = rois.mapNotNull { roi ->
             getFreeBuffer()?.let { buff -> BufferedExampleMap(roi.inNewFrame(imageFrame), buff) }
         }.toMutableList()
@@ -319,7 +327,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
                       "The last $nNotCreated maps will not be created."
             warning.add(msg, false)
         }
-
 
 
         // State
@@ -349,7 +356,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     }
 
     /** Get the frame of the image analyser. */
-    private fun imageAnalysisFrame(): Frame? {
+    private fun imageAnalysisFrame(analyser: ImageAnalysis): Frame? {
         // Get analyser and update its target orientation.
         analyser.targetRotation = display.rotation
         // The frame orientation is the sum of the image and analyser target.
