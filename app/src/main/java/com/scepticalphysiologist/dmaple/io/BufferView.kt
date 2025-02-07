@@ -41,6 +41,8 @@ abstract class BufferView<T : Number>(
         dir.setRowsPerStrip(raster.calculateRowsPerStrip(dir.planarConfiguration))
         dir.writeRasters = raster
 
+        // todo - set raster from buffer directly using raster.setinterleaved method. Tried this
+        //    but not working???
         try {
             for(j in 0 until ny)
                 for(i in 0 until nx)

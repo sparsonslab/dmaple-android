@@ -119,6 +119,9 @@ class BufferedExampleMap(
     override fun saveAndClose(file: File?) {
 
         // save
+        // todo = put in coroutine so won't take for ever. (Need to pass new buffer view
+        //    around buffer, so that this object can be destroyed?)
+        /*
         val path = File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
             "xxxxmap.tiff"
@@ -126,6 +129,8 @@ class BufferedExampleMap(
         val img = TIFFImage()
         img.add(mapView.tiffDirectory(nt))
         TiffWriter.writeTiff(path, img)
+        */
+
 
     }
 }
