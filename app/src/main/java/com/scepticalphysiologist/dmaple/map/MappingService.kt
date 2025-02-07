@@ -168,18 +168,18 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         display = (this.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay
         cameraProvider = ProcessCameraProvider.getInstance(this).get()
         cameraProvider.unbindAll()
-        setPreview(freeze = false)
+        setPreview(autosOn = true)
         setAnalyser()
     }
 
     /** Set the preview.
-     * @param freeze Turn off auto-focus, -exposure and -white-balance.
+     * @param autosOn Auto-focus, -exposure and -white-balance are on.
      * */
-    private fun setPreview(freeze: Boolean) {
+    private fun setPreview(autosOn: Boolean) {
         unBindUse(preview)
         preview = Preview.Builder().also { builder ->
             builder.setTargetAspectRatio(CAMERA_ASPECT_RATIO)
-            if(freeze) {
+            if(!autosOn) {
                 val interOperator = Camera2Interop.Extender(builder)
                 interOperator.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_LOCK, true)
                 interOperator.setCaptureRequestOption(CaptureRequest.CONTROL_AE_LOCK, true)
@@ -330,7 +330,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
 
         // State
-        setPreview(freeze = true)
+        setPreview(autosOn = false)
         creating = true
         startTime = Instant.now()
         return warning
@@ -349,7 +349,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         System.gc()
 
         // State
-        setPreview(freeze = false)
+        setPreview(autosOn = true)
         creating = false
         startTime = null
         return warnings
