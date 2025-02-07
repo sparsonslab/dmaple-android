@@ -173,7 +173,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     }
 
     /** Set the preview.
-     * @param autosOn Auto-focus, -exposure and -white-balance are on.
+     * @param autosOn Auto-focus, -exposure and -white-balance are on (this also applies to the image analyser).
      * */
     private fun setPreview(autosOn: Boolean) {
         unBindUse(preview)
@@ -317,7 +317,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
         // Create map creators.
         // todo - MappingRois should include the MapCreator class to which they are used for.
-        val imageFrame = analyser?.let{imageAnalysisFrame(it)} ?: return warning
+        val imageFrame = imageAnalysisFrame() ?: return warning
         creators = rois.mapNotNull { roi ->
             getFreeBuffer()?.let { buff -> BufferedExampleMap(roi.inNewFrame(imageFrame), buff) }
         }.toMutableList()
@@ -327,7 +327,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
                       "The last $nNotCreated maps will not be created."
             warning.add(msg, false)
         }
-
 
         // State
         setPreview(autosOn = false)
@@ -356,18 +355,20 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     }
 
     /** Get the frame of the image analyser. */
-    private fun imageAnalysisFrame(analyser: ImageAnalysis): Frame? {
-        // Get analyser and update its target orientation.
-        analyser.targetRotation = display.rotation
-        // The frame orientation is the sum of the image and analyser target.
-        // (see the definition of ImageAnalysis.targetRotation)
-        val imageInfo = analyser.resolutionInfo ?: return null
-        val or = imageInfo.rotationDegrees + surfaceRotationDegrees(analyser.targetRotation)
-        return Frame(
-            width=imageInfo.resolution.width.toFloat(),
-            height = imageInfo.resolution.height.toFloat(),
-            orientation = or
-        )
+    private fun imageAnalysisFrame(): Frame? {
+        analyser?.let {
+            // Get analyser and update its target orientation.
+            it.targetRotation = display.rotation
+            // The frame orientation is the sum of the image and analyser target.
+            // (see the definition of ImageAnalysis.targetRotation)
+            val imageInfo = it.resolutionInfo ?: return null
+            val or = imageInfo.rotationDegrees + surfaceRotationDegrees(it.targetRotation)
+            return Frame(
+                width=imageInfo.resolution.width.toFloat(),
+                height = imageInfo.resolution.height.toFloat(),
+                orientation = or
+            )
+        } ?: return null
     }
 
     /** Analyse each image from the camera feed. Called continuously during the life of the service. */
