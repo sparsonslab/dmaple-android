@@ -5,15 +5,18 @@ import android.graphics.Color
 import android.util.AttributeSet
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.camera.view.PreviewView
 import kotlin.math.roundToInt
 import android.view.WindowManager
+import android.widget.LinearLayout
 import androidx.core.view.updateLayoutParams
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.etc.Point
+import com.scepticalphysiologist.dmaple.etc.SwitchableSlider
 import com.scepticalphysiologist.dmaple.map.MappingRoi
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.etc.VerticalSlider
@@ -39,9 +42,9 @@ class MappingFieldOfView(context: Context, attributeSet: AttributeSet?):
     // Controls
     // --------
     /** A slider for thresholding mapping ROIs. */
-    private val thresholdSlider = VerticalSlider(this.context, Pair(0, 255), R.drawable.threshold_steps, Color.RED)
+    private val thresholdSlider = SwitchableSlider(this.context, Pair(0, 255), R.drawable.threshold_steps, Color.RED)
     /** A slide for controlling exposure. */
-    private val exposureSlider = VerticalSlider(this.context, Pair(0, 100), R.drawable.exposure_sun, Color.YELLOW)
+    private val exposureSlider = SwitchableSlider(this.context, Pair(0, 100), R.drawable.exposure_sun, Color.YELLOW)
     /** Indicate that exposure has changed - a value between 0 and 1. */
     val exposure = MutableLiveData<Float>(0f)
 
@@ -57,12 +60,19 @@ class MappingFieldOfView(context: Context, attributeSet: AttributeSet?):
         cameraFeed.implementationMode = PreviewView.ImplementationMode.COMPATIBLE
         cameraFeed.scaleType = PreviewView.ScaleType.FILL_CENTER
 
-        // Add child views, from lowest to highest layer in the frame.
+        // Camera and overlays.
         this.addView(cameraFeed)
         this.addView(spineOverlay)
         this.addView(roiOverlay)
-        this.addView(exposureSlider, LayoutParams(40, LayoutParams.MATCH_PARENT, Gravity.LEFT))
-        this.addView(thresholdSlider, LayoutParams(40, LayoutParams.MATCH_PARENT, Gravity.RIGHT))
+
+        // Slider controls.
+        val sliderGroup = LinearLayout(context)
+        sliderGroup.orientation = LinearLayout.VERTICAL
+        sliderGroup.layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, Gravity.BOTTOM)
+        sliderGroup.addView(thresholdSlider)
+        sliderGroup.addView(exposureSlider)
+        exposureSlider.switch(show=false)
+        this.addView(sliderGroup)
 
         // Layout.
         setBackgroundColor(Color.GRAY)

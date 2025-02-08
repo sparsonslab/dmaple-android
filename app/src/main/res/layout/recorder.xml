@@ -7,7 +7,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context="com.scepticalphysiologist.dmaple.ui.Recorder">
 
-
     <com.scepticalphysiologist.dmaple.ui.camera.MapView
         android:id="@+id/maps"
         android:layout_width="match_parent"
@@ -15,36 +14,6 @@
         android:scaleType="fitCenter"
         android:background="@color/teal_200">
     </com.scepticalphysiologist.dmaple.ui.camera.MapView>
-
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="40dp"
-        android:layout_height="match_parent">
-
-
-        <SeekBar
-            android:id="@+id/seeker"
-            android:layout_width="wrap_content"
-            android:layout_height="0dp"
-            android:rotation="270"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toTopOf="@id/switch2">
-
-        </SeekBar>
-
-
-        <ImageButton
-            android:id="@+id/switch2"
-            android:src="@drawable/play_arrow"
-            android:background="@null"
-            android:scaleType="fitXY"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            app:layout_constraintBottom_toBottomOf="parent">
-        </ImageButton>
-
-
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <TextView
         android:id="@+id/camera_timer"
@@ -63,7 +32,6 @@
         android:layout_height="match_parent">
     </com.scepticalphysiologist.dmaple.ui.camera.MappingFieldOfView>
 
-
     <ImageButton
         android:id="@+id/record_button"
         android:src="@drawable/play_arrow"
@@ -74,6 +42,5 @@
         android:layout_gravity="center_horizontal|bottom"
         android:layout_margin="20px">
     </ImageButton>
-
 
 </FrameLayout>
