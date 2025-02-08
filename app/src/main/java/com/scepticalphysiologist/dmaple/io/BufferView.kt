@@ -1,7 +1,5 @@
 package com.scepticalphysiologist.dmaple.io
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red

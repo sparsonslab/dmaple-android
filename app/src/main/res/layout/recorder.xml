@@ -16,6 +16,36 @@
         android:background="@color/teal_200">
     </com.scepticalphysiologist.dmaple.ui.camera.MapView>
 
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="40dp"
+        android:layout_height="match_parent">
+
+
+        <SeekBar
+            android:id="@+id/seeker"
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
+            android:rotation="270"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/switch2">
+
+        </SeekBar>
+
+
+        <ImageButton
+            android:id="@+id/switch2"
+            android:src="@drawable/play_arrow"
+            android:background="@null"
+            android:scaleType="fitXY"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            app:layout_constraintBottom_toBottomOf="parent">
+        </ImageButton>
+
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
     <TextView
         android:id="@+id/camera_timer"
         android:layout_width="wrap_content"

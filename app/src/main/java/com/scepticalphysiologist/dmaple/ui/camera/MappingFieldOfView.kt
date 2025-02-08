@@ -12,6 +12,7 @@ import android.view.WindowManager
 import androidx.core.view.updateLayoutParams
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
+import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.map.MappingRoi
 import com.scepticalphysiologist.dmaple.map.MappingService
@@ -38,9 +39,9 @@ class MappingFieldOfView(context: Context, attributeSet: AttributeSet?):
     // Controls
     // --------
     /** A slider for thresholding mapping ROIs. */
-    private val thresholdSlider = VerticalSlider(this.context, attributeSet, Pair(0, 255), Color.RED)
+    private val thresholdSlider = VerticalSlider(this.context, Pair(0, 255), R.drawable.threshold_steps, Color.RED)
     /** A slide for controlling exposure. */
-    private val exposureSlider = VerticalSlider(this.context, attributeSet, Pair(0, 100), Color.BLUE)
+    private val exposureSlider = VerticalSlider(this.context, Pair(0, 100), R.drawable.exposure_sun, Color.YELLOW)
     /** Indicate that exposure has changed - a value between 0 and 1. */
     val exposure = MutableLiveData<Float>(0f)
 
