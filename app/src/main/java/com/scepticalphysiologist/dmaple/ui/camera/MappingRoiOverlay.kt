@@ -378,7 +378,7 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
             frame=frame,
             p0 = Point(s.x * 0.5f, s.y * 0.05f),
             p1 = Point(s.x * 0.9f, s.y * 0.05f),
-            end = 0.05f * minOf(s.x, s.y)
+            end = 0.025f * minOf(s.x, s.y)
         )
     }
 
