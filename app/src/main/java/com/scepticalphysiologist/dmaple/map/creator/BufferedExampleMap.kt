@@ -9,6 +9,7 @@ import androidx.annotation.RequiresApi
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.io.ShortView
 import com.scepticalphysiologist.dmaple.map.MappingRoi
+import kotlinx.coroutines.delay
 import mil.nga.tiff.TIFFImage
 import mil.nga.tiff.TiffWriter
 import java.io.File
@@ -130,7 +131,6 @@ class BufferedExampleMap(
         img.add(mapView.tiffDirectory(nt))
         TiffWriter.writeTiff(path, img)
         */
-
 
     }
 }
