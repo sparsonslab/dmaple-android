@@ -360,10 +360,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     /** Save all maps, clear their creators and free buffers. */
     private fun saveAndClear() = scope.launch(Dispatchers.Default) {
-        // Save maps and clear map creators.
         for(creator in creators) creator.saveAndClose()
         creators.clear()
-        // Free buffers.
         freeAllBuffers()
         System.gc()
     }
