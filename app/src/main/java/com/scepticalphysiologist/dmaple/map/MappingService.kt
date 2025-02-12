@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.hardware.camera2.CaptureRequest
 import android.os.Binder
+import android.os.Environment
 import android.os.IBinder
 import android.view.Display
 import android.view.WindowManager
@@ -28,9 +29,13 @@ import androidx.lifecycle.LifecycleService
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.etc.Frame
 import com.scepticalphysiologist.dmaple.etc.surfaceRotationDegrees
-import com.scepticalphysiologist.dmaple.etc.Warnings
+import com.scepticalphysiologist.dmaple.etc.msg.Warnings
 import com.scepticalphysiologist.dmaple.map.creator.BufferedExampleMap
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.IOException
 import java.io.RandomAccessFile
@@ -161,6 +166,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     private var creating: Boolean = false
     /** The instant that creation of maps started. */
     private var startTime: Instant? = null
+
+    private var scope: CoroutineScope = MainScope()
 
     /** Set-up the camera. */
     override fun onCreate() {
@@ -300,20 +307,43 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         } ?: 0
     }
 
+    /** After stopping recording, save maps, clear map creators and free-up resources.
+     *
+     * @param mapFilePrefix A prefix for all map files or null if maps are not to be saved.
+     * */
+    fun clearCreators(mapFilePrefix: String?) = scope.launch(Dispatchers.Default) {
+        if(creating) return@launch
+        val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+        for(i in creators.indices) {
+            val file = mapFilePrefix?.let { prefix ->
+                File(dir, "${prefix}_map$i")
+            }
+            creators[i].destroy(file)
+        }
+        creators.clear()
+        freeAllBuffers()
+        System.gc()
+    }
+
     // ---------------------------------------------------------------------------------------------
     // Map creation
     // ---------------------------------------------------------------------------------------------
 
     /** Start creating maps from a set of ROIs. */
     private fun start(): Warnings {
-        // No reason to start if there are no mapping ROIs.
+        // Preliminary checks.
         val warning = Warnings("Start Recording")
-        if(rois.isEmpty()) {
-            val msg = "There are no areas to map (dashed rectangles).\n" +
-                      "Make a mapping area by double tapping a selection."
-            warning.add(msg, true)
-            return warning
-        }
+        if(creators.isNotEmpty()) warning.add(message =
+            "Maps are still being saved.\n" +
+            "Please wait.",
+            causesStop = true
+        )
+        if(rois.isEmpty()) warning.add(message =
+            "There are no areas to map (dashed rectangles).\n" +
+            "Make a mapping area by double tapping a selection.",
+            causesStop = true
+        )
+        if(warning.shouldStop()) return warning
 
         // Create map creators.
         // todo - MappingRois should include the MapCreator class to which they are used for.
@@ -321,12 +351,11 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         creators = rois.mapNotNull { roi ->
             getFreeBuffer()?.let { buff -> BufferedExampleMap(roi.inNewFrame(imageFrame), buff) }
         }.toMutableList()
-        if(creators.size < rois.size) {
-            val nNotCreated = rois.size - creators.size
-            val msg = "There are not enough buffers to process all maps.\n" +
-                      "The last $nNotCreated maps will not be created."
-            warning.add(msg, false)
-        }
+        if(creators.size < rois.size) warning.add(message =
+            "There are not enough buffers to process all maps.\n" +
+            "The last ${rois.size - creators.size} maps will not be created.",
+            causesStop = false
+        )
 
         // State
         setPreview(autosOn = false)
@@ -337,21 +366,11 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     /** Stop creating maps. */
     private fun stop(): Warnings {
-        val warnings = Warnings("Stop Recording")
-
-        // Save and clear maps.
-        for(creator in creators) creator.saveAndClose()
-        creators.clear()
-
-        // Free buffers.
-        freeAllBuffers()
-        System.gc()
-
         // State
-        setPreview(autosOn = true)
         creating = false
         startTime = null
-        return warnings
+        setPreview(autosOn = true)
+        return Warnings("Stop Recording")
     }
 
     /** Get the frame of the image analyser. */

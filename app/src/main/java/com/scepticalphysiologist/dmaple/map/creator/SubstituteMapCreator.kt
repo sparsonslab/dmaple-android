@@ -124,7 +124,7 @@ class SubstituteMapCreator(roi: MappingRoi): MapCreator(roi) {
     // Map save.
     // ---------------------------------------------------------------------------------------------
 
-    override fun saveAndClose(file: File?) {
+    override fun destroy(file: File?) {
 
         // save
         mapBuffer.writeRemainingSamples()

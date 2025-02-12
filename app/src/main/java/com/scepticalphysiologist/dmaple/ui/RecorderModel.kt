@@ -6,13 +6,15 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
+import android.text.InputType
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
+import com.scepticalphysiologist.dmaple.etc.msg.InputRequired
+import com.scepticalphysiologist.dmaple.etc.msg.Message
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.MappingRoi
-import com.scepticalphysiologist.dmaple.etc.Warnings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -25,6 +27,7 @@ class RecorderModel(application: Application) :
     AndroidViewModel(application),
     ServiceConnection
 {
+
     // Mapping service
     // ---------------
     /** The foreground service to record maps ans save state. */
@@ -34,10 +37,12 @@ class RecorderModel(application: Application) :
 
     // State
     // -----
+
+    private var state = 0
     /** The index (in [mapper]'s list of map creators) of the current map to be shown. */
     private var currentMapIndex: Int = 0
     /** Indicate warning messages that should be shown, e.g. when starting mapping. */
-    val warnings = MutableLiveData<Warnings>()
+    val messages = MutableLiveData<Message?>(null)
     /** Indicate the elapsed time (seconds) of mapping. */
     val timer = MutableLiveData<Long>(0L)
     /** A coroutine scope for running the timer. */
@@ -70,6 +75,34 @@ class RecorderModel(application: Application) :
     // Public wrapper to mapping service.
     // ---------------------------------------------------------------------------------------------
 
+    fun getState(): Int { return state }
+
+    fun updateState(){
+        if(mapper == null) return
+
+        // Recording (1)
+        if((state == 1) || mapper!!.isCreatingMaps()) {
+            messages.postValue(mapper!!.startStop())
+            if(!mapper!!.isCreatingMaps()) {
+                stopTimer()
+                state = 2
+            }
+        }
+        // ROI selection (0)
+        else if(state == 0) {
+            messages.postValue(mapper!!.startStop())
+            if(mapper!!.isCreatingMaps()) {
+                startTimer()
+                state = 1
+            }
+        }
+        // Post-recording (2)
+        else if (state == 2) {
+            askToSaveMaps()
+            state = 0
+        }
+    }
+
     /** Set the ROIs used for mapping. */
     fun setMappingRois(viewRois: List<MappingRoi>) { mapper?.setRois(viewRois) }
 
@@ -77,19 +110,6 @@ class RecorderModel(application: Application) :
     fun getMappingRois(): List<MappingRoi> { return mapper?.getRois() ?: listOf() }
 
     fun setExposure(fraction: Float) { mapper?.setExposure(fraction) }
-
-    /** Switch the mapping state (start or stop) and return if it is then mapping. */
-    fun startStop(): Boolean {
-        return mapper?.let {
-            warnings.postValue(it.startStop())
-            val isCreating = it.isCreatingMaps()
-            if(isCreating) startTimer() else stopTimer()
-            isCreating
-        } ?: false
-    }
-
-    /** Is the service mapping? */
-    fun isMapping(): Boolean { return mapper?.isCreatingMaps() ?: false }
 
     /** Set the current map to be shown in the [MapView]. */
     fun setCurrentlyShownMap(i: Int) {
@@ -119,6 +139,30 @@ class RecorderModel(application: Application) :
             mapper?.let {timer.postValue(it.elapsedSeconds())}
             delay(1000)
         }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Save maps
+    // ---------------------------------------------------------------------------------------------
+
+    private fun askToSaveMaps() {
+        val dialog = InputRequired(
+            title = "Save Maps",
+            message = "Set a prefix for all saved maps.",
+            initialValue = "",
+            inputType = InputType.TYPE_CLASS_TEXT
+        )
+        dialog.positive = Pair("Save", this::saveMaps)
+        dialog.negative = Pair("Do not save", this::doNotSaveMaps)
+        messages.postValue(dialog)
+    }
+
+    private fun saveMaps(mapFilePrefix: String) {
+        mapper?.clearCreators(mapFilePrefix)
+    }
+
+    private fun doNotSaveMaps(input: String) {
+        mapper?.clearCreators(null)
     }
 
 }

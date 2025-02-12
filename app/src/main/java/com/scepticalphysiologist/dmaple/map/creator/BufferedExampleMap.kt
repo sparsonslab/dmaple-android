@@ -2,15 +2,10 @@ package com.scepticalphysiologist.dmaple.map.creator
 
 import android.graphics.Bitmap
 import android.graphics.Rect
-import android.os.Build
-import android.os.Environment
 import android.util.Size
-import androidx.annotation.RequiresApi
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.io.ShortView
 import com.scepticalphysiologist.dmaple.map.MappingRoi
-import mil.nga.tiff.TIFFImage
-import mil.nga.tiff.TiffWriter
 import java.io.File
 import java.lang.IllegalArgumentException
 import java.lang.IndexOutOfBoundsException
@@ -19,7 +14,7 @@ import kotlin.math.abs
 
 class BufferedExampleMap(
     roi: MappingRoi,
-    private val mapBuffer: MappedByteBuffer
+    mapBuffer: MappedByteBuffer
 ): MapCreator(roi)  {
 
 
@@ -69,7 +64,6 @@ class BufferedExampleMap(
         if(reachedEnd) return
         try {
             (pE.first until pE.second).map {
-                //mapBuffer.putInt(if(isVertical) bitmap.getPixel(pL, it) else bitmap.getPixel(it, pL))
                 mapView.addNTSCGrey(if(isVertical) bitmap.getPixel(pL, it) else bitmap.getPixel(it, pL))
             }
             nt += 1
@@ -98,7 +92,6 @@ class BufferedExampleMap(
             var k = 0
             for(j in area.top until area.bottom step stepY)
                 for(i in area.left until area.right step stepX) {
-                    //backing[k] = mapBuffer.getInt(4 * (j * ns + i))
                     backing[k] = mapView.getColorInt(i, j)
                     k += 1
                 }
@@ -116,7 +109,9 @@ class BufferedExampleMap(
     // ---------------------------------------------------------------------------------------------
 
 
-    override fun saveAndClose(file: File?) {
+    override fun destroy(file: File?) {
+
+        println("DESTROYING MAP: saving to = ${file?.absolutePath}")
 
         // save
         // todo = put in coroutine so won't take for ever. (Need to pass new buffer view
@@ -130,7 +125,6 @@ class BufferedExampleMap(
         img.add(mapView.tiffDirectory(nt))
         TiffWriter.writeTiff(path, img)
         */
-
 
     }
 }
