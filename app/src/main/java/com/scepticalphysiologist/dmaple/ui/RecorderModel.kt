@@ -101,7 +101,6 @@ class RecorderModel(application: Application) :
             askToSaveMaps()
             state = 0
         }
-
     }
 
     /** Set the ROIs used for mapping. */
