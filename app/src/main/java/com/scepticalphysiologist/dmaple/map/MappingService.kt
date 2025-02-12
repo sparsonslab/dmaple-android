@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.hardware.camera2.CaptureRequest
 import android.os.Binder
+import android.os.Environment
 import android.os.IBinder
 import android.view.Display
 import android.view.WindowManager
@@ -28,15 +29,13 @@ import androidx.lifecycle.LifecycleService
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.etc.Frame
 import com.scepticalphysiologist.dmaple.etc.surfaceRotationDegrees
-import com.scepticalphysiologist.dmaple.etc.Warnings
+import com.scepticalphysiologist.dmaple.etc.msg.Warnings
 import com.scepticalphysiologist.dmaple.map.creator.BufferedExampleMap
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.IOException
 import java.io.RandomAccessFile
@@ -308,6 +307,24 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         } ?: 0
     }
 
+    /** After stopping recording, save maps, clear map creators and free-up resources.
+     *
+     * @param mapFilePrefix A prefix for all map files or null if maps are not to be saved.
+     * */
+    fun clearCreators(mapFilePrefix: String?) = scope.launch(Dispatchers.Default) {
+        if(creating) return@launch
+        val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+        for(i in creators.indices) {
+            val file = mapFilePrefix?.let { prefix ->
+                File(dir, "${prefix}_map$i")
+            }
+            creators[i].destroy(file)
+        }
+        creators.clear()
+        freeAllBuffers()
+        System.gc()
+    }
+
     // ---------------------------------------------------------------------------------------------
     // Map creation
     // ---------------------------------------------------------------------------------------------
@@ -353,17 +370,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         creating = false
         startTime = null
         setPreview(autosOn = true)
-        // Save and clear maps in background.
-        saveAndClear()
         return Warnings("Stop Recording")
-    }
-
-    /** Save all maps, clear their creators and free buffers. */
-    private fun saveAndClear() = scope.launch(Dispatchers.Default) {
-        for(creator in creators) creator.saveAndClose()
-        creators.clear()
-        freeAllBuffers()
-        System.gc()
     }
 
     /** Get the frame of the image analyser. */

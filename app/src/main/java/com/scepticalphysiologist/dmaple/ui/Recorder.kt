@@ -58,13 +58,12 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
 
         // Start/stop recording.
         binding.recordButton.setOnClickListener {
-            model.startStop()
-            binding.maps.updateCreator(model.creatorOfCurrentlyShownMap())
+            model.updateState()
             setUIState()
         }
 
         // Show warnings upon start/stop.
-        model.warnings.observe(viewLifecycleOwner) { it.show(binding.root.context) }
+        model.messages.observe(viewLifecycleOwner) { it.show(binding.root.context) }
 
         // When recording, allow the camera view to be resized by dragging near its
         // far (bottom right) corner.
@@ -78,10 +77,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         binding.cameraAndRoi.roiHasBeenSelected().observe(viewLifecycleOwner) { selectedRoiIndex ->
             // todo - use IDs for ROIs rather than index? Tried this but problems can come
             //     with copying and transforming
-            if(model.isMapping()){
-                model.setCurrentlyShownMap(selectedRoiIndex)
-                binding.maps.updateCreator(model.creatorOfCurrentlyShownMap())
-            }
+            roiSelected(selectedRoiIndex)
         }
 
         // Update the timer shown during recording.
@@ -92,31 +88,47 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
 
     /** Set the UI appearance depending on whether maps are being created. */
     private fun setUIState() {
-        val isRecording = model.isMapping()
 
-        // Button icon
-        val icon = if(isRecording) R.drawable.stop_5f6368 else R.drawable.play_arrow
-        binding.recordButton.setImageResource(icon)
+        when(model.getState()) {
+            0 -> {
+                binding.recordButton.setImageResource(R.drawable.play_arrow)
+                binding.maps.reset()
+                binding.cameraAndRoi.allowEditing(true)
+                binding.cameraAndRoi.fullSize()
+                binding.cameraTimer.text = ""
+                binding.maps.stop()
+            }
+            1 -> {
+                binding.recordButton.setImageResource(R.drawable.stop_5f6368)
+                binding.cameraAndRoi.allowEditing(false)
+                val extent = Point.ofViewExtent(binding.root) * 0.5f
+                binding.cameraAndRoi.resize(extent.x.toInt(), extent.y.toInt())
+                binding.maps.updateCreator(model.creatorOfCurrentlyShownMap())
+                binding.maps.start()
+            }
+            2 -> {
+                binding.recordButton.setImageResource(R.drawable.eject_arrow)
+                binding.cameraAndRoi.allowEditing(false)
+            }
+        }
 
-        // Map view.
-        if(!isRecording) binding.maps.reset()
+    }
 
-        // Set camera view.
-        binding.cameraAndRoi.allowEditing(!isRecording)
-        if(isRecording) {
-            val extent = Point.ofViewExtent(binding.root) * 0.5f
-            binding.cameraAndRoi.resize(extent.x.toInt(), extent.y.toInt())
-            binding.maps.start()
-        } else {
-            binding.cameraAndRoi.fullSize()
-            binding.cameraTimer.text = ""
-            binding.maps.stop()
+    private fun stateShowsMap(): Boolean{
+        val state = model.getState()
+        return (state == 1) || (state == 2)
+    }
+
+    private fun roiSelected(roiIndex: Int) {
+        if(stateShowsMap()){
+            model.setCurrentlyShownMap(roiIndex)
+            binding.maps.updateCreator(model.creatorOfCurrentlyShownMap())
         }
     }
 
     /** While recording, resize the camera view by dragging its lower-right corner. */
     private fun dragCameraView(event: MotionEvent): Boolean {
-        if(model.isMapping() && (event.action == MotionEvent.ACTION_MOVE)) {
+        if(stateShowsMap() && (event.action == MotionEvent.ACTION_MOVE)) {
             val d = (Point.ofViewExtent(binding.cameraAndRoi) - Point.ofMotionEvent(event)).l2()
             if (d < 100) {
                 binding.cameraAndRoi.resize(event.x.toInt(), event.y.toInt())

@@ -109,7 +109,9 @@ class BufferedExampleMap(
     // ---------------------------------------------------------------------------------------------
 
 
-    override fun saveAndClose(file: File?) {
+    override fun destroy(file: File?) {
+
+        println("DESTROYING MAP: saving to = ${file?.absolutePath}")
 
         // save
         // todo = put in coroutine so won't take for ever. (Need to pass new buffer view

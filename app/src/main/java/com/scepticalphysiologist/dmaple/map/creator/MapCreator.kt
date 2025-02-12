@@ -28,8 +28,8 @@ abstract class MapCreator(val roi: MappingRoi) {
      * */
     abstract fun getMapBitmap(crop: Rect?, backing: IntArray, stepX: Int = 1, stepY: Int = 1): Bitmap?
 
-    /** Save and close the map. */
-    abstract fun saveAndClose(file: File? = null)
+    /** Destroy the creator (freeing any resources) and if a file is provided, save the map. */
+    abstract fun destroy(file: File? = null)
 
 }
 
