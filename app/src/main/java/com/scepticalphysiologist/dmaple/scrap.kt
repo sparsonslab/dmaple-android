@@ -9,8 +9,7 @@ import androidx.core.graphics.alpha
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
-import com.scepticalphysiologist.dmaple.io.RGBView
-import com.scepticalphysiologist.dmaple.io.ShortView
+import com.scepticalphysiologist.dmaple.map.creator.RGBMap
 import mil.nga.tiff.TIFFImage
 import mil.nga.tiff.TiffWriter
 import java.io.File
@@ -26,7 +25,7 @@ fun main() {
 
     val nx = 100
     val ny = 100
-    val buffer = RGBView(ByteBuffer.allocate(nx * ny * 3), nx)
+    val buffer = RGBMap(ByteBuffer.allocate(nx * ny * 3), nx)
     for(i in 20..60)
         for(j in 40..60)
             buffer.set(i, j, Color.RED)

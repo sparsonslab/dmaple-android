@@ -4,7 +4,6 @@ import android.graphics.Bitmap
 import android.graphics.Rect
 import android.util.Size
 import com.scepticalphysiologist.dmaple.etc.Point
-import com.scepticalphysiologist.dmaple.io.ShortView
 import com.scepticalphysiologist.dmaple.map.MappingRoi
 import java.io.File
 import java.lang.IllegalArgumentException
@@ -32,7 +31,7 @@ class BufferedExampleMap(
 
     private var reachedEnd = false
 
-    private var mapView: ShortView
+    private var mapView: ShortMap
 
     // ---------------------------------------------------------------------------------------------
     // Creation and memory allocation
@@ -48,7 +47,7 @@ class BufferedExampleMap(
             pL = edge.first.y.toInt()
         }
         ns = abs(pE.first - pE.second)
-        mapView = ShortView(mapBuffer, ns)
+        mapView = ShortMap(mapBuffer, ns)
     }
 
 

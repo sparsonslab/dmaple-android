@@ -169,6 +169,10 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     private var scope: CoroutineScope = MainScope()
 
+    // ---------------------------------------------------------------------------------------------
+    // Initiation
+    // ---------------------------------------------------------------------------------------------
+
     /** Set-up the camera. */
     override fun onCreate() {
         super.onCreate()
@@ -179,8 +183,9 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         setAnalyser()
     }
 
-    /** Set the preview.
-     * @param autosOn Auto-focus, -exposure and -white-balance are on (this also applies to the image analyser).
+    /** Set the preview use case of CameraX.
+     * @param autosOn Auto-focus, -exposure and -white-balance are on
+     * (this also applies to the image analyser).
      * */
     private fun setPreview(autosOn: Boolean) {
         unBindUse(preview)
@@ -198,6 +203,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         }
     }
 
+    /** Set the image analyser use case of CameraX. */
     private fun setAnalyser() {
         unBindUse(analyser)
         analyser = ImageAnalysis.Builder().also { builder ->
@@ -210,16 +216,16 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         }
     }
 
-    private fun unBindUse(use: UseCase?) {
-        cameraProvider.unbind(use)
-    }
-
+    /** Bind a CameraX use case. */
     private fun bindUse(use: UseCase?) {
         camera = cameraProvider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, use)
     }
 
+    /** Unbind a CameraX use case. */
+    private fun unBindUse(use: UseCase?) { cameraProvider.unbind(use) }
+
     // ---------------------------------------------------------------------------------------------
-    // Binding access
+    // Binding access to the service
     // ---------------------------------------------------------------------------------------------
 
     private val binder = MappingBinder()
@@ -307,7 +313,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         } ?: 0
     }
 
-    /** After stopping recording, save maps, clear map creators and free-up resources.
+    /** If maps are not being created, save the maps, clear the creators and free-up resources.
      *
      * @param mapFilePrefix A prefix for all map files or null if maps are not to be saved.
      * */

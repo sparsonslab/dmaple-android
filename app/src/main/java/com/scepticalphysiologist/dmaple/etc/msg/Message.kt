@@ -7,7 +7,13 @@ import androidx.appcompat.app.AlertDialog
 
 /** A message dialog with button callbacks.
  *
+ * If both the [negative] and [positive] attributes are null, a default 'Okay' button
+ * is shown by the dialog which just dismisses the dialog.
+ *
  * @property title The title of the dialog.
+ * @property message The message shown by the dialog.
+ * @property negative A label and an optional callback, for the dialog's negative button.
+ * @property positive A label and an optional callback, for the dialog's positive button.
  */
 abstract class Message(
     protected val title: String = "Message",
@@ -31,7 +37,7 @@ abstract class Message(
     /** Show the dialog. */
     open fun show(context: Context) { createDialog(context).show() }
 
-    /** Respond to button clicks. */
+    /** Respond to button clicks by invoking the callbacks. */
     override fun onClick(dialog: DialogInterface?, button: Int) {
         when(button) {
             DialogInterface.BUTTON_NEGATIVE -> negative?.second?.invoke(clickString())

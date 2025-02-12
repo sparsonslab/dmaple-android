@@ -12,6 +12,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import com.scepticalphysiologist.dmaple.etc.msg.InputRequired
 import com.scepticalphysiologist.dmaple.etc.msg.Message
+import com.scepticalphysiologist.dmaple.io.randomAlphaString
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.MappingRoi
@@ -21,6 +22,9 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 
 class RecorderModel(application: Application) :
@@ -37,7 +41,11 @@ class RecorderModel(application: Application) :
 
     // State
     // -----
-
+    /** Model state.
+     * 0 = Create mapping ROIs.
+     * 1 = Record maps.
+     * 2 = View maps.
+     */
     private var state = 0
     /** The index (in [mapper]'s list of map creators) of the current map to be shown. */
     private var currentMapIndex: Int = 0
@@ -62,6 +70,7 @@ class RecorderModel(application: Application) :
     /** Once the service is connected, get an instance of it and notify of the connection. */
     override fun onServiceConnected(p0: ComponentName?, binder: IBinder?) {
         val service = (binder as MappingService.MappingBinder).getService()
+        if(service.isCreatingMaps()) state = 1
         mapper = service
         mappingServiceConnected.postValue(true)
     }
@@ -75,11 +84,12 @@ class RecorderModel(application: Application) :
     // Public wrapper to mapping service.
     // ---------------------------------------------------------------------------------------------
 
+    /** Get the model's [state]. */
     fun getState(): Int { return state }
 
+    /** Update the model [state] when (e.g.) a button is pressed. */
     fun updateState(){
         if(mapper == null) return
-
         // Recording (1)
         if((state == 1) || mapper!!.isCreatingMaps()) {
             messages.postValue(mapper!!.startStop())
@@ -109,6 +119,7 @@ class RecorderModel(application: Application) :
     /** Get the ROIs used for mapping. */
     fun getMappingRois(): List<MappingRoi> { return mapper?.getRois() ?: listOf() }
 
+    /** Set the exposure level. */
     fun setExposure(fraction: Float) { mapper?.setExposure(fraction) }
 
     /** Set the current map to be shown in the [MapView]. */
@@ -145,10 +156,11 @@ class RecorderModel(application: Application) :
     // Save maps
     // ---------------------------------------------------------------------------------------------
 
+    /** Show a dialog asking if the user wants to save the maps. */
     private fun askToSaveMaps() {
         val dialog = InputRequired(
-            title = "Save Maps",
-            message = "Set a prefix for all saved maps.",
+            title = "Save Maps?",
+            message = "If you want to save the maps\nyou can set a common file identifier.",
             initialValue = "",
             inputType = InputType.TYPE_CLASS_TEXT
         )
@@ -157,12 +169,14 @@ class RecorderModel(application: Application) :
         messages.postValue(dialog)
     }
 
-    private fun saveMaps(mapFilePrefix: String) {
-        mapper?.clearCreators(mapFilePrefix)
+    /** Save all maps. */
+    private fun saveMaps(mapId: String) {
+        val id = mapId.ifEmpty { randomAlphaString(20) }
+        val dt = LocalDateTime.now().format(DateTimeFormatter.ofPattern("YYMMdd_HHmmss"))
+        mapper?.clearCreators(mapFilePrefix = "${dt}_$id")
     }
 
-    private fun doNotSaveMaps(input: String) {
-        mapper?.clearCreators(null)
-    }
+    /** Do not save maps, but still clear-up. */
+    private fun doNotSaveMaps(input: String) { mapper?.clearCreators(mapFilePrefix = null) }
 
 }

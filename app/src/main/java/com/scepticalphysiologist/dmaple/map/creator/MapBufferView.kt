@@ -1,4 +1,4 @@
-package com.scepticalphysiologist.dmaple.io
+package com.scepticalphysiologist.dmaple.map.creator
 
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
@@ -11,29 +11,39 @@ import java.lang.IndexOutOfBoundsException
 import java.lang.Math.floorDiv
 import java.nio.ByteBuffer
 
-
-abstract class BufferView<T : Number>(
+/** A wrapper ("view") around a byte buffer that holds a map's data.
+ *
+ * @param T The type of the map's pixels.
+ * @property buffer The byte buffer that holds the map's data.
+ * @property nx The number of spatial pixels in the map.
+ */
+abstract class MapBufferView<T : Number>(
     protected val buffer: ByteBuffer,
     protected val nx: Int
 ) {
+    /** The number of color channels per pixel. */
+    protected abstract val nColorChannels: Int
 
-    protected abstract val samplesPerPixel: Int
+    /** The number of bits per color channel. */
+    protected abstract val bitsPerChannel: Int
 
-    protected abstract val bitsPerSample: Int
-
+    /** The "field type" for the TIFF image. */
     protected abstract val fieldType: FieldType
 
+    /** Convert the map into a TIFF image "directory".
+     * @param y The yth time pixel up to which to use. Null to use the current position.
+     * */
     fun tiffDirectory(y: Int? = null): FileDirectory {
-
-        val ny = y ?: floorDiv(buffer.position(), nx)
+        val currentTime = floorDiv(buffer.position(), nx)
+        val ny = minOf(y ?: currentTime, currentTime)
 
         val dir = FileDirectory()
         dir.setImageWidth(nx)
         dir.setImageHeight(ny)
-        dir.samplesPerPixel = samplesPerPixel
-        dir.setBitsPerSample(bitsPerSample)
+        dir.samplesPerPixel = nColorChannels
+        dir.setBitsPerSample(bitsPerChannel)
 
-        val raster = Rasters(nx, ny, samplesPerPixel, fieldType)
+        val raster = Rasters(nx, ny, nColorChannels, fieldType)
         dir.compression = TiffConstants.COMPRESSION_NO
         dir.planarConfiguration = TiffConstants.PLANAR_CONFIGURATION_CHUNKY
         dir.setRowsPerStrip(raster.calculateRowsPerStrip(dir.planarConfiguration))
@@ -49,24 +59,28 @@ abstract class BufferView<T : Number>(
         return dir
     }
 
+    /** Set the (i, j) pixel of the image raster. */
     abstract fun setPixel(i: Int, j: Int, raster: Rasters)
 
+    /** Get the value of the (i, j) pixel. */
     abstract fun get(i: Int, j: Int): T
 
+    /** Set the value of the (i, j) pixel. */
     abstract fun set(i: Int, j: Int, value: T)
 
+    /** Add a value to the map. */
     abstract fun add(value: T)
 
+    /** Get a color integer to show the (i, j) pixel in a bitmap. */
     abstract fun getColorInt(i: Int, j: Int): Int
-
 }
 
+/** A map consisting of RGB color values. */
+class RGBMap(buffer: ByteBuffer, nx: Int): MapBufferView<Int>(buffer, nx) {
 
-class RGBView(buffer: ByteBuffer, nx: Int): BufferView<Int>(buffer, nx) {
+    override val nColorChannels = 3
 
-    override val samplesPerPixel = 3
-
-    override val bitsPerSample = 8
+    override val bitsPerChannel = 8
 
     override val fieldType = FieldType.BYTE
 
@@ -103,12 +117,12 @@ class RGBView(buffer: ByteBuffer, nx: Int): BufferView<Int>(buffer, nx) {
 
 }
 
+/** A map consisting of short integers. */
+class ShortMap(buffer: ByteBuffer, nx: Int): MapBufferView<Short>(buffer, nx) {
 
-class ShortView(buffer: ByteBuffer, nx: Int): BufferView<Short>(buffer, nx) {
+    override val nColorChannels = 1
 
-    override val samplesPerPixel = 1
-
-    override val bitsPerSample = 16
+    override val bitsPerChannel = 16
 
     override val fieldType = FieldType.SHORT
 
@@ -149,5 +163,3 @@ class ShortView(buffer: ByteBuffer, nx: Int): BufferView<Short>(buffer, nx) {
     }
 
 }
-
-
