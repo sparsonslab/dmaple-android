@@ -1,9 +1,7 @@
 package com.scepticalphysiologist.dmaple.etc.msg
 
 import android.content.Context
-import android.content.DialogInterface
 import androidx.appcompat.app.AlertDialog
-import com.scepticalphysiologist.dmaple.R
 
 /** Collection of warnings and whether they should stop some process.
  *

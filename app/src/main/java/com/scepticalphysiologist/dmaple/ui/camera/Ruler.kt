@@ -1,13 +1,9 @@
 package com.scepticalphysiologist.dmaple.ui.camera
 
 import android.content.Context
-import android.content.DialogInterface
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.text.InputType
-import android.widget.EditText
-import androidx.appcompat.app.AlertDialog
-import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.etc.Frame
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.etc.msg.InputRequired
