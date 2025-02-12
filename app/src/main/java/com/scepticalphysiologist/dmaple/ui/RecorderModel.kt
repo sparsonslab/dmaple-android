@@ -42,7 +42,7 @@ class RecorderModel(application: Application) :
     /** The index (in [mapper]'s list of map creators) of the current map to be shown. */
     private var currentMapIndex: Int = 0
     /** Indicate warning messages that should be shown, e.g. when starting mapping. */
-    val messages = MutableLiveData<Message>()
+    val messages = MutableLiveData<Message?>(null)
     /** Indicate the elapsed time (seconds) of mapping. */
     val timer = MutableLiveData<Long>(0L)
     /** A coroutine scope for running the timer. */
@@ -111,19 +111,6 @@ class RecorderModel(application: Application) :
     fun getMappingRois(): List<MappingRoi> { return mapper?.getRois() ?: listOf() }
 
     fun setExposure(fraction: Float) { mapper?.setExposure(fraction) }
-
-    /** Switch the mapping state (start or stop) and return if it is then mapping. */
-    fun startStop(): Boolean {
-        return mapper?.let {
-            messages.postValue(it.startStop())
-            val isCreating = it.isCreatingMaps()
-            if(isCreating) startTimer() else stopTimer()
-            isCreating
-        } ?: false
-    }
-
-    /** Is the service mapping? */
-    fun isMapping(): Boolean { return mapper?.isCreatingMaps() ?: false }
 
     /** Set the current map to be shown in the [MapView]. */
     fun setCurrentlyShownMap(i: Int) {

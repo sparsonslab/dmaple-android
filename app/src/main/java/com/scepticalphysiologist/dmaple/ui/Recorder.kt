@@ -63,7 +63,11 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         }
 
         // Show warnings upon start/stop.
-        model.messages.observe(viewLifecycleOwner) { it.show(binding.root.context) }
+        var ignore = true // Prevent the last messages being shown at start-up.
+        model.messages.observe(viewLifecycleOwner) {
+            if(!ignore) it?.show(binding.root.context)
+            ignore = false
+        }
 
         // When recording, allow the camera view to be resized by dragging near its
         // far (bottom right) corner.
@@ -88,7 +92,6 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
 
     /** Set the UI appearance depending on whether maps are being created. */
     private fun setUIState() {
-
         when(model.getState()) {
             0 -> {
                 binding.recordButton.setImageResource(R.drawable.play_arrow)
@@ -111,7 +114,6 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
                 binding.cameraAndRoi.allowEditing(false)
             }
         }
-
     }
 
     private fun stateShowsMap(): Boolean{
