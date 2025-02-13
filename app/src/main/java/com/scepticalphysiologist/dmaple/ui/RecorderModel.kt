@@ -1,18 +1,13 @@
 package com.scepticalphysiologist.dmaple.ui
 
 import android.app.Application
-import android.content.ComponentName
-import android.content.Context
-import android.content.Intent
-import android.content.ServiceConnection
-import android.os.IBinder
 import android.text.InputType
-import androidx.camera.view.PreviewView
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
+import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.etc.msg.InputRequired
 import com.scepticalphysiologist.dmaple.etc.msg.Message
-import com.scepticalphysiologist.dmaple.io.randomAlphaString
+import com.scepticalphysiologist.dmaple.etc.randomAlphaString
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.MappingRoi
@@ -22,22 +17,16 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.time.Instant
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 
-class RecorderModel(application: Application) :
-    AndroidViewModel(application),
-    ServiceConnection
-{
+class RecorderModel(application: Application): AndroidViewModel(application) {
 
     // Mapping service
     // ---------------
-    /** The foreground service to record maps ans save state. */
-    private var mapper: MappingService? = null
-    /** Indicate that the mapping service has been connected to. */
-    val mappingServiceConnected = MutableLiveData<Boolean>(false)
+    private val mapper: MappingService?
+        get() = MainActivity.mapService
 
     // State
     // -----
@@ -46,7 +35,7 @@ class RecorderModel(application: Application) :
      * 1 = Record maps.
      * 2 = View maps.
      */
-    private var state = 0
+    private var state = if(mapper?.isCreatingMaps() == true) 1 else 0
     /** The index (in [mapper]'s list of map creators) of the current map to be shown. */
     private var currentMapIndex: Int = 0
     /** Indicate warning messages that should be shown, e.g. when starting mapping. */
@@ -55,30 +44,6 @@ class RecorderModel(application: Application) :
     val timer = MutableLiveData<Long>(0L)
     /** A coroutine scope for running the timer. */
     private var scope: CoroutineScope? = null
-
-    // ---------------------------------------------------------------------------------------------
-    // Mapping service initiation and connection.
-    // ---------------------------------------------------------------------------------------------
-
-    /** Connect ("bind") the mapping service so that it can be called. */
-    fun connectMappingService(context: Context) {
-        val intent = Intent(context, MappingService::class.java)
-        context.startForegroundService(intent)
-        context.bindService(intent, this, Context.BIND_AUTO_CREATE)
-    }
-
-    /** Once the service is connected, get an instance of it and notify of the connection. */
-    override fun onServiceConnected(p0: ComponentName?, binder: IBinder?) {
-        val service = (binder as MappingService.MappingBinder).getService()
-        if(service.isCreatingMaps()) state = 1
-        mapper = service
-        mappingServiceConnected.postValue(true)
-    }
-
-    override fun onServiceDisconnected(p0: ComponentName?) { }
-
-    /** Set the view surface onto which the camera feed will be shown. */
-    fun setCameraPreviewSurface(preview: PreviewView) { mapper?.setSurface(preview.surfaceProvider) }
 
     // ---------------------------------------------------------------------------------------------
     // Public wrapper to mapping service.
