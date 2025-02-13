@@ -7,7 +7,7 @@ import androidx.lifecycle.MutableLiveData
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.etc.msg.InputRequired
 import com.scepticalphysiologist.dmaple.etc.msg.Message
-import com.scepticalphysiologist.dmaple.io.randomAlphaString
+import com.scepticalphysiologist.dmaple.etc.randomAlphaString
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.MappingRoi
