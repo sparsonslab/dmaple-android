@@ -1,6 +1,5 @@
 package com.scepticalphysiologist.dmaple
 
-import android.app.ActivityManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -36,7 +35,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         private var surface: SurfaceProvider? = null
 
         /** Set the view surface onto which the camera feed will be shown. */
-        fun setCameraPreviewSurface(preview: PreviewView) {
+        fun setMappingServiceCameraPreview(preview: PreviewView) {
             surface = preview.surfaceProvider
             mapService?.setSurface(surface!!)
         }

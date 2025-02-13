@@ -2,13 +2,10 @@ package com.scepticalphysiologist.dmaple.ui
 
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
-import android.os.Bundle
 import android.text.format.DateUtils
 import android.view.MotionEvent
-import android.view.View
 import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.lifecycle.ViewModelProvider
-import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.databinding.RecorderBinding
 import com.scepticalphysiologist.dmaple.etc.PermissionSets
@@ -34,14 +31,13 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         // Keep the screen on, so that the camera stays on.
         //binding.root.keepScreenOn = true
 
-        // Once the view is inflated.
+        // Once the view is inflated, set the mapping service's camera surface.
         binding.root.post {
-            MainActivity.setCameraPreviewSurface(binding.cameraAndRoi.getCameraPreview())
+            model.setCameraPreview(binding.cameraAndRoi.getCameraPreview())
             binding.cameraAndRoi.setExposureSlider(0.5f)
             binding.cameraAndRoi.setSavedRois(model.getMappingRois())
             setUIState()
         }
-
 
         // Whenever the saved ROIs have changed in the view, transfer these to the mapping
         // service (via the view model) so they are persisted.

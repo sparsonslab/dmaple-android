@@ -2,6 +2,7 @@ package com.scepticalphysiologist.dmaple.ui
 
 import android.app.Application
 import android.text.InputType
+import androidx.camera.view.PreviewView
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import com.scepticalphysiologist.dmaple.MainActivity
@@ -23,13 +24,10 @@ import java.time.format.DateTimeFormatter
 
 class RecorderModel(application: Application): AndroidViewModel(application) {
 
-    // Mapping service
-    // ---------------
+    /** A reference to the mapping service used to record maps and save state in the background. */
     private val mapper: MappingService?
         get() = MainActivity.mapService
 
-    // State
-    // -----
     /** Model state.
      * 0 = Create mapping ROIs.
      * 1 = Record maps.
@@ -46,7 +44,7 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
     private var scope: CoroutineScope? = null
 
     // ---------------------------------------------------------------------------------------------
-    // Public wrapper to mapping service.
+    // Finite state machine
     // ---------------------------------------------------------------------------------------------
 
     /** Get the model's [state]. */
@@ -76,6 +74,15 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
             askToSaveMaps()
             state = 0
         }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Public wrapper to the mapping service.
+    // ---------------------------------------------------------------------------------------------
+
+    /** Provide the camera preview (surface provider) for the mapping service. */
+    fun setCameraPreview(preview: PreviewView) {
+        MainActivity.setMappingServiceCameraPreview(preview)
     }
 
     /** Set the ROIs used for mapping. */
