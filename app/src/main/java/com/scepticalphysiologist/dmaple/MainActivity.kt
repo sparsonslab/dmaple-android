@@ -30,6 +30,15 @@ class MainActivity : AppCompatActivity() {
             return 1_000_000 * mng.memoryClass
         }
 
+
+        /** The foreground service to record maps and save state.
+         *
+         * This service is started ("connected") by the [Recorder] fragment's view model
+         * ([RecordModel]) but must live here to prevent context leak.
+         * */
+        var mapService: MappingService? = null
+
+
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

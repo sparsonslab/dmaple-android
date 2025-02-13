@@ -10,6 +10,7 @@ import android.text.InputType
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
+import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.etc.msg.InputRequired
 import com.scepticalphysiologist.dmaple.etc.msg.Message
 import com.scepticalphysiologist.dmaple.io.randomAlphaString
@@ -33,8 +34,9 @@ class RecorderModel(application: Application) :
 
     // Mapping service
     // ---------------
-    /** The foreground service to record maps ans save state. */
-    private var mapper: MappingService? = null
+    private val mapper: MappingService?
+        get() = MainActivity.mapService
+
     /** Indicate that the mapping service has been connected to. */
     val mappingServiceConnected = MutableLiveData<Boolean>(false)
 
@@ -69,9 +71,9 @@ class RecorderModel(application: Application) :
     /** Once the service is connected, get an instance of it and notify of the connection. */
     override fun onServiceConnected(p0: ComponentName?, binder: IBinder?) {
         val service = (binder as MappingService.MappingBinder).getService()
-        if(service.isCreatingMaps()) state = 1
-        mapper = service
+        MainActivity.mapService = service
         mappingServiceConnected.postValue(true)
+        if(service.isCreatingMaps()) state = 1
     }
 
     override fun onServiceDisconnected(p0: ComponentName?) { }
