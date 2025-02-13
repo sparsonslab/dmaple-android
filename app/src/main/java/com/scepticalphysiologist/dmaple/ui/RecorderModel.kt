@@ -37,7 +37,7 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
     /** The index (in [mapper]'s list of map creators) of the current map to be shown. */
     private var currentMapIndex: Int = 0
     /** Indicate warning messages that should be shown, e.g. when starting mapping. */
-    val messages = MutableLiveData<Message?>(null)
+    val messages = MutableLiveData<Message<*>?>(null)
     /** Indicate the elapsed time (seconds) of mapping. */
     val timer = MutableLiveData<Long>(0L)
     /** A coroutine scope for running the timer. */

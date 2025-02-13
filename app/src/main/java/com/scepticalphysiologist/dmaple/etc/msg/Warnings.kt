@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.appcompat.app.AlertDialog
 
 /** A collection of warning messages and whether they should stop some process. */
-class Warnings(title: String = "Warning"): Message(title, "") {
+class Warnings(title: String = "Warning"): Message<List<Pair<String, Boolean>>>(title, "") {
 
     /** The warning messages. Each message consists of the message and whether it should stop a process. */
     private val messages: MutableList<Pair<String, Boolean>> = mutableListOf()
@@ -23,4 +23,7 @@ class Warnings(title: String = "Warning"): Message(title, "") {
 
     /** Only show if there are some warning messages.*/
     override fun show(context: Context) { if(messages.isNotEmpty()) super.show(context) }
+
+    override fun clickReturn(): List<Pair<String, Boolean>> { return messages }
+
 }

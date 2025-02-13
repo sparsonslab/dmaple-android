@@ -18,9 +18,12 @@
         <item name="android:windowTitleSize">@dimen/normal_text_size</item>
         <item name="android:textAppearance">@font/montserrat_light</item>
         <item name="android:textAllCaps">false</item>
-        <item name="android:lineSpacingMultiplier">1.9</item>
+        <item name="android:lineSpacingMultiplier">1.2</item>
         <item name="buttonBarNegativeButtonStyle">@style/dialog_button_negative</item>
         <item name="buttonBarPositiveButtonStyle">@style/dialog_button_positive</item>
+        <!-- ... lists -->
+        <item name="android:dividerHeight">5dp</item>
+        <item name="textColorAlertDialogListItem">@color/black</item>
     </style>
     <style name="dialog_button_negative">
         <item name="android:backgroundTint">#d6d4d4</item>

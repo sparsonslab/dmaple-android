@@ -18,7 +18,9 @@ import com.scepticalphysiologist.dmaple.etc.Edge
 import com.scepticalphysiologist.dmaple.etc.Frame
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.etc.ThresholdBitmap
+import com.scepticalphysiologist.dmaple.etc.msg.MultipleChoice
 import com.scepticalphysiologist.dmaple.map.MappingRoi
+import com.scepticalphysiologist.dmaple.map.creator.MapType
 
 /** Gesture states for [MappingRoiOverlay]. */
 enum class GestureState {
@@ -218,8 +220,10 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
             val ap = rp.abs()
             // ... near centre
             if((ap.x < ft) && (ap.y < ft)) {
-                // .... double-click: add ROI to list.
+                // ... double-click: add ROI to list.
                 if(isDoubleClick) saveActiveRoi()
+                // ... long-press: select map type(s).
+                else if(isLongPress) setActiveMapType()
                 // ... otherwise: translate.
                 else translate(event)
             }
@@ -236,6 +240,22 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
             else clearActiveRoi()
         }
         return true
+    }
+
+    private fun setActiveMapType() {
+        activeRoi?.let {
+            val dialog = MultipleChoice(
+                title = "Map Types",
+                choices = MapType.entries.map{Pair(it.title, false)}.toMutableList()
+            )
+            dialog.positive = Pair("Set", this::setMapTypes)
+            dialog.negative = Pair("Cancel", null)
+            dialog.show(context)
+        }
+    }
+
+    private fun setMapTypes(selected: List<Int>) {
+        println(selected.map{MapType.entries[it].title})
     }
 
     /** Save the active ROI. */

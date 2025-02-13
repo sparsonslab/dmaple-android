@@ -3,7 +3,6 @@ package com.scepticalphysiologist.dmaple.etc.msg
 import android.content.Context
 import android.text.InputType
 import android.widget.EditText
-import android.widget.FrameLayout
 import androidx.appcompat.app.AlertDialog
 import androidx.constraintlayout.widget.ConstraintLayout
 import com.scepticalphysiologist.dmaple.etc.sidePaddedLayout
@@ -16,7 +15,7 @@ class InputRequired(
     val initialValue: Any = "",
     /** The valid input types. */
     val inputType: Int = InputType.TYPE_CLASS_TEXT,
-): Message(title, message) {
+): Message<String>(title, message) {
 
     /** Input widget. */
     private var input: EditText? = null
@@ -34,6 +33,6 @@ class InputRequired(
         return dialog
     }
 
-    override fun clickString(): String { return input?.text.toString() }
+    override fun clickReturn(): String { return input?.text.toString() }
 
 }
