@@ -2,8 +2,11 @@ package com.scepticalphysiologist.dmaple.etc.msg
 
 import android.content.Context
 import android.content.DialogInterface
+import android.view.ViewGroup.LayoutParams
 import com.scepticalphysiologist.dmaple.R
 import androidx.appcompat.app.AlertDialog
+import androidx.core.view.updateLayoutParams
+import androidx.core.view.updatePadding
 
 /** A message dialog with button callbacks.
  *
@@ -26,7 +29,7 @@ abstract class Message<T>(
 
     /** Create the dialog. */
     protected open fun createDialog(context: Context): AlertDialog.Builder {
-        val dialog = AlertDialog.Builder(context, R.style.warning_dialog)
+        val dialog = AlertDialog.Builder(context, R.style.message_dialog)
         dialog.setTitle(title)
         if(message.isNotEmpty()) dialog.setMessage(message)
         if ((negative == null) && (positive == null)) negative = Pair("Okay", null)
@@ -36,9 +39,7 @@ abstract class Message<T>(
     }
 
     /** Show the dialog. */
-    open fun show(context: Context) {
-        createDialog(context).show()
-    }
+    open fun show(context: Context) { createDialog(context).create().show() }
 
     /** Respond to button clicks by invoking the callbacks. */
     override fun onClick(dialog: DialogInterface?, button: Int) {

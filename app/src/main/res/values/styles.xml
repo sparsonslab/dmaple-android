@@ -9,7 +9,7 @@
 
 
     <!-- WARNING MESSAGE DIALOG -->
-    <style name="warning_dialog" parent="@style/Theme.AppCompat.Dialog.Alert">
+    <style name="message_dialog" parent="@style/Theme.AppCompat.Dialog.Alert">
         <item name="android:background">@color/white</item>
         <item name="android:textColor">@color/black</item>
         <item name="android:textColorPrimary">@color/black</item>
@@ -19,11 +19,15 @@
         <item name="android:textAppearance">@font/montserrat_light</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:lineSpacingMultiplier">1.2</item>
-        <item name="buttonBarNegativeButtonStyle">@style/dialog_button_negative</item>
-        <item name="buttonBarPositiveButtonStyle">@style/dialog_button_positive</item>
+
         <!-- ... lists -->
         <item name="android:dividerHeight">5dp</item>
         <item name="textColorAlertDialogListItem">@color/black</item>
+
+        <item name="buttonBarNegativeButtonStyle">@style/dialog_button_negative</item>
+        <item name="buttonBarPositiveButtonStyle">@style/dialog_button_positive</item>
+        <item name="layout_constraintWidth_max">500dp</item>
+
     </style>
     <style name="dialog_button_negative">
         <item name="android:backgroundTint">#d6d4d4</item>
