@@ -6,6 +6,7 @@ import android.graphics.RectF
 import com.scepticalphysiologist.dmaple.etc.Edge
 import com.scepticalphysiologist.dmaple.etc.Frame
 import com.scepticalphysiologist.dmaple.etc.Point
+import com.scepticalphysiologist.dmaple.map.creator.MapType
 
 /** An ROI used for creating a spatio-temporal map.
  *
@@ -18,6 +19,9 @@ class MappingRoi(
     var threshold: Int = 0,
     var seedingEdge: Edge = Edge.BOTTOM
 ): RectF(0f, 0f, 0f, 0f) {
+
+    /** The maps to be created from this ROI. */
+    var maps = listOf<MapType>()
 
     /** Change the ROI's reference frame. */
     fun changeFrame(newFrame: Frame) {

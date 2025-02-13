@@ -223,7 +223,7 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
                 // ... double-click: add ROI to list.
                 if(isDoubleClick) saveActiveRoi()
                 // ... long-press: select map type(s).
-                else if(isLongPress) setActiveMapType()
+                else if(isLongPress) requestMapTypes()
                 // ... otherwise: translate.
                 else translate(event)
             }
@@ -242,11 +242,12 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
         return true
     }
 
-    private fun setActiveMapType() {
-        activeRoi?.let {
+    /** Open a dialog for the user to set the map types for the active ROI. */
+    private fun requestMapTypes() {
+        activeRoi?.let { roi ->
             val dialog = MultipleChoice(
                 title = "Map Types",
-                choices = MapType.entries.map{Pair(it.title, false)}.toMutableList()
+                choices = MapType.entries.map{Pair(it.title, it in roi.maps)}.toMutableList()
             )
             dialog.positive = Pair("Set", this::setMapTypes)
             dialog.negative = Pair("Cancel", null)
@@ -254,8 +255,9 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
         }
     }
 
+    /** Callback for setting the active ROI's map types. */
     private fun setMapTypes(selected: List<Int>) {
-        println(selected.map{MapType.entries[it].title})
+        activeRoi?.let { roi -> roi.maps = selected.map{MapType.entries[it]}.toList() }
     }
 
     /** Save the active ROI. */
