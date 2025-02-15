@@ -11,11 +11,7 @@ import kotlin.math.ceil
 
 
 /** A class that handles the creation of a spatio-temporal map. */
-abstract class MapCreator {
-
-    abstract fun nRequiredBuffers(): Int
-
-    abstract fun setRoiAndBuffers(roi: MappingRoi, buffers: List<ByteBuffer>): Boolean
+abstract class MapCreator(val roi: MappingRoi, bufferProvider: (() -> ByteBuffer?)) {
 
     /** The current sample width (space) and height (time) of the map. */
     abstract fun spaceTimeSampleSize(): Size

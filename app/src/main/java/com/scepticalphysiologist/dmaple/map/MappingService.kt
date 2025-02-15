@@ -30,7 +30,6 @@ import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.etc.Frame
 import com.scepticalphysiologist.dmaple.etc.surfaceRotationDegrees
 import com.scepticalphysiologist.dmaple.etc.msg.Warnings
-import com.scepticalphysiologist.dmaple.map.creator.BufferedExampleMap
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -322,7 +321,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
         for(i in creators.indices) {
             val file = mapFilePrefix?.let { prefix ->
-                File(dir, "${prefix}_map$i")
+                File(dir, "${prefix}_${creators[i].roi.uid}")
             }
             creators[i].destroy(file)
         }
@@ -352,15 +351,12 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         if(warning.shouldStop()) return warning
 
         // Create map creators.
-        // todo - MappingRois should include the MapCreator class to which they are used for.
         val imageFrame = imageAnalysisFrame() ?: return warning
         creators.clear()
         for(roi in rois) {
             for(map in roi.maps) {
-                val creator = map.creatorClass.getConstructor().newInstance()
-                val buffers = (0 until creator.nRequiredBuffers()).mapNotNull { getFreeBuffer() }
-                val isSet = creator.setRoiAndBuffers(roi.inNewFrame(imageFrame), buffers)
-                if(isSet) creators.add(creator)
+                val creator = map.makeCreator(roi.inNewFrame(imageFrame), MappingService::getFreeBuffer)
+                if(creator != null) creators.add(creator)
                 else {
                     creators.clear()
                     warning.add(message =

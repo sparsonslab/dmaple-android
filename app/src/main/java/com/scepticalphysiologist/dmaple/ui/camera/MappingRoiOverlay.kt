@@ -353,7 +353,7 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     /** Initiate an active ROI de novo. */
     private fun initiate(event: MotionEvent) {
         if(event.action != MotionEvent.ACTION_DOWN) return
-        changeActiveRoi(MappingRoi(Frame.fromView(this, display)))
+        changeActiveRoi(MappingRoi(Frame.fromView(this, display), maps=listOf(MapType.DIAMETER)))
         activeRoi?.let { roi ->
             roi.left = event.x - 50f
             roi.right = event.x + 50f

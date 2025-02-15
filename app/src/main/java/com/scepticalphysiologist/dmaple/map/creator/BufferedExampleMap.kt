@@ -1,6 +1,7 @@
 package com.scepticalphysiologist.dmaple.map.creator
 
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.graphics.Rect
 import android.util.Size
 import com.scepticalphysiologist.dmaple.etc.Point
@@ -11,37 +12,27 @@ import java.lang.IndexOutOfBoundsException
 import java.nio.ByteBuffer
 import kotlin.math.abs
 
-class BufferedExampleMap: MapCreator()  {
+class BufferedExampleMap(roi: MappingRoi, bufferProvider: (() -> ByteBuffer?)): MapCreator(roi, bufferProvider)  {
 
     // Map geometry
     // ------------
     /** The map seeding edge orientation within the input images. */
-    private var isVertical: Boolean = false
+    private val isVertical: Boolean = roi.seedingEdge.isVertical()
     /** Long-axis coordinates of the seeding edge .*/
-    private var pE: Pair<Int, Int> = Pair(0, 1)
+    private val pE: Pair<Int, Int>
     /** Short-axis coordinate of the seeding edge. */
-    private var pL: Int = 0
+    private val pL: Int
     /** Sample size of map - space and time. */
-    private var ns: Int = 0
+    private val ns: Int
     private var nt: Int = 0
 
 
     // Buffering
     // ---------
-    private lateinit var mapView: ShortMap
-
+    private var mapView: ShortMap? = null
     private var reachedEnd = false
 
-    // ---------------------------------------------------------------------------------------------
-    // Creation and memory allocation
-    // ---------------------------------------------------------------------------------------------
-
-    override fun nRequiredBuffers(): Int { return 1 }
-
-    override fun setRoiAndBuffers(roi: MappingRoi, buffers: List<ByteBuffer>): Boolean {
-        if(buffers.size < nRequiredBuffers()) return false
-
-        isVertical = roi.seedingEdge.isVertical()
+    init {
         val edge = Point.ofRectEdge(roi, roi.seedingEdge)
         if(isVertical) {
             pE = orderedY(edge)
@@ -52,10 +43,10 @@ class BufferedExampleMap: MapCreator()  {
         }
         ns = abs(pE.first - pE.second)
 
-        mapView = ShortMap(buffers[0], ns)
-        return true
+        bufferProvider.invoke()?.let { mapView = ShortMap(it, ns) } ?: {
+            throw IndexOutOfBoundsException("There are not enough buffers.")
+        }
     }
-
 
     // ---------------------------------------------------------------------------------------------
     // Update and bitmap creation.
@@ -69,7 +60,7 @@ class BufferedExampleMap: MapCreator()  {
         if(reachedEnd) return
         try {
             (pE.first until pE.second).map {
-                mapView.addNTSCGrey(if(isVertical) bitmap.getPixel(pL, it) else bitmap.getPixel(it, pL))
+                mapView?.addNTSCGrey(if(isVertical) bitmap.getPixel(pL, it) else bitmap.getPixel(it, pL))
             }
             nt += 1
         } catch (_: java.lang.IndexOutOfBoundsException) { reachedEnd = true }
@@ -97,7 +88,7 @@ class BufferedExampleMap: MapCreator()  {
             var k = 0
             for(j in area.top until area.bottom step stepY)
                 for(i in area.left until area.right step stepX) {
-                    backing[k] = mapView.getColorInt(i, j)
+                    backing[k] = mapView?.getColorInt(i, j) ?: Color.BLACK
                     k += 1
                 }
             return Bitmap.createBitmap(backing, bs.width, bs.height, Bitmap.Config.ARGB_8888)
