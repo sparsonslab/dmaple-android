@@ -62,6 +62,8 @@ class MapView(context: Context, attributeSet: AttributeSet):
     // -------------
     /** The creator of the map being shown by this view. */
     private var creator: MapCreator? = null
+    /** The ith map of the creator being shown by this view (for where a creator makes more than one map). */
+    private var mapIdx: Int = 0
     /** The coroutine scope used for the live (during mapping) extracting of the viewed bitmap
      * from the map creator. */
     private var scope: CoroutineScope? = null
@@ -188,7 +190,10 @@ class MapView(context: Context, attributeSet: AttributeSet):
     // ---------------------------------------------------------------------------------------------
 
     /** Update the map being shown. */
-    fun updateCreator(currentCreator: MapCreator?) { creator = currentCreator }
+    fun updateCreator(creatorAndMapIdx: Pair<MapCreator?, Int>) {
+        creator = creatorAndMapIdx.first
+        mapIdx = creatorAndMapIdx.second
+    }
 
     /** Start live view of the map being created. */
     fun start() {
@@ -222,9 +227,10 @@ class MapView(context: Context, attributeSet: AttributeSet):
                 val p0 = Point.maxOf(bitmapSize - pE - offset, Point())
                 val p1 = p0 + pE
                 val bm = mapCreator.getMapBitmap(
-                    Rect(p0.x.toInt(), p0.y.toInt(), p1.x.toInt(), p1.y.toInt()),
-                    bitmapBacking,
-                    stepX = pixelStep.x.toInt(), stepY = pixelStep.y.toInt()
+                    idx = mapIdx,
+                    crop = Rect(p0.x.toInt(), p0.y.toInt(), p1.x.toInt(), p1.y.toInt()),
+                    stepX = pixelStep.x.toInt(), stepY = pixelStep.y.toInt(),
+                    backing = bitmapBacking,
                 )
                 // Rotate and scale the bitmap and post to the main thread for display.
                 bm?.let {

@@ -106,8 +106,8 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     // -----
     /** The ROIs are editable - can be moved, expanded, saved, activated, etc. */
     private var editable: Boolean = true
-    /** The index of a saved ROI that has been selected. */
-    val selectedRoi = MutableLiveData<Int>(0)
+    /** The UID of a saved ROI that has been selected. */
+    val selectedRoi = MutableLiveData<String>("")
 
 
     init {
@@ -291,15 +291,15 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
         for(i in savedRois.indices) {
             val ap = touchPoint.relativeDistance(savedRois[i]).abs()
             if ((ap.x < ft) && (ap.y < ft)) {
-                // If editable - change the saved ROI to the active,
+                // notify selection
+                selectedRoi.postValue(savedRois[i].uid)
+                // If editable - change the saved ROI to the active
                 if(editable) {
                     changeActiveRoi(savedRois.removeAt(i))
                     savedRoiChange.postValue(true)
                     drag = touchPoint
                     invalidate()
                 }
-                // notify selection
-                selectedRoi.postValue(i)
                 return true
             }
         }

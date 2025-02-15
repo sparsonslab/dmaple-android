@@ -12,7 +12,9 @@ import java.lang.IndexOutOfBoundsException
 import java.nio.ByteBuffer
 import kotlin.math.abs
 
-class BufferedExampleMap(roi: MappingRoi, bufferProvider: (() -> ByteBuffer?)): MapCreator(roi, bufferProvider)  {
+class BufferedExampleMap(
+    roi: MappingRoi, bufferProvider: (() -> ByteBuffer?)
+): MapCreator(roi, bufferProvider) {
 
     // Map geometry
     // ------------
@@ -25,7 +27,6 @@ class BufferedExampleMap(roi: MappingRoi, bufferProvider: (() -> ByteBuffer?)): 
     /** Sample size of map - space and time. */
     private val ns: Int
     private var nt: Int = 0
-
 
     // Buffering
     // ---------
@@ -66,16 +67,13 @@ class BufferedExampleMap(roi: MappingRoi, bufferProvider: (() -> ByteBuffer?)): 
         } catch (_: java.lang.IndexOutOfBoundsException) { reachedEnd = true }
     }
 
-    /** Get the map as a bitmap (space = x/width, time = y/height).
-     *
-     * @param crop The area of the map to return.
-     * @param stepX A step in the spatial pixels (for pixel skip).
-     * @param stepY A step in the time pixels (for pixel skip).
-     * */
+    override fun nMaps(): Int { return 1 }
+
     override fun getMapBitmap(
+        idx: Int,
         crop: Rect?,
-        backing: IntArray,
         stepX: Int, stepY: Int,
+        backing: IntArray,
     ): Bitmap? {
 
         try {

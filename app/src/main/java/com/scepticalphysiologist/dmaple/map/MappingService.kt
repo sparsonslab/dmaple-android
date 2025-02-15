@@ -161,6 +161,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     private var rois = mutableListOf<MappingRoi>()
     /** Map creators. */
     private var creators = mutableListOf<MapCreator>()
+    /** The currently shown map: its [creators] index and map index within that creator. */
+    private var currentMap: Pair<Int, Int> = Pair(0, 0)
     /** Maps are being created ("recording"). */
     private var creating: Boolean = false
     /** The instant that creation of maps started. */
@@ -299,18 +301,21 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** Is the mapping service currently creating maps? */
     fun isCreatingMaps(): Boolean { return creating }
 
-    /** Get the ith map creator. */
-    fun getMapCreator(i: Int): MapCreator? { return if(i < creators.size) creators[i] else null }
-
-    /** The number of map creators. */
-    fun nMapCreators(): Int { return creators.size }
-
     /** The number of seconds since the service started mapping. */
     fun elapsedSeconds(): Long {
         return startTime?.let {
             (Duration.between(it, Instant.now()).toMillis() / 1000f).toLong()
         } ?: 0
     }
+
+    /** Get current map's creator and map index. */
+    fun getCurrentMapCreator(): Pair<MapCreator?, Int> {
+        val (currentCreatorIdx, currentMapIdx) = currentMap
+        return Pair(creators[currentCreatorIdx], currentMapIdx)
+    }
+
+    /** Given a selected ROI, set the next map to show. */
+    fun setNextMap(roiUID: String) { currentMap = getNextMap(roiUID) }
 
     /** If maps are not being created, save the maps, clear the creators and free-up resources.
      *
@@ -417,6 +422,29 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
         // Wait for a while before grabbing the next frame.
         Thread.sleep(APPROX_FRAME_INTERVAL_MS)
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Current map update.
+    // ---------------------------------------------------------------------------------------------
+
+    /** Given a selected ROI, get the next map to show. */
+    private fun getNextMap(roiUID: String): Pair<Int, Int> {
+        val (currentCreatorIdx, currentMapIdx) = currentMap
+        // Indices of creators associated with the selected ROI.
+        val creatorsFromRoi = creators.indices.filter { creators[it].roi.uid == roiUID }
+        // No creators matching the ROI: the first creator and its first map.
+        if(creatorsFromRoi.isEmpty()) return Pair(0, 0)
+        // Current creator does not come from the ROI: The first creator associate with the ROI.
+        if(currentCreatorIdx !in creatorsFromRoi) return Pair(creatorsFromRoi[0], 0)
+        // Current creator does come from the ROI ...
+        // ... and it has more maps to show: the next map from the same creator
+        if(currentMapIdx < creators[currentCreatorIdx].nMaps() - 1)
+            return Pair(currentCreatorIdx, currentMapIdx + 1)
+        // ... and it does not have more maps: the next creator associated with the ROI.
+        var j = 1 + creatorsFromRoi.indexOf(currentCreatorIdx)
+        if(j >= creatorsFromRoi.size) j = 0
+        return Pair(creatorsFromRoi[j], 0)
     }
 
 }

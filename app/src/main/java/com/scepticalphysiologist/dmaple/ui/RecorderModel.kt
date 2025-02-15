@@ -34,8 +34,6 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
      * 2 = View maps.
      */
     private var state = if(mapper?.isCreatingMaps() == true) 1 else 0
-    /** The index (in [mapper]'s list of map creators) of the current map to be shown. */
-    private var currentMapIndex: Int = 0
     /** Indicate warning messages that should be shown, e.g. when starting mapping. */
     val messages = MutableLiveData<Message<*>?>(null)
     /** Indicate the elapsed time (seconds) of mapping. */
@@ -81,9 +79,7 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
     // ---------------------------------------------------------------------------------------------
 
     /** Provide the camera preview (surface provider) for the mapping service. */
-    fun setCameraPreview(preview: PreviewView) {
-        MainActivity.setMappingServiceCameraPreview(preview)
-    }
+    fun setCameraPreview(preview: PreviewView) { MainActivity.setMappingServiceCameraPreview(preview) }
 
     /** Set the ROIs used for mapping. */
     fun setMappingRois(viewRois: List<MappingRoi>) { mapper?.setRois(viewRois) }
@@ -94,13 +90,11 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
     /** Set the exposure level. */
     fun setExposure(fraction: Float) { mapper?.setExposure(fraction) }
 
-    /** Set the current map to be shown in the [MapView]. */
-    fun setCurrentlyShownMap(i: Int) {
-        mapper?.let{ currentMapIndex = if(i < it.nMapCreators()) i else 0 }
-    }
+    /** Update the currently shown map given the UID of a selected ROI. */
+    fun updateCurrentlyShownMap(selectedRoiUid: String) { mapper?.setNextMap(selectedRoiUid) }
 
-    /** Get the map creator of the current map shown in the map*/
-    fun creatorOfCurrentlyShownMap(): MapCreator? { return mapper?.getMapCreator(currentMapIndex) }
+    /** Get the currently shown map - its creator and map index. */
+    fun getCurrentlyShownMap(): Pair<MapCreator?, Int> { return mapper?.getCurrentMapCreator() ?: Pair(null, 0) }
 
     // ---------------------------------------------------------------------------------------------
     // Timer
