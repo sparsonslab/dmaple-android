@@ -354,14 +354,24 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         // Create map creators.
         // todo - MappingRois should include the MapCreator class to which they are used for.
         val imageFrame = imageAnalysisFrame() ?: return warning
-        creators = rois.mapNotNull { roi ->
-            getFreeBuffer()?.let { buff -> BufferedExampleMap(roi.inNewFrame(imageFrame), buff) }
-        }.toMutableList()
-        if(creators.size < rois.size) warning.add(message =
-            "There are not enough buffers to process all maps.\n" +
-            "The last ${rois.size - creators.size} maps will not be created.",
-            causesStop = false
-        )
+        creators.clear()
+        for(roi in rois) {
+            for(map in roi.maps) {
+                val creator = map.creatorClass.getConstructor().newInstance()
+                val buffers = (0 until creator.nRequiredBuffers()).mapNotNull { getFreeBuffer() }
+                val isSet = creator.setRoiAndBuffers(roi.inNewFrame(imageFrame), buffers)
+                if(isSet) creators.add(creator)
+                else {
+                    creators.clear()
+                    warning.add(message =
+                        "There are not enough buffers to process all maps.\n" +
+                        "The last ${rois.size - creators.size} maps will not be created.",
+                        causesStop = false
+                    )
+                    return warning
+                }
+            }
+        }
 
         // State
         setPreview(autosOn = false)

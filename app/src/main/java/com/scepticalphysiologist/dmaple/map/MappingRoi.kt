@@ -6,6 +6,7 @@ import android.graphics.RectF
 import com.scepticalphysiologist.dmaple.etc.Edge
 import com.scepticalphysiologist.dmaple.etc.Frame
 import com.scepticalphysiologist.dmaple.etc.Point
+import com.scepticalphysiologist.dmaple.etc.randomAlphaString
 import com.scepticalphysiologist.dmaple.map.creator.MapType
 
 /** An ROI used for creating a spatio-temporal map.
@@ -17,11 +18,10 @@ import com.scepticalphysiologist.dmaple.map.creator.MapType
 class MappingRoi(
     var frame: Frame,
     var threshold: Int = 0,
-    var seedingEdge: Edge = Edge.BOTTOM
+    var seedingEdge: Edge = Edge.BOTTOM,
+    var maps: List<MapType> = listOf(),
+    var uid: String = randomAlphaString(20)
 ): RectF(0f, 0f, 0f, 0f) {
-
-    /** The maps to be created from this ROI. */
-    var maps = listOf<MapType>()
 
     /** Change the ROI's reference frame. */
     fun changeFrame(newFrame: Frame) {
@@ -42,7 +42,9 @@ class MappingRoi(
         val cpy= MappingRoi(
             frame = this.frame,
             threshold = this.threshold,
-            seedingEdge = this.seedingEdge
+            seedingEdge = this.seedingEdge,
+            maps = this.maps,
+            uid = this.uid
         )
         cpy.set(this)
         return cpy

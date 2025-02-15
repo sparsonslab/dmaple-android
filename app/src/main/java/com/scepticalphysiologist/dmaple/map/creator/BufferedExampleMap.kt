@@ -8,36 +8,40 @@ import com.scepticalphysiologist.dmaple.map.MappingRoi
 import java.io.File
 import java.lang.IllegalArgumentException
 import java.lang.IndexOutOfBoundsException
-import java.nio.MappedByteBuffer
+import java.nio.ByteBuffer
 import kotlin.math.abs
 
-class BufferedExampleMap(
-    roi: MappingRoi,
-    mapBuffer: MappedByteBuffer
-): MapCreator(roi)  {
-
+class BufferedExampleMap: MapCreator()  {
 
     // Map geometry
     // ------------
     /** The map seeding edge orientation within the input images. */
-    private val isVertical: Boolean = roi.seedingEdge.isVertical()
+    private var isVertical: Boolean = false
     /** Long-axis coordinates of the seeding edge .*/
-    private val pE: Pair<Int, Int>
+    private var pE: Pair<Int, Int> = Pair(0, 1)
     /** Short-axis coordinate of the seeding edge. */
-    private val pL: Int
+    private var pL: Int = 0
     /** Sample size of map - space and time. */
-    private val ns: Int
+    private var ns: Int = 0
     private var nt: Int = 0
 
-    private var reachedEnd = false
 
-    private var mapView: ShortMap
+    // Buffering
+    // ---------
+    private lateinit var mapView: ShortMap
+
+    private var reachedEnd = false
 
     // ---------------------------------------------------------------------------------------------
     // Creation and memory allocation
     // ---------------------------------------------------------------------------------------------
 
-    init {
+    override fun nRequiredBuffers(): Int { return 1 }
+
+    override fun setRoiAndBuffers(roi: MappingRoi, buffers: List<ByteBuffer>): Boolean {
+        if(buffers.size < nRequiredBuffers()) return false
+
+        isVertical = roi.seedingEdge.isVertical()
         val edge = Point.ofRectEdge(roi, roi.seedingEdge)
         if(isVertical) {
             pE = orderedY(edge)
@@ -47,7 +51,9 @@ class BufferedExampleMap(
             pL = edge.first.y.toInt()
         }
         ns = abs(pE.first - pE.second)
-        mapView = ShortMap(mapBuffer, ns)
+
+        mapView = ShortMap(buffers[0], ns)
+        return true
     }
 
 

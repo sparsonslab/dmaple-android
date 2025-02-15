@@ -6,11 +6,16 @@ import android.util.Size
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.map.MappingRoi
 import java.io.File
+import java.nio.ByteBuffer
 import kotlin.math.ceil
 
 
 /** A class that handles the creation of a spatio-temporal map. */
-abstract class MapCreator(val roi: MappingRoi) {
+abstract class MapCreator {
+
+    abstract fun nRequiredBuffers(): Int
+
+    abstract fun setRoiAndBuffers(roi: MappingRoi, buffers: List<ByteBuffer>): Boolean
 
     /** The current sample width (space) and height (time) of the map. */
     abstract fun spaceTimeSampleSize(): Size
