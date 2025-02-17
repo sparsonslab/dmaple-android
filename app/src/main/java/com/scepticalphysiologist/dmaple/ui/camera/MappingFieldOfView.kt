@@ -16,7 +16,6 @@ import androidx.lifecycle.MutableLiveData
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.etc.SwitchableSlider
-import com.scepticalphysiologist.dmaple.etc.SwitchableSlider2
 import com.scepticalphysiologist.dmaple.map.MappingRoi
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.etc.aspectRatioRatio
@@ -41,9 +40,9 @@ class MappingFieldOfView(context: Context, attributeSet: AttributeSet?):
     // Controls
     // --------
     /** A slider for thresholding mapping ROIs. */
-    private val thresholdSlider = SwitchableSlider2(context, Pair(0, 255), R.drawable.threshold_steps, Color.RED)
+    private val thresholdSlider = SwitchableSlider(context, Pair(0, 255), R.drawable.threshold_steps, Color.RED)
     /** A slide for controlling exposure. */
-    private val exposureSlider = SwitchableSlider2(context, Pair(0, 100), R.drawable.exposure_sun, Color.YELLOW)
+    private val exposureSlider = SwitchableSlider(context, Pair(0, 100), R.drawable.exposure_sun, Color.YELLOW)
     /** Indicate that exposure has changed - a value between 0 and 1. */
     val exposure = MutableLiveData<Float>(0f)
 
