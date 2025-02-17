@@ -12,6 +12,12 @@ import androidx.core.view.updateLayoutParams
 import androidx.lifecycle.MutableLiveData
 import kotlin.math.abs
 
+/** Vertical slider with a "switch" at the bottom that changes its visibility.
+ *
+ * @property range The range of the slider.
+ * @param switchIcon The resource id of the icon used for the switch button.
+ * @param color The color of the slider.
+ * */
 class SwitchableSlider(
     context: Context,
     private val range: Pair<Int, Int>,
@@ -21,13 +27,18 @@ class SwitchableSlider(
     LinearLayout(context),
     SeekBar.OnSeekBarChangeListener
 {
-
+    // Views
+    // -----
+    /** The slider. */
     private val slider = SeekBar(context)
-
+    /** The switch to change slider visibility. */
     private val switch = ImageButton(context)
 
+    // Live data signalling
+    // --------------------
+    /** Announce that the user has stopped or started tracking. */
     val onoff = MutableLiveData<Boolean>(false)
-
+    /** Announce that the slide r position had changed. */
     val position = MutableLiveData<Int>(0)
 
     init {
@@ -42,7 +53,6 @@ class SwitchableSlider(
         // Slider
         val sliderFrame = FrameLayout(context)
         sliderFrame.layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, 0.5f)
-        sliderFrame.setPadding(0, 10, 0, 10)
         slider.setOnSeekBarChangeListener(this)
         slider.min = range.first
         slider.max = range.second
@@ -61,26 +71,27 @@ class SwitchableSlider(
         this.addView(switch, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, 0f))
     }
 
-
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
         super.onLayout(changed, l, t, r, b)
         slider.updateLayoutParams { width = abs(0.45f * (b - t)).toInt() }
     }
 
+    /** Switch the slider visibility. */
     fun switch(show: Boolean? = null){
         slider.visibility = show?.let{ if(it) View.VISIBLE else View.INVISIBLE } ?:
                 if(slider.visibility == View.VISIBLE) View.INVISIBLE else View.VISIBLE
     }
 
+    /** Set the position of the slider. */
     fun setPosition(p: Int) {
-        this.slider.progress = p
-        println("slider = $p")
+        slider.progress = when {
+            p > slider.max -> slider.max
+            p < slider.min -> slider.min
+            else -> p
+        }
     }
 
-    override fun onProgressChanged(p0: SeekBar?, p1: Int, p2: Boolean) {
-        position.value = p1
-        println("pos = $p1")
-    }
+    override fun onProgressChanged(p0: SeekBar?, p1: Int, p2: Boolean) { position.value = p1 }
 
     override fun onStartTrackingTouch(p0: SeekBar?) { onoff.value = true }
 
