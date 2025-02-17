@@ -32,6 +32,35 @@
         android:layout_height="match_parent">
     </com.scepticalphysiologist.dmaple.ui.camera.MappingFieldOfView>
 
+
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.5">
+        </FrameLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.5">
+
+            <SeekBar
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:rotation="270">
+            </SeekBar>
+
+        </FrameLayout>
+
+    </LinearLayout>
+
+
     <ImageButton
         android:id="@+id/record_button"
         android:src="@drawable/play_arrow"
