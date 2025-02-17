@@ -18,7 +18,9 @@ import com.scepticalphysiologist.dmaple.etc.Edge
 import com.scepticalphysiologist.dmaple.etc.Frame
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.etc.ThresholdBitmap
+import com.scepticalphysiologist.dmaple.etc.msg.MultipleChoice
 import com.scepticalphysiologist.dmaple.map.MappingRoi
+import com.scepticalphysiologist.dmaple.map.creator.MapType
 
 /** Gesture states for [MappingRoiOverlay]. */
 enum class GestureState {
@@ -104,8 +106,8 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     // -----
     /** The ROIs are editable - can be moved, expanded, saved, activated, etc. */
     private var editable: Boolean = true
-    /** The index of a saved ROI that has been selected. */
-    val selectedRoi = MutableLiveData<Int>(0)
+    /** The UID of a saved ROI that has been selected. */
+    val selectedRoi = MutableLiveData<String>("")
 
 
     init {
@@ -218,8 +220,10 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
             val ap = rp.abs()
             // ... near centre
             if((ap.x < ft) && (ap.y < ft)) {
-                // .... double-click: add ROI to list.
+                // ... double-click: add ROI to list.
                 if(isDoubleClick) saveActiveRoi()
+                // ... long-press: select map type(s).
+                else if(isLongPress) requestMapTypes()
                 // ... otherwise: translate.
                 else translate(event)
             }
@@ -236,6 +240,24 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
             else clearActiveRoi()
         }
         return true
+    }
+
+    /** Open a dialog for the user to set the map types for the active ROI. */
+    private fun requestMapTypes() {
+        activeRoi?.let { roi ->
+            val dialog = MultipleChoice(
+                title = "Map Types",
+                choices = MapType.entries.map{Pair(it.title, it in roi.maps)}.toMutableList()
+            )
+            dialog.positive = Pair("Set", this::setMapTypes)
+            dialog.negative = Pair("Cancel", null)
+            dialog.show(context)
+        }
+    }
+
+    /** Callback for setting the active ROI's map types. */
+    private fun setMapTypes(selected: List<Int>) {
+        activeRoi?.let { roi -> roi.maps = selected.map{MapType.entries[it]}.toList() }
     }
 
     /** Save the active ROI. */
@@ -269,15 +291,15 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
         for(i in savedRois.indices) {
             val ap = touchPoint.relativeDistance(savedRois[i]).abs()
             if ((ap.x < ft) && (ap.y < ft)) {
-                // If editable - change the saved ROI to the active,
+                // notify selection
+                selectedRoi.postValue(savedRois[i].uid)
+                // If editable - change the saved ROI to the active
                 if(editable) {
                     changeActiveRoi(savedRois.removeAt(i))
                     savedRoiChange.postValue(true)
                     drag = touchPoint
                     invalidate()
                 }
-                // notify selection
-                selectedRoi.postValue(i)
                 return true
             }
         }
@@ -331,7 +353,7 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     /** Initiate an active ROI de novo. */
     private fun initiate(event: MotionEvent) {
         if(event.action != MotionEvent.ACTION_DOWN) return
-        changeActiveRoi(MappingRoi(Frame.fromView(this, display)))
+        changeActiveRoi(MappingRoi(Frame.fromView(this, display), maps=listOf(MapType.DIAMETER)))
         activeRoi?.let { roi ->
             roi.left = event.x - 50f
             roi.right = event.x + 50f

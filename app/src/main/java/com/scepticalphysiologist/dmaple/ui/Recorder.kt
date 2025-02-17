@@ -2,13 +2,10 @@ package com.scepticalphysiologist.dmaple.ui
 
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
-import android.os.Bundle
 import android.text.format.DateUtils
 import android.view.MotionEvent
-import android.view.View
 import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.lifecycle.ViewModelProvider
-import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.databinding.RecorderBinding
 import com.scepticalphysiologist.dmaple.etc.PermissionSets
@@ -34,14 +31,13 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         // Keep the screen on, so that the camera stays on.
         //binding.root.keepScreenOn = true
 
-        // Once the view is inflated.
+        // Once the view is inflated, set the mapping service's camera surface.
         binding.root.post {
-            MainActivity.setCameraPreviewSurface(binding.cameraAndRoi.getCameraPreview())
+            model.setCameraPreview(binding.cameraAndRoi.getCameraPreview())
             binding.cameraAndRoi.setExposureSlider(0.5f)
             binding.cameraAndRoi.setSavedRois(model.getMappingRois())
             setUIState()
         }
-
 
         // Whenever the saved ROIs have changed in the view, transfer these to the mapping
         // service (via the view model) so they are persisted.
@@ -73,11 +69,12 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
             if(!dragCameraView(event)) binding.maps.processMotionEvent(event) else true
         }
 
-        // When recording, select the ROI of the map being shown.
-        binding.cameraAndRoi.roiHasBeenSelected().observe(viewLifecycleOwner) { selectedRoiIndex ->
-            // todo - use IDs for ROIs rather than index? Tried this but problems can come
-            //     with copying and transforming
-            roiSelected(selectedRoiIndex)
+        // When recording, update the map is an ROI is selected.
+        binding.cameraAndRoi.roiHasBeenSelected().observe(viewLifecycleOwner) { selectedRoiUID ->
+            if(stateShowsMap()){
+                model.updateCurrentlyShownMap(selectedRoiUID)
+                binding.maps.updateCreator(model.getCurrentlyShownMap())
+            }
         }
 
         // Update the timer shown during recording.
@@ -102,7 +99,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
                 binding.cameraAndRoi.allowEditing(false)
                 val extent = Point.ofViewExtent(binding.root) * 0.5f
                 binding.cameraAndRoi.resize(extent.x.toInt(), extent.y.toInt())
-                binding.maps.updateCreator(model.creatorOfCurrentlyShownMap())
+                binding.maps.updateCreator(model.getCurrentlyShownMap())
                 binding.maps.start()
             }
             2 -> {
@@ -112,16 +109,10 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         }
     }
 
+    /** If the fragment showing maps? */
     private fun stateShowsMap(): Boolean{
         val state = model.getState()
         return (state == 1) || (state == 2)
-    }
-
-    private fun roiSelected(roiIndex: Int) {
-        if(stateShowsMap()){
-            model.setCurrentlyShownMap(roiIndex)
-            binding.maps.updateCreator(model.creatorOfCurrentlyShownMap())
-        }
     }
 
     /** While recording, resize the camera view by dragging its lower-right corner. */

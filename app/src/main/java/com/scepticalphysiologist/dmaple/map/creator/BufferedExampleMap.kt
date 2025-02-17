@@ -1,6 +1,7 @@
 package com.scepticalphysiologist.dmaple.map.creator
 
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.graphics.Rect
 import android.util.Size
 import com.scepticalphysiologist.dmaple.etc.Point
@@ -8,14 +9,12 @@ import com.scepticalphysiologist.dmaple.map.MappingRoi
 import java.io.File
 import java.lang.IllegalArgumentException
 import java.lang.IndexOutOfBoundsException
-import java.nio.MappedByteBuffer
+import java.nio.ByteBuffer
 import kotlin.math.abs
 
 class BufferedExampleMap(
-    roi: MappingRoi,
-    mapBuffer: MappedByteBuffer
-): MapCreator(roi)  {
-
+    roi: MappingRoi, bufferProvider: (() -> ByteBuffer?)
+): MapCreator(roi, bufferProvider) {
 
     // Map geometry
     // ------------
@@ -29,13 +28,10 @@ class BufferedExampleMap(
     private val ns: Int
     private var nt: Int = 0
 
+    // Buffering
+    // ---------
+    private var mapView: ShortMap? = null
     private var reachedEnd = false
-
-    private var mapView: ShortMap
-
-    // ---------------------------------------------------------------------------------------------
-    // Creation and memory allocation
-    // ---------------------------------------------------------------------------------------------
 
     init {
         val edge = Point.ofRectEdge(roi, roi.seedingEdge)
@@ -47,9 +43,11 @@ class BufferedExampleMap(
             pL = edge.first.y.toInt()
         }
         ns = abs(pE.first - pE.second)
-        mapView = ShortMap(mapBuffer, ns)
-    }
 
+        bufferProvider.invoke()?.let { mapView = ShortMap(it, ns) } ?: {
+            throw IndexOutOfBoundsException("There are not enough buffers.")
+        }
+    }
 
     // ---------------------------------------------------------------------------------------------
     // Update and bitmap creation.
@@ -63,22 +61,19 @@ class BufferedExampleMap(
         if(reachedEnd) return
         try {
             (pE.first until pE.second).map {
-                mapView.addNTSCGrey(if(isVertical) bitmap.getPixel(pL, it) else bitmap.getPixel(it, pL))
+                mapView?.addNTSCGrey(if(isVertical) bitmap.getPixel(pL, it) else bitmap.getPixel(it, pL))
             }
             nt += 1
         } catch (_: java.lang.IndexOutOfBoundsException) { reachedEnd = true }
     }
 
-    /** Get the map as a bitmap (space = x/width, time = y/height).
-     *
-     * @param crop The area of the map to return.
-     * @param stepX A step in the spatial pixels (for pixel skip).
-     * @param stepY A step in the time pixels (for pixel skip).
-     * */
+    override fun nMaps(): Int { return 1 }
+
     override fun getMapBitmap(
+        idx: Int,
         crop: Rect?,
-        backing: IntArray,
         stepX: Int, stepY: Int,
+        backing: IntArray,
     ): Bitmap? {
 
         try {
@@ -91,7 +86,7 @@ class BufferedExampleMap(
             var k = 0
             for(j in area.top until area.bottom step stepY)
                 for(i in area.left until area.right step stepX) {
-                    backing[k] = mapView.getColorInt(i, j)
+                    backing[k] = mapView?.getColorInt(i, j) ?: Color.BLACK
                     k += 1
                 }
             return Bitmap.createBitmap(backing, bs.width, bs.height, Bitmap.Config.ARGB_8888)

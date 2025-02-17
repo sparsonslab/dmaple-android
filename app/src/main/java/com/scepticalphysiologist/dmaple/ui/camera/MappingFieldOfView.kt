@@ -5,7 +5,6 @@ import android.graphics.Color
 import android.util.AttributeSet
 import android.view.Gravity
 import android.view.View
-import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.camera.view.PreviewView
 import kotlin.math.roundToInt
@@ -19,7 +18,6 @@ import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.etc.SwitchableSlider
 import com.scepticalphysiologist.dmaple.map.MappingRoi
 import com.scepticalphysiologist.dmaple.map.MappingService
-import com.scepticalphysiologist.dmaple.etc.VerticalSlider
 import com.scepticalphysiologist.dmaple.etc.aspectRatioRatio
 
 /** The mapping field of view. The camera feed and overlays for:
@@ -106,7 +104,7 @@ class MappingFieldOfView(context: Context, attributeSet: AttributeSet?):
 
     fun setSavedRois(rois: List<MappingRoi>) { roiOverlay.setSavedRois(rois) }
 
-    fun roiHasBeenSelected(): MutableLiveData<Int> { return roiOverlay.selectedRoi }
+    fun roiHasBeenSelected(): MutableLiveData<String> { return roiOverlay.selectedRoi }
 
     fun savedRoisHaveChanged(): MutableLiveData<Boolean> { return roiOverlay.savedRoiChange }
 

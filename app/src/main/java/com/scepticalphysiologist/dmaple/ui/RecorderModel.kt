@@ -2,6 +2,7 @@ package com.scepticalphysiologist.dmaple.ui
 
 import android.app.Application
 import android.text.InputType
+import androidx.camera.view.PreviewView
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import com.scepticalphysiologist.dmaple.MainActivity
@@ -23,30 +24,25 @@ import java.time.format.DateTimeFormatter
 
 class RecorderModel(application: Application): AndroidViewModel(application) {
 
-    // Mapping service
-    // ---------------
+    /** A reference to the mapping service used to record maps and save state in the background. */
     private val mapper: MappingService?
         get() = MainActivity.mapService
 
-    // State
-    // -----
     /** Model state.
      * 0 = Create mapping ROIs.
      * 1 = Record maps.
      * 2 = View maps.
      */
     private var state = if(mapper?.isCreatingMaps() == true) 1 else 0
-    /** The index (in [mapper]'s list of map creators) of the current map to be shown. */
-    private var currentMapIndex: Int = 0
     /** Indicate warning messages that should be shown, e.g. when starting mapping. */
-    val messages = MutableLiveData<Message?>(null)
+    val messages = MutableLiveData<Message<*>?>(null)
     /** Indicate the elapsed time (seconds) of mapping. */
     val timer = MutableLiveData<Long>(0L)
     /** A coroutine scope for running the timer. */
     private var scope: CoroutineScope? = null
 
     // ---------------------------------------------------------------------------------------------
-    // Public wrapper to mapping service.
+    // Finite state machine
     // ---------------------------------------------------------------------------------------------
 
     /** Get the model's [state]. */
@@ -78,6 +74,13 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
         }
     }
 
+    // ---------------------------------------------------------------------------------------------
+    // Public wrapper to the mapping service.
+    // ---------------------------------------------------------------------------------------------
+
+    /** Provide the camera preview (surface provider) for the mapping service. */
+    fun setCameraPreview(preview: PreviewView) { MainActivity.setMappingServiceCameraPreview(preview) }
+
     /** Set the ROIs used for mapping. */
     fun setMappingRois(viewRois: List<MappingRoi>) { mapper?.setRois(viewRois) }
 
@@ -87,13 +90,11 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
     /** Set the exposure level. */
     fun setExposure(fraction: Float) { mapper?.setExposure(fraction) }
 
-    /** Set the current map to be shown in the [MapView]. */
-    fun setCurrentlyShownMap(i: Int) {
-        mapper?.let{ currentMapIndex = if(i < it.nMapCreators()) i else 0 }
-    }
+    /** Update the currently shown map given the UID of a selected ROI. */
+    fun updateCurrentlyShownMap(selectedRoiUid: String) { mapper?.setNextMap(selectedRoiUid) }
 
-    /** Get the map creator of the current map shown in the map*/
-    fun creatorOfCurrentlyShownMap(): MapCreator? { return mapper?.getMapCreator(currentMapIndex) }
+    /** Get the currently shown map - its creator and map index. */
+    fun getCurrentlyShownMap(): Pair<MapCreator?, Int> { return mapper?.getCurrentMapCreator() ?: Pair(null, 0) }
 
     // ---------------------------------------------------------------------------------------------
     // Timer
