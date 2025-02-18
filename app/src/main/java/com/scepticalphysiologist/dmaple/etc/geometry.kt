@@ -200,17 +200,16 @@ class Point(var x: Float = 0f, var y: Float = 0f) {
  * @property orientation The frame orientation (degrees).
  * @property size The width and height of the frame.
  */
-class Frame(width: Float, height: Float, val orientation: Int = 0) {
+class Frame(val size: Point, val orientation: Int = 0) {
 
-    val size: Point = Point(width, height)
+    //val size: Point = Point(width, height)
 
     companion object {
 
         /**  Get a view's frame. */
         fun fromView(view: View, display: Display): Frame {
             return Frame(
-                width=view.width.toFloat(),
-                height=view.height.toFloat(),
+                Point(view.width.toFloat(), view.height.toFloat()),
                 orientation = surfaceRotationDegrees(display.rotation)
             )
         }
@@ -218,8 +217,7 @@ class Frame(width: Float, height: Float, val orientation: Int = 0) {
         /** Get an image's frame. */
         fun fromImage(image: ImageProxy): Frame {
             return Frame(
-                width=image.width.toFloat(),
-                height=image.height.toFloat(),
+                Point(image.width.toFloat(), image.height.toFloat()),
                 orientation = image.imageInfo.rotationDegrees
             )
         }

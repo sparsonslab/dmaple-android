@@ -115,7 +115,10 @@ fun saveCreatorsAndMaps(
 
         // TIFF image
         TiffWriter.writeTiff(File(dir, "${roi.uid}.tiff"), img)
-        roiMetadata[roi.uid] = mapOf("maps" to mapMetadata)
+        roiMetadata[roi.uid] = mapOf(
+            "maps" to mapMetadata,
+
+        )
     }
 
     // Write metadata.

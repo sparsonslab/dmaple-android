@@ -27,6 +27,7 @@ import androidx.core.app.ServiceCompat
 import androidx.lifecycle.LifecycleService
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.etc.Frame
+import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.etc.surfaceRotationDegrees
 import com.scepticalphysiologist.dmaple.etc.msg.Warnings
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
@@ -393,8 +394,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             val imageInfo = it.resolutionInfo ?: return null
             val or = imageInfo.rotationDegrees + surfaceRotationDegrees(it.targetRotation)
             return Frame(
-                width=imageInfo.resolution.width.toFloat(),
-                height = imageInfo.resolution.height.toFloat(),
+                Point(imageInfo.resolution.width.toFloat(), imageInfo.resolution.height.toFloat()),
                 orientation = or
             )
         } ?: return null
