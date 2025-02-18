@@ -25,19 +25,22 @@ fun main() {
 
     val nx = 100
     val ny = 100
-    val buffer = RGBMap(ByteBuffer.allocate(nx * ny * 3), nx)
+    val buffer = ByteBuffer.allocate(nx * ny * 3)
+    val map = RGBMap(buffer, nx)
     for(i in 20..60)
         for(j in 40..60)
-            buffer.set(i, j, Color.RED)
+            map.set(i, j, Color.RED)
 
-    println(Color.BLUE)
-    println(buffer.getColorInt(50, 50))
+    buffer.position(nx * ny * 3 - 1)
 
-    val dir = buffer.tiffDirectory(ny)
+
+    println(map.getColorInt(50, 50))
+
     val img = TIFFImage()
-    img.add(dir)
+    img.add(map.tiffDirectory(ny))
+    img.add(map.tiffDirectory(ny))
 
-    val path = "/Users/senparsons/Documents/programming/personal/dmaple_android/example6.tiff"
+    val path = "/Users/senparsons/Documents/programming/personal/dmaple_android/example10.tiff"
     TiffWriter.writeTiff(File(path), img)
 
 

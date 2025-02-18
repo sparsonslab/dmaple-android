@@ -3,6 +3,7 @@ package com.scepticalphysiologist.dmaple.map.creator
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
+import mil.nga.tiff.FieldTagType
 import mil.nga.tiff.FieldType
 import mil.nga.tiff.FileDirectory
 import mil.nga.tiff.Rasters

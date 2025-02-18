@@ -26,4 +26,15 @@ enum class MapType (val title: String){
         return null
     }
 
+    companion object {
+
+
+
+        fun getMapType(creator: MapCreator): MapType {
+            return when(creator) {
+                is BufferedExampleMap -> DIAMETER
+                else -> SPINE
+            }
+        }
+    }
 }

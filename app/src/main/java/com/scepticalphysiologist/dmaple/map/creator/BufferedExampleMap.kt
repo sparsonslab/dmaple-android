@@ -103,7 +103,9 @@ class BufferedExampleMap(
     // Map save.
     // ---------------------------------------------------------------------------------------------
 
-    override fun tiffDirectory(): List<FileDirectory> {
-        return mapView?.let{listOf(it.tiffDirectory(nt))} ?: listOf()
+    override fun tiffDirectory(): Map<String, FileDirectory> {
+        return mapView?.let{
+            mapOf("map0" to it.tiffDirectory(nt))
+        } ?: mapOf()
     }
 }
