@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.hardware.camera2.CaptureRequest
 import android.os.Binder
+import android.os.Environment
 import android.os.IBinder
 import android.view.Display
 import android.view.WindowManager
@@ -30,8 +31,8 @@ import com.scepticalphysiologist.dmaple.etc.Frame
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.etc.surfaceRotationDegrees
 import com.scepticalphysiologist.dmaple.etc.msg.Warnings
+import com.scepticalphysiologist.dmaple.etc.strftime
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
-import com.scepticalphysiologist.dmaple.map.creator.saveCreatorsAndMaps
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -324,7 +325,13 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
      * */
     fun saveAndClear(folderName: String?) = scope.launch(Dispatchers.Default) {
         if(creating) return@launch
-        folderName?.let { saveCreatorsAndMaps(creators, it, startTime) }
+        folderName?.let {
+            MappingRecord(
+                name = strftime(startTime, "YYMMdd_HHmmss_") + it,
+                time = startTime,
+                creators = creators
+            ).write(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS))
+        }
         creators.clear()
         freeAllBuffers()
         System.gc()
