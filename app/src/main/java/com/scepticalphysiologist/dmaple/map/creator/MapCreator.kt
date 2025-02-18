@@ -5,6 +5,7 @@ import android.graphics.Rect
 import android.util.Size
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.map.MappingRoi
+import mil.nga.tiff.FileDirectory
 import java.io.File
 import java.nio.ByteBuffer
 import kotlin.math.ceil
@@ -39,7 +40,7 @@ abstract class MapCreator(val roi: MappingRoi, bufferProvider: (() -> ByteBuffer
     ): Bitmap?
 
     /** Destroy the creator (freeing any resources) and if a file is provided, save the map. */
-    abstract fun destroy(file: File? = null)
+    abstract fun tiffDirectory(): List<FileDirectory>
 
 }
 

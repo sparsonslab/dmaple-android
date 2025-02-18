@@ -118,10 +118,14 @@ dependencies {
     implementation "androidx.camera:camera-extensions:$camerax_version"
 
     // ---------------------------------------------------------------------------------------------
-    // Images
+    // Third-party
     // ---------------------------------------------------------------------------------------------
 
+    // TIFF images
     implementation "mil.nga:tiff:3.0.0"
+
+    // json
+    implementation 'com.beust:klaxon:5.5'
 
     // ---------------------------------------------------------------------------------------------
     // JUnit testing

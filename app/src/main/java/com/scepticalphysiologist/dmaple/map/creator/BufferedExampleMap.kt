@@ -6,6 +6,7 @@ import android.graphics.Rect
 import android.util.Size
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.map.MappingRoi
+import mil.nga.tiff.FileDirectory
 import java.io.File
 import java.lang.IllegalArgumentException
 import java.lang.IndexOutOfBoundsException
@@ -102,23 +103,7 @@ class BufferedExampleMap(
     // Map save.
     // ---------------------------------------------------------------------------------------------
 
-
-    override fun destroy(file: File?) {
-
-        println("DESTROYING MAP: saving to = ${file?.absolutePath}")
-
-        // save
-        // todo = put in coroutine so won't take for ever. (Need to pass new buffer view
-        //    around buffer, so that this object can be destroyed?)
-        /*
-        val path = File(
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
-            "xxxxmap.tiff"
-        )
-        val img = TIFFImage()
-        img.add(mapView.tiffDirectory(nt))
-        TiffWriter.writeTiff(path, img)
-        */
-
+    override fun tiffDirectory(): List<FileDirectory> {
+        return mapView?.let{listOf(it.tiffDirectory(nt))} ?: listOf()
     }
 }

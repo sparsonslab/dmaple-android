@@ -30,11 +30,15 @@ import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.etc.Frame
 import com.scepticalphysiologist.dmaple.etc.surfaceRotationDegrees
 import com.scepticalphysiologist.dmaple.etc.msg.Warnings
+import com.scepticalphysiologist.dmaple.etc.strftime
+import com.scepticalphysiologist.dmaple.etc.writeJSON
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
+import mil.nga.tiff.TIFFImage
+import mil.nga.tiff.TiffWriter
 import java.io.File
 import java.io.IOException
 import java.io.RandomAccessFile
@@ -42,6 +46,8 @@ import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.Executors
 
 /** A foreground service that will run the camera, record spatio-temporal maps and keep ROI state.
@@ -166,7 +172,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** Maps are being created ("recording"). */
     private var creating: Boolean = false
     /** The instant that creation of maps started. */
-    private var startTime: Instant? = null
+    private var startTime: Instant = Instant.now()
 
     private var scope: CoroutineScope = MainScope()
 
@@ -321,18 +327,37 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
      *
      * @param mapFilePrefix A prefix for all map files or null if maps are not to be saved.
      * */
-    fun clearCreators(mapFilePrefix: String?) = scope.launch(Dispatchers.Default) {
+    fun saveAndClear(folderName: String?) = scope.launch(Dispatchers.Default) {
         if(creating) return@launch
-        val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
-        for(i in creators.indices) {
-            val file = mapFilePrefix?.let { prefix ->
-                File(dir, "${prefix}_${creators[i].roi.uid}")
-            }
-            creators[i].destroy(file)
-        }
+        folderName?.let { saveMaps(it) }
         creators.clear()
         freeAllBuffers()
         System.gc()
+    }
+
+    private fun saveMaps(folderName: String) {
+        // Folder
+        val dtPrefix = strftime(startTime, "YYMMdd_HHmmss")
+        val dir = File(
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
+            if(folderName.isEmpty()) dtPrefix else "${dtPrefix}_$folderName"
+        )
+        if(!dir.exists()) dir.mkdir()
+
+        // Metadata
+        val metadata: MutableMap<String, Any> = mutableMapOf(
+            "date-time" to strftime(startTime,"YY-MM-dd HH:mm:ss"),
+        )
+        val metaFile = File(dir, "mapping_metadata.json")
+        writeJSON(metaFile, metadata)
+
+        // Maps
+        for((roi, crtrs) in roiCreatorsMap()) {
+            val img = TIFFImage()
+            for(c in crtrs.map { it.tiffDirectory() }.flatten()) img.add(c)
+            val path = File(dir, "${roi.uid}.tiff")
+            TiffWriter.writeTiff(path, img)
+        }
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -385,7 +410,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     private fun stop(): Warnings {
         // State
         creating = false
-        startTime = null
         setPreview(autosOn = true)
         return Warnings("Stop Recording")
     }
@@ -425,7 +449,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     }
 
     // ---------------------------------------------------------------------------------------------
-    // Current map update.
+    // ROIs and maps
     // ---------------------------------------------------------------------------------------------
 
     /** Given a selected ROI, get the next map to show. */
@@ -445,6 +469,16 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         var j = 1 + creatorsFromRoi.indexOf(currentCreatorIdx)
         if(j >= creatorsFromRoi.size) j = 0
         return Pair(creatorsFromRoi[j], 0)
+    }
+
+    private fun roiCreatorsMap(): Map<MappingRoi, List<MapCreator>> {
+        val uids = creators.map{it.roi.uid}.toSet()
+        val mp = mutableMapOf<MappingRoi, List<MapCreator>>()
+        for(uid in uids) {
+            val roi = creators.first { it.roi.uid == uid }.roi
+            mp[roi] = creators.filter { it.roi.uid == uid }
+        }
+        return mp
     }
 
 }

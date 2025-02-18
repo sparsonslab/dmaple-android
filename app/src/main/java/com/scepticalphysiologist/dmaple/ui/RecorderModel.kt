@@ -126,7 +126,7 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
     private fun askToSaveMaps() {
         val dialog = InputRequired(
             title = "Save Maps?",
-            message = "If you want to save the maps\nyou can set a common file identifier.",
+            message = "If you want to save the maps\nyou can set a directory name.",
             initialValue = "",
             inputType = InputType.TYPE_CLASS_TEXT
         )
@@ -136,13 +136,9 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
     }
 
     /** Save all maps. */
-    private fun saveMaps(mapId: String) {
-        val id = mapId.ifEmpty { randomAlphaString(20) }
-        val dt = LocalDateTime.now().format(DateTimeFormatter.ofPattern("YYMMdd_HHmmss"))
-        mapper?.clearCreators(mapFilePrefix = "${dt}_$id")
-    }
+    private fun saveMaps(dir: String) { mapper?.saveAndClear(dir) }
 
     /** Do not save maps, but still clear-up. */
-    private fun doNotSaveMaps(input: String) { mapper?.clearCreators(mapFilePrefix = null) }
+    private fun doNotSaveMaps(input: String) { mapper?.saveAndClear(null) }
 
 }
