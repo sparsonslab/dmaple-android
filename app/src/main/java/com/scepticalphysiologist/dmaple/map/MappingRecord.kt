@@ -5,8 +5,6 @@ import com.scepticalphysiologist.dmaple.etc.strftime
 import com.scepticalphysiologist.dmaple.etc.strptime
 import com.scepticalphysiologist.dmaple.etc.writeJSON
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
-import com.scepticalphysiologist.dmaple.map.creator.MapType
-import mil.nga.tiff.FieldTagType
 import mil.nga.tiff.TIFFImage
 import mil.nga.tiff.TiffWriter
 import java.io.File
@@ -56,39 +54,19 @@ class MappingRecord(
         val dir = File(root, name)
         if(!dir.exists()) dir.mkdir()
 
-        // Metadata
-        val metadata: MutableMap<String, Any> = mutableMapOf(
-            "date-time" to strftime(time, dtFormat),
-        )
-
         // Maps
         // One TIFF image per ROI. One TIFF "directory"/"slice" per map.
-        val roiMetadata = mutableMapOf<String, Any>()
         for((roi, roiCreators) in struct) {
 
-            // Creators - TIFF slices and metadata.
-            val img = TIFFImage()
-            val mapMetadata = mutableListOf<Map<String, Any>>()
-            for(creator in roiCreators) {
-                val creatorName = MapType.getMapType(creator).title
-                for((mapName, tiffDir) in creator.tiffDirectory()) {
-                    tiffDir.setStringEntryValue(FieldTagType.ImageDescription, mapName)
-                    img.add(tiffDir)
-                    mapMetadata.add(mapOf(
-                        "type" to creatorName,
-                        "map#" to mapName
-                    ))
-                }
-            }
+            // ROI json
+            // ??????
 
-            // TIFF image
+            // Map TIFFs
+            val img = TIFFImage()
+            for(tiff in roiCreators.map{it.tiffDirectories()}.filterNotNull().flatten()) img.add(tiff)
             TiffWriter.writeTiff(File(dir, "${roi.uid}.tiff"), img)
-            roiMetadata[roi.uid] = mapOf("maps" to mapMetadata)
         }
 
-        // Write metadata.
-        metadata["rois"] = roiMetadata
-        writeJSON(File(dir, metadataFileName), metadata)
     }
 
 

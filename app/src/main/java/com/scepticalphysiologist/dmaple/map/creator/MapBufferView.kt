@@ -34,7 +34,7 @@ abstract class MapBufferView<T : Number>(
     /** Convert the map into a TIFF image "directory".
      * @param y The yth time pixel up to which to use. Null to use the current position.
      * */
-    fun tiffDirectory(y: Int? = null): FileDirectory {
+    fun tiffDirectory(y: Int? = null, description: String = ""): FileDirectory {
         val currentTime = floorDiv(buffer.position(), nx)
         val ny = minOf(y ?: currentTime, currentTime)
 
@@ -43,6 +43,7 @@ abstract class MapBufferView<T : Number>(
         dir.setImageHeight(ny)
         dir.samplesPerPixel = nColorChannels
         dir.setBitsPerSample(bitsPerChannel)
+        dir.setStringEntryValue(FieldTagType.ImageDescription, description)
 
         val raster = Rasters(nx, ny, nColorChannels, fieldType)
         dir.compression = TiffConstants.COMPRESSION_NO

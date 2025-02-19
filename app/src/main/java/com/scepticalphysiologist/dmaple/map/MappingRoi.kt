@@ -24,8 +24,6 @@ class MappingRoi(
 ): RectF(0f, 0f, 0f, 0f) {
 
 
-
-
     /** Change the ROI's reference frame. */
     fun changeFrame(newFrame: Frame) {
         this.set(frame.transformRect(this, newFrame, resize=true))

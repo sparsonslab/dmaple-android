@@ -39,7 +39,7 @@ abstract class MapCreator(val roi: MappingRoi, bufferProvider: (() -> ByteBuffer
     ): Bitmap?
 
     /** Destroy the creator (freeing any resources) and if a file is provided, save the map. */
-    abstract fun tiffDirectory(): Map<String, FileDirectory>
+    abstract fun tiffDirectories(): List<FileDirectory>?
 
 }
 

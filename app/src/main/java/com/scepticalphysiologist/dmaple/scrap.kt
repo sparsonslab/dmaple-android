@@ -10,6 +10,7 @@ import androidx.core.graphics.alpha
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
+import com.google.gson.Gson
 import com.scepticalphysiologist.dmaple.etc.Edge
 import com.scepticalphysiologist.dmaple.etc.Frame
 import com.scepticalphysiologist.dmaple.etc.Point
@@ -26,7 +27,6 @@ fun printColor(color: Int) {
     println("${color.alpha}, ${color.red}, ${color.green}, ${color.blue}")
 }
 
-@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 fun main() {
 
     val roi = MappingRoi(
@@ -35,6 +35,9 @@ fun main() {
         seedingEdge = Edge.TOP,
         maps = listOf(MapType.RADIUS, MapType.SPINE),
     )
+
+   //val gson = Gson()
+    //println(gson.toJson(roi.frame))
 
     /*
 
