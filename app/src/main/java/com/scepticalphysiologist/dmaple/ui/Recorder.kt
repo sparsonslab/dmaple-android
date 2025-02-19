@@ -4,8 +4,10 @@ import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.text.format.DateUtils
 import android.view.MotionEvent
+import android.view.View
 import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.fragment.findNavController
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.databinding.RecorderBinding
 import com.scepticalphysiologist.dmaple.etc.PermissionSets
@@ -81,6 +83,13 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         model.timer.observe(viewLifecycleOwner) { elapsedSec ->
             binding.cameraTimer.text = DateUtils.formatElapsedTime(elapsedSec)
         }
+
+        // Got to records.
+        binding.toRecordsButton.setOnClickListener {
+            findNavController().navigate(R.id.recorder_to_explorer)
+        }
+
+
     }
 
     /** Set the UI appearance depending on whether maps are being created. */
@@ -88,6 +97,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         when(model.getState()) {
             0 -> {
                 binding.recordButton.setImageResource(R.drawable.play_arrow)
+                binding.toRecordsButton.visibility = View.VISIBLE
                 binding.maps.reset()
                 binding.cameraAndRoi.allowEditing(true)
                 binding.cameraAndRoi.fullSize()
@@ -96,6 +106,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
             }
             1 -> {
                 binding.recordButton.setImageResource(R.drawable.stop_5f6368)
+                binding.toRecordsButton.visibility = View.INVISIBLE
                 binding.cameraAndRoi.allowEditing(false)
                 val extent = Point.ofViewExtent(binding.root) * 0.5f
                 binding.cameraAndRoi.resize(extent.x.toInt(), extent.y.toInt())
@@ -104,6 +115,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
             }
             2 -> {
                 binding.recordButton.setImageResource(R.drawable.eject_arrow)
+                binding.toRecordsButton.visibility = View.INVISIBLE
                 binding.cameraAndRoi.allowEditing(false)
             }
         }

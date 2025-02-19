@@ -33,6 +33,8 @@ import com.scepticalphysiologist.dmaple.etc.surfaceRotationDegrees
 import com.scepticalphysiologist.dmaple.etc.msg.Warnings
 import com.scepticalphysiologist.dmaple.etc.strftime
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
+import com.scepticalphysiologist.dmaple.map.record.MappingRecord
+import com.scepticalphysiologist.dmaple.map.record.roiCreatorsMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope

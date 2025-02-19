@@ -1,7 +1,8 @@
-package com.scepticalphysiologist.dmaple.map
+package com.scepticalphysiologist.dmaple.map.record
 
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
+import com.scepticalphysiologist.dmaple.map.MappingRoi
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import mil.nga.tiff.TIFFImage
 import mil.nga.tiff.TiffReader

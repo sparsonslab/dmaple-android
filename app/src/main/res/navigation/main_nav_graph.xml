@@ -10,6 +10,20 @@
         android:id="@+id/recorder"
         android:name="com.scepticalphysiologist.dmaple.ui.Recorder"
         tools:layout="@layout/recorder">
+        <action
+            android:id="@+id/recorder_to_explorer"
+            app:destination="@+id/explorer">
+        </action>
+    </fragment>
+
+    <fragment
+        android:id="@+id/explorer"
+        android:name="com.scepticalphysiologist.dmaple.ui.Explorer"
+        tools:layout="@layout/explorer">
+        <action
+            android:id="@+id/explorer_to_recorder"
+            app:destination="@id/recorder">
+        </action>
     </fragment>
 
 </navigation>

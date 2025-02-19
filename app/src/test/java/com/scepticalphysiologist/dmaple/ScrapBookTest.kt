@@ -7,7 +7,7 @@ import com.scepticalphysiologist.dmaple.etc.Edge
 import com.scepticalphysiologist.dmaple.etc.Frame
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.etc.randomAlphaString
-import com.scepticalphysiologist.dmaple.map.MappingRecord
+import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import com.scepticalphysiologist.dmaple.map.MappingRoi
 import com.scepticalphysiologist.dmaple.map.creator.MapType
 import org.junit.jupiter.api.Test
