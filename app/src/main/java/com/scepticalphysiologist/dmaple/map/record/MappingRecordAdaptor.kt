@@ -46,7 +46,7 @@ class MappingRecordAdaptor (
             it.maps.toString()
         }.joinToString("\n")
         holder.binding.recordDescription.text = roiDescription
-
+        record.field?.let {holder.binding.recordImage.setImageBitmap(it)}
 
         holder.binding.root.setOnClickListener {
             openRecord(record)

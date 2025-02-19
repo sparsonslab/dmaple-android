@@ -1,5 +1,7 @@
 package com.scepticalphysiologist.dmaple.map.record
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.scepticalphysiologist.dmaple.map.MappingRoi
@@ -8,14 +10,16 @@ import mil.nga.tiff.TIFFImage
 import mil.nga.tiff.TiffReader
 import mil.nga.tiff.TiffWriter
 import java.io.File
+import java.io.FileOutputStream
 import java.nio.ByteBuffer
 
 class MappingRecord(
     val location: File,
+    val field: Bitmap?,
     val struct: Map<MappingRoi, List<MapCreator>>
 ) {
 
-    val name = location.name
+    val name: String = location.name
 
     companion object {
 
@@ -40,7 +44,12 @@ class MappingRecord(
                 struct[roi] = roi.maps.map{it.makeCreator(roi)}
             }
 
-            return MappingRecord(location, struct)
+            // Field of view
+            var field: Bitmap?= null
+            val fieldFile = File(location, "field.jpg")
+            if(fieldFile.exists()) field = BitmapFactory.decodeFile(fieldFile.absolutePath)
+
+            return MappingRecord(location, field, struct)
         }
 
     }
@@ -74,6 +83,13 @@ class MappingRecord(
             for(tiff in roiCreators.map{it.toTiff()}.filterNotNull().flatten()) img.add(tiff)
             TiffWriter.writeTiff(File(location, "${roi.uid}.tiff"), img)
         }
+
+        // Field
+        field?.compress(
+            Bitmap.CompressFormat.JPEG, 90,
+            FileOutputStream(File(location, "field.jpg"))
+        )
+
     }
 
 }

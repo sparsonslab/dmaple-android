@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.graphics.Bitmap
 import android.hardware.camera2.CaptureRequest
 import android.os.Binder
 import android.os.Environment
@@ -173,6 +174,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** The instant that creation of maps started. */
     private var startTime: Instant = Instant.now()
 
+    private var lastFrame: Bitmap? = null
     private var scope: CoroutineScope = MainScope()
 
     // ---------------------------------------------------------------------------------------------
@@ -333,7 +335,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
                 strftime(startTime, "YYMMdd_HHmmss_") + it
             )
-            val record = MappingRecord(loc, roiCreatorsMap(creators))
+            val record = MappingRecord(loc, lastFrame, roiCreatorsMap(creators))
             record.write()
             Explorer.records.add(record)
         }
@@ -417,11 +419,11 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     override fun analyze(image: ImageProxy) {
         if(creating) {
             // Pass the image to each map creator to analyse.
-            val bm = image.toBitmap()
+            lastFrame = image.toBitmap()
             // todo - would be faster to have creators access image pixels directly rather
             //    than convert the whole image to a bitmap. But getting pixels out of image
             //    is a pain (decoding, planes, etc) -  I did try!
-            for(creator in creators) creator.updateWithCameraBitmap(bm)
+            for(creator in creators) creator.updateWithCameraBitmap(lastFrame!!)
         }
         // Each image must be "closed" to allow preview to continue.
         image.close()

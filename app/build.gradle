@@ -128,6 +128,7 @@ dependencies {
     // json
     implementation 'com.beust:klaxon:5.5'
 
+    // serialization
     implementation 'com.google.code.gson:gson:2.8.8'
 
     // ---------------------------------------------------------------------------------------------
