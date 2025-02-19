@@ -1,72 +1,70 @@
 package com.scepticalphysiologist.dmaple.map
 
-import com.scepticalphysiologist.dmaple.etc.readJSON
-import com.scepticalphysiologist.dmaple.etc.strftime
-import com.scepticalphysiologist.dmaple.etc.strptime
-import com.scepticalphysiologist.dmaple.etc.writeJSON
+import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import mil.nga.tiff.TIFFImage
 import mil.nga.tiff.TiffWriter
 import java.io.File
-import java.time.Instant
 
 class MappingRecord(
     val name: String,
-    val time: Instant,
     val struct: Map<MappingRoi, List<MapCreator>>
 ) {
 
     companion object {
 
-        private const val metadataFileName = "mapping_metadata.json"
-
-        private const val dtFormat = "YY-MM-dd HH:mm:ss"
-
 
         fun read(folder: File): MappingRecord? {
 
-            // Metadata
-            val metaDataFile = File(folder, metadataFileName)
-            if(!metaDataFile.exists()) return null
-            val metadata = readJSON(metaDataFile)
-            val time = (metadata["date-time"] as? String)?.let{ strptime(it, dtFormat) } ?: return null
+            if(!folder.exists() || !folder.isDirectory) return null
+
+            // ROI files.
+            val roiFiles = folder.listFiles()?.filter{it.name.endsWith(".json") } ?: listOf()
+            if(roiFiles.isEmpty()) return null
+
+            val struct = mutableMapOf<MappingRoi, List<MapCreator>>()
+            for(roiFile in roiFiles) {
+                try {
+                    val roi = Gson().fromJson(roiFile.readText(), MappingRoi::class.java)
+                    val roiName = roiFile.name.slice(0 until roiFile.name.length - 5)
+                    println("${roi.uid}")
+
+                    val mapsFile = File(folder, "${roiName}.tiff")
+                    if(!mapsFile.exists()) {
+                        struct[roi] = listOf()
+                        continue
+                    }
 
 
-            // ROIs
-            val rois = (metadata["rois"] as? Map<*, *>) ?: return null
-            for((k, v) in rois) {
-                val roiName = k as? String ?: continue
+                    struct[roi] = listOf()
 
+                } catch(_: JsonSyntaxException) {
+                    continue
+                }
             }
 
-
-            val name = folder.name
-
-
-            return null
+            return MappingRecord(name=folder.name, struct = struct)
         }
 
     }
 
     fun write(root: File) {
-
         // Directory to save map
         val dir = File(root, name)
         if(!dir.exists()) dir.mkdir()
 
-        // Maps
-        // One TIFF image per ROI. One TIFF "directory"/"slice" per map.
+        // ROIs and their maps.
         for((roi, roiCreators) in struct) {
+            // JSON serialized ROI
+            val roiFile = File(dir, "${roi.uid}.json")
+            roiFile.writeText(Gson().toJson(roi))
 
-            // ROI json
-            // ??????
-
-            // Map TIFFs
+            // TIFF of maps (one slice/directory per map)
             val img = TIFFImage()
             for(tiff in roiCreators.map{it.tiffDirectories()}.filterNotNull().flatten()) img.add(tiff)
             TiffWriter.writeTiff(File(dir, "${roi.uid}.tiff"), img)
         }
-
     }
 
 

@@ -1,7 +1,5 @@
 package com.scepticalphysiologist.dmaple
 
-
-
 import android.graphics.Color
 import android.os.Build
 import android.view.Surface
@@ -22,6 +20,7 @@ import mil.nga.tiff.TiffWriter
 import java.io.File
 import java.nio.ByteBuffer
 
+import android.graphics.RectF
 
 fun printColor(color: Int) {
     println("${color.alpha}, ${color.red}, ${color.green}, ${color.blue}")
@@ -29,15 +28,10 @@ fun printColor(color: Int) {
 
 fun main() {
 
-    val roi = MappingRoi(
-        frame = Frame(Point(800f, 1200f), orientation = Surface.ROTATION_90),
-        threshold = 156,
-        seedingEdge = Edge.TOP,
-        maps = listOf(MapType.RADIUS, MapType.SPINE),
-    )
 
-   //val gson = Gson()
-    //println(gson.toJson(roi.frame))
+
+    val root = File("/Users/senparsons/Downloads/250219_103317_gloop")
+
 
     /*
 

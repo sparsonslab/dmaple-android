@@ -328,7 +328,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         folderName?.let {
             MappingRecord(
                 name = strftime(startTime, "YYMMdd_HHmmss_") + it,
-                time = startTime,
                 struct = roiCreatorsMap(creators)
             ).write(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS))
         }
