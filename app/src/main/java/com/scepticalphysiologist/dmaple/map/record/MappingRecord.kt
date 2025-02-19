@@ -13,21 +13,29 @@ import java.io.File
 import java.io.FileOutputStream
 import java.nio.ByteBuffer
 
+/** Input-output of a mapping recording.
+ *
+ */
 class MappingRecord(
+    /** The directory containing all the data from a recording. */
     val location: File,
+    /** An image of the mapping field (i.e. a camera frame). */
     val field: Bitmap?,
+    /** The mapping ROIs and their map creators. */
     val struct: Map<MappingRoi, List<MapCreator>>
 ) {
 
+    /** The name (folder name) of the record. */
     val name: String = location.name
 
     companion object {
 
+        /** Read a record from the [location] folder.*/
         fun read(location: File): MappingRecord? {
 
             if(!location.exists() || !location.isDirectory) return null
 
-            // ROI files.
+            // ROI JSON files.
             val roiFiles = location.listFiles()?.filter{it.name.endsWith(".json") } ?: listOf()
             if(roiFiles.isEmpty()) return null
 
@@ -37,7 +45,6 @@ class MappingRecord(
                 val roi = try { Gson().fromJson(roiFile.readText(), MappingRoi::class.java) }
                 catch (_: JsonSyntaxException) { null }
                 if(roi == null) continue
-
                 // Maps: creators
                 val mapsFile = File(location, "${roi.uid}.tiff")
                 if(!mapsFile.exists()) continue
@@ -54,7 +61,8 @@ class MappingRecord(
 
     }
 
-    fun readMapTiffs(bufferProvider: (() -> ByteBuffer?)) {
+    /** Once a record has been read, load the map TIFFs. */
+    fun loadMapTiffs(bufferProvider: (() -> ByteBuffer?)) {
         for((roi, creators) in struct) {
             val mapsFile = File(location, "${roi.uid}.tiff")
             if(!mapsFile.exists()) continue
@@ -68,6 +76,7 @@ class MappingRecord(
         }
     }
 
+    /** Write the record to its [location] folder. */
     fun write() {
         // Directory to save map
         if(!location.exists()) location.mkdir()
@@ -77,19 +86,17 @@ class MappingRecord(
             // ROI: serialize to JSON
             val roiFile = File(location, "${roi.uid}.json")
             roiFile.writeText(Gson().toJson(roi))
-
             // Maps: to TIFF (one slice/directory per map)
             val img = TIFFImage()
             for(tiff in roiCreators.map{it.toTiff()}.filterNotNull().flatten()) img.add(tiff)
             TiffWriter.writeTiff(File(location, "${roi.uid}.tiff"), img)
         }
 
-        // Field
+        // Mapping field.
         field?.compress(
             Bitmap.CompressFormat.JPEG, 90,
             FileOutputStream(File(location, "field.jpg"))
         )
-
     }
 
 }
