@@ -1,6 +1,8 @@
 package com.scepticalphysiologist.dmaple.map
 
+import com.scepticalphysiologist.dmaple.etc.readJSON
 import com.scepticalphysiologist.dmaple.etc.strftime
+import com.scepticalphysiologist.dmaple.etc.strptime
 import com.scepticalphysiologist.dmaple.etc.writeJSON
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.creator.MapType
@@ -13,17 +15,37 @@ import java.time.Instant
 class MappingRecord(
     val name: String,
     val time: Instant,
-    creators: List<MapCreator>
+    val struct: Map<MappingRoi, List<MapCreator>>
 ) {
-
-    val struct: Map<MappingRoi, List<MapCreator>> = roiCreatorsMap(creators)
 
     companion object {
 
-        fun read(folder: File) {
+        private const val metadataFileName = "mapping_metadata.json"
+
+        private const val dtFormat = "YY-MM-dd HH:mm:ss"
 
 
+        fun read(folder: File): MappingRecord? {
 
+            // Metadata
+            val metaDataFile = File(folder, metadataFileName)
+            if(!metaDataFile.exists()) return null
+            val metadata = readJSON(metaDataFile)
+            val time = (metadata["date-time"] as? String)?.let{ strptime(it, dtFormat) } ?: return null
+
+
+            // ROIs
+            val rois = (metadata["rois"] as? Map<*, *>) ?: return null
+            for((k, v) in rois) {
+                val roiName = k as? String ?: continue
+
+            }
+
+
+            val name = folder.name
+
+
+            return null
         }
 
     }
@@ -36,7 +58,7 @@ class MappingRecord(
 
         // Metadata
         val metadata: MutableMap<String, Any> = mutableMapOf(
-            "date-time" to strftime(time,"YY-MM-dd HH:mm:ss"),
+            "date-time" to strftime(time, dtFormat),
         )
 
         // Maps
@@ -66,7 +88,7 @@ class MappingRecord(
 
         // Write metadata.
         metadata["rois"] = roiMetadata
-        writeJSON(File(dir, "mapping_metadata.json"), metadata)
+        writeJSON(File(dir, metadataFileName), metadata)
     }
 
 
@@ -74,7 +96,7 @@ class MappingRecord(
 
 
 /** Map ROIs (in the camera's frame) to the creators associated with them. */
-private fun roiCreatorsMap(creators: List<MapCreator>): Map<MappingRoi, List<MapCreator>> {
+fun roiCreatorsMap(creators: List<MapCreator>): Map<MappingRoi, List<MapCreator>> {
     val uids = creators.map{it.roi.uid}.toSet()
     val mp = mutableMapOf<MappingRoi, List<MapCreator>>()
     for(uid in uids) {

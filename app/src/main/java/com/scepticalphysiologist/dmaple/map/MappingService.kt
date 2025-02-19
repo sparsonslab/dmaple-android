@@ -329,7 +329,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             MappingRecord(
                 name = strftime(startTime, "YYMMdd_HHmmss_") + it,
                 time = startTime,
-                creators = creators
+                struct = roiCreatorsMap(creators)
             ).write(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS))
         }
         creators.clear()
