@@ -4,22 +4,26 @@ import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import mil.nga.tiff.TIFFImage
+import mil.nga.tiff.TiffReader
 import mil.nga.tiff.TiffWriter
 import java.io.File
+import java.nio.ByteBuffer
 
 class MappingRecord(
-    val name: String,
+    val location: File,
     val struct: Map<MappingRoi, List<MapCreator>>
 ) {
 
+    val name = location.name
+
     companion object {
 
-        fun read(folder: File): MappingRecord? {
+        fun read(location: File): MappingRecord? {
 
-            if(!folder.exists() || !folder.isDirectory) return null
+            if(!location.exists() || !location.isDirectory) return null
 
             // ROI files.
-            val roiFiles = folder.listFiles()?.filter{it.name.endsWith(".json") } ?: listOf()
+            val roiFiles = location.listFiles()?.filter{it.name.endsWith(".json") } ?: listOf()
             if(roiFiles.isEmpty()) return null
 
             val struct = mutableMapOf<MappingRoi, List<MapCreator>>()
@@ -30,31 +34,44 @@ class MappingRecord(
                 if(roi == null) continue
 
                 // Maps: creators
-                val mapsFile = File(folder, "${roi.uid}.tiff")
+                val mapsFile = File(location, "${roi.uid}.tiff")
                 if(!mapsFile.exists()) continue
                 struct[roi] = roi.maps.map{it.makeCreator(roi)}
             }
 
-            return MappingRecord(name=folder.name, struct = struct)
+            return MappingRecord(location, struct)
         }
 
     }
 
-    fun write(root: File) {
+    fun readMapTiffs(bufferProvider: (() -> ByteBuffer?)) {
+        for((roi, creators) in struct) {
+            val mapsFile = File(location, "${roi.uid}.tiff")
+            if(!mapsFile.exists()) continue
+            val dirs = TiffReader.readTiff(mapsFile).fileDirectories
+            for(creator in creators) {
+                val buffers = (0 until creator.nMaps).map{bufferProvider.invoke()}.filterNotNull()
+                if(buffers.size < creator.nMaps) return
+                creator.provideBuffers(buffers)
+                creator.fromTiff(dirs)
+            }
+        }
+    }
+
+    fun write() {
         // Directory to save map
-        val dir = File(root, name)
-        if(!dir.exists()) dir.mkdir()
+        if(!location.exists()) location.mkdir()
 
         // ROIs and their maps.
         for((roi, roiCreators) in struct) {
             // ROI: serialize to JSON
-            val roiFile = File(dir, "${roi.uid}.json")
+            val roiFile = File(location, "${roi.uid}.json")
             roiFile.writeText(Gson().toJson(roi))
 
             // Maps: to TIFF (one slice/directory per map)
             val img = TIFFImage()
             for(tiff in roiCreators.map{it.toTiff()}.filterNotNull().flatten()) img.add(tiff)
-            TiffWriter.writeTiff(File(dir, "${roi.uid}.tiff"), img)
+            TiffWriter.writeTiff(File(location, "${roi.uid}.tiff"), img)
         }
     }
 

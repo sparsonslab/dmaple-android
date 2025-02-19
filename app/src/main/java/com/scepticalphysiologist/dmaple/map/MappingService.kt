@@ -326,10 +326,11 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     fun saveAndClear(folderName: String?) = scope.launch(Dispatchers.Default) {
         if(creating) return@launch
         folderName?.let {
-            MappingRecord(
-                name = strftime(startTime, "YYMMdd_HHmmss_") + it,
-                struct = roiCreatorsMap(creators)
-            ).write(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS))
+            val loc = File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
+                strftime(startTime, "YYMMdd_HHmmss_") + it
+            )
+            MappingRecord(loc, roiCreatorsMap(creators)).write()
         }
         creators.clear()
         freeAllBuffers()
