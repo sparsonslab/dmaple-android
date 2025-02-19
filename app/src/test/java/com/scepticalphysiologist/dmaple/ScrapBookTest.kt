@@ -6,6 +6,7 @@ import com.google.gson.Gson
 import com.scepticalphysiologist.dmaple.etc.Edge
 import com.scepticalphysiologist.dmaple.etc.Frame
 import com.scepticalphysiologist.dmaple.etc.Point
+import com.scepticalphysiologist.dmaple.etc.randomAlphaString
 import com.scepticalphysiologist.dmaple.map.MappingRecord
 import com.scepticalphysiologist.dmaple.map.MappingRoi
 import com.scepticalphysiologist.dmaple.map.creator.MapType
@@ -77,6 +78,16 @@ class ScrapBookTest {
     }
 
     @Test
+    fun `example 5`() {
+
+        val uid = randomAlphaString(100)
+
+        println("=".repeat(30))
+        println(uid.map{it.toInt()}.sum())
+
+    }
+
+    @Test
     fun `example 3`() {
 
         val root = File("/Users/senparsons/Downloads/250219_103317_gloop")
@@ -87,7 +98,8 @@ class ScrapBookTest {
         record?.let {
 
             for((roi, creators) in it.struct) {
-                println(roi.maps)
+                println(roi.bottom)
+                println(creators[0].nMaps)
             }
 
         } ?: println("null")

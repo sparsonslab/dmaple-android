@@ -11,16 +11,18 @@ import kotlin.math.ceil
 
 
 /** A class that handles the creation of a spatio-temporal map. */
-abstract class MapCreator(val roi: MappingRoi, bufferProvider: (() -> ByteBuffer?)) {
+abstract class MapCreator(val roi: MappingRoi) {
+
+    /** The number of maps produced by the creator. */
+    abstract val nMaps: Int
+
+    abstract fun provideBuffers(buffers: List<ByteBuffer>): Boolean
 
     /** The current sample width (space) and height (time) of the map. */
     abstract fun spaceTimeSampleSize(): Size
 
     /** Update the map from a new camera bitmap. */
     abstract fun updateWithCameraBitmap(bitmap: Bitmap)
-
-    /** Get the number of maps produced by the creator. */
-    abstract fun nMaps(): Int
 
     /** Get a portion of the map as a bitmap.
      *
@@ -39,7 +41,9 @@ abstract class MapCreator(val roi: MappingRoi, bufferProvider: (() -> ByteBuffer
     ): Bitmap?
 
     /** Destroy the creator (freeing any resources) and if a file is provided, save the map. */
-    abstract fun tiffDirectories(): List<FileDirectory>?
+    abstract fun toTiff(): List<FileDirectory>?
+
+    abstract fun fromTiff(tiff: List<FileDirectory>)
 
 }
 

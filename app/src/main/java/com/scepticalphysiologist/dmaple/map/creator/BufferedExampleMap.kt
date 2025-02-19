@@ -6,15 +6,16 @@ import android.graphics.Rect
 import android.util.Size
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.map.MappingRoi
+import mil.nga.tiff.FieldTagType
 import mil.nga.tiff.FileDirectory
 import java.lang.IllegalArgumentException
 import java.lang.IndexOutOfBoundsException
 import java.nio.ByteBuffer
 import kotlin.math.abs
 
-class BufferedExampleMap(
-    roi: MappingRoi, bufferProvider: (() -> ByteBuffer?)
-): MapCreator(roi, bufferProvider) {
+class BufferedExampleMap(roi: MappingRoi): MapCreator(roi) {
+
+    override val nMaps = 1
 
     // Map geometry
     // ------------
@@ -43,11 +44,15 @@ class BufferedExampleMap(
             pL = edge.first.y.toInt()
         }
         ns = abs(pE.first - pE.second)
-
-        bufferProvider.invoke()?.let { mapView = ShortMap(it, ns) } ?: {
-            throw IndexOutOfBoundsException("There are not enough buffers.")
-        }
     }
+
+    override fun provideBuffers(buffers: List<ByteBuffer>): Boolean {
+        if(buffers.size < nMaps) return false
+        mapView = ShortMap(buffers[0], ns)
+        return true
+    }
+
+
 
     // ---------------------------------------------------------------------------------------------
     // Update and bitmap creation.
@@ -66,8 +71,6 @@ class BufferedExampleMap(
             nt += 1
         } catch (_: java.lang.IndexOutOfBoundsException) { reachedEnd = true }
     }
-
-    override fun nMaps(): Int { return 1 }
 
     override fun getMapBitmap(
         idx: Int,
@@ -102,10 +105,18 @@ class BufferedExampleMap(
     // Map save.
     // ---------------------------------------------------------------------------------------------
 
-    override fun tiffDirectories(): List<FileDirectory>? {
+    override fun toTiff(): List<FileDirectory>? {
         return mapView?.let{
             val description = "${MapType.getMapType(this).title}:0"
             return listOf(it.tiffDirectory(nt, description))
+        }
+    }
+
+    override fun fromTiff(tiff: List<FileDirectory>) {
+        mapView?.let {
+            val description = "${MapType.getMapType(this).title}:0"
+            val dirs = tiff.filter { it.getStringEntryValue(FieldTagType.ImageDescription) == description }
+            // todo - do something here to load image data into buffer
         }
     }
 }

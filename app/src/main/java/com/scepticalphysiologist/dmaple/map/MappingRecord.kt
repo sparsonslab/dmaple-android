@@ -14,7 +14,6 @@ class MappingRecord(
 
     companion object {
 
-
         fun read(folder: File): MappingRecord? {
 
             if(!folder.exists() || !folder.isDirectory) return null
@@ -25,23 +24,15 @@ class MappingRecord(
 
             val struct = mutableMapOf<MappingRoi, List<MapCreator>>()
             for(roiFile in roiFiles) {
-                try {
-                    val roi = Gson().fromJson(roiFile.readText(), MappingRoi::class.java)
-                    val roiName = roiFile.name.slice(0 until roiFile.name.length - 5)
-                    println("${roi.uid}")
+                // ROI: deserialize JSON
+                val roi = try { Gson().fromJson(roiFile.readText(), MappingRoi::class.java) }
+                catch (_: JsonSyntaxException) { null }
+                if(roi == null) continue
 
-                    val mapsFile = File(folder, "${roiName}.tiff")
-                    if(!mapsFile.exists()) {
-                        struct[roi] = listOf()
-                        continue
-                    }
-
-
-                    struct[roi] = listOf()
-
-                } catch(_: JsonSyntaxException) {
-                    continue
-                }
+                // Maps: creators
+                val mapsFile = File(folder, "${roi.uid}.tiff")
+                if(!mapsFile.exists()) continue
+                struct[roi] = roi.maps.map{it.makeCreator(roi)}
             }
 
             return MappingRecord(name=folder.name, struct = struct)
@@ -56,17 +47,16 @@ class MappingRecord(
 
         // ROIs and their maps.
         for((roi, roiCreators) in struct) {
-            // JSON serialized ROI
+            // ROI: serialize to JSON
             val roiFile = File(dir, "${roi.uid}.json")
             roiFile.writeText(Gson().toJson(roi))
 
-            // TIFF of maps (one slice/directory per map)
+            // Maps: to TIFF (one slice/directory per map)
             val img = TIFFImage()
-            for(tiff in roiCreators.map{it.tiffDirectories()}.filterNotNull().flatten()) img.add(tiff)
+            for(tiff in roiCreators.map{it.toTiff()}.filterNotNull().flatten()) img.add(tiff)
             TiffWriter.writeTiff(File(dir, "${roi.uid}.tiff"), img)
         }
     }
-
 
 }
 

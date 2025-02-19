@@ -23,6 +23,8 @@ class MappingRoi(
     var uid: String = randomAlphaString(20)
 ): RectF(0f, 0f, 0f, 0f) {
 
+    // Required for unit tests because RectF.hashCode is a stub in the test version of android.graphics
+    override fun hashCode(): Int { return uid.map{it.toInt()}.sum() + threshold }
 
     /** Change the ROI's reference frame. */
     fun changeFrame(newFrame: Frame) {

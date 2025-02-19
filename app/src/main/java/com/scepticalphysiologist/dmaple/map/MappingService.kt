@@ -361,8 +361,9 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         creators.clear()
         for(roi in rois) {
             for(map in roi.maps) {
-                val creator = map.makeCreator(roi.inNewFrame(imageFrame), MappingService::getFreeBuffer)
-                if(creator != null) creators.add(creator)
+                val creator = map.makeCreator(roi.inNewFrame(imageFrame))
+                val buffers = (0 until creator.nMaps).map{getFreeBuffer()}.filterNotNull()
+                if(creator.provideBuffers(buffers)) creators.add(creator)
                 else {
                     creators.clear()
                     warning.add(message =
@@ -438,7 +439,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         if(currentCreatorIdx !in creatorsFromRoi) return Pair(creatorsFromRoi[0], 0)
         // Current creator does come from the ROI ...
         // ... and it has more maps to show: the next map from the same creator
-        if(currentMapIdx < creators[currentCreatorIdx].nMaps() - 1)
+        if(currentMapIdx < creators[currentCreatorIdx].nMaps - 1)
             return Pair(currentCreatorIdx, currentMapIdx + 1)
         // ... and it does not have more maps: the next creator associated with the ROI.
         var j = 1 + creatorsFromRoi.indexOf(currentCreatorIdx)
