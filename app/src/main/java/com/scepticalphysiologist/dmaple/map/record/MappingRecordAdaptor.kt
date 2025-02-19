@@ -18,9 +18,7 @@ class MappingRecordAdaptor (
 
     class MappingRecordHolder (
         val binding: MappingRecordHolderBinding
-    ) : RecyclerView.ViewHolder (binding.root) {
-
-    }
+    ) : RecyclerView.ViewHolder (binding.root) {}
 
     // ---------------------------------------------------------------------------------------------
     // View creation.
@@ -36,22 +34,21 @@ class MappingRecordAdaptor (
     override fun getItemCount(): Int { return Explorer.records.size }
 
     override fun onBindViewHolder(holder: MappingRecordHolder, position: Int) {
-
         // The test record to be inserted.
         val record = Explorer.records[position]
 
-        // View header - record name and time.
+        // Record name and description.
         holder.binding.recordName.text = record.name
         val roiDescription = record.struct.keys.map{
             it.maps.toString()
         }.joinToString("\n")
         holder.binding.recordDescription.text = roiDescription
-        record.field?.let {holder.binding.recordImage.setImageBitmap(it)}
 
-        holder.binding.root.setOnClickListener {
-            openRecord(record)
-        }
+        // Field image
+        record.field?.let { holder.binding.recordImage.setImageBitmap(it) }
 
+        // Touch to open.
+        holder.binding.root.setOnClickListener { openRecord(record) }
     }
 
     private fun openRecord(record: MappingRecord) {
