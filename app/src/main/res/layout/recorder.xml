@@ -45,7 +45,7 @@
 
     <ImageButton
         android:id="@+id/to_records_button"
-        android:src="@drawable/eject_arrow"
+        android:src="@drawable/folder_open"
         android:background="@null"
         android:scaleType="fitXY"
         android:layout_width="50dp"
