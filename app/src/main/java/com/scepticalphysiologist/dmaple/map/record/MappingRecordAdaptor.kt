@@ -1,7 +1,6 @@
 package com.scepticalphysiologist.dmaple.map.record
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
@@ -20,9 +19,6 @@ class MappingRecordAdaptor (
     class MappingRecordHolder (
         val binding: MappingRecordHolderBinding
     ) : RecyclerView.ViewHolder (binding.root) {
-
-
-
 
     }
 
@@ -51,6 +47,15 @@ class MappingRecordAdaptor (
         }.joinToString("\n")
         holder.binding.recordDescription.text = roiDescription
 
+
+        holder.binding.root.setOnClickListener {
+            openRecord(record)
+        }
+
+    }
+
+    private fun openRecord(record: MappingRecord) {
+        println("OPEN ${record.name}")
     }
 
 }

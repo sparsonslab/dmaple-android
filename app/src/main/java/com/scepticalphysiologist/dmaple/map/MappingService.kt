@@ -35,6 +35,7 @@ import com.scepticalphysiologist.dmaple.etc.strftime
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import com.scepticalphysiologist.dmaple.map.record.roiCreatorsMap
+import com.scepticalphysiologist.dmaple.ui.Explorer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -332,7 +333,9 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
                 strftime(startTime, "YYMMdd_HHmmss_") + it
             )
-            MappingRecord(loc, roiCreatorsMap(creators)).write()
+            val record = MappingRecord(loc, roiCreatorsMap(creators))
+            record.write()
+            Explorer.records.add(record)
         }
         creators.clear()
         freeAllBuffers()
