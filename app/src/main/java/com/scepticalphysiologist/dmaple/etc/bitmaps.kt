@@ -3,8 +3,10 @@ package com.scepticalphysiologist.dmaple.etc
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Matrix
 import android.graphics.Rect
 import android.graphics.RectF
+import android.graphics.drawable.GradientDrawable.Orientation
 import androidx.core.graphics.blue
 import androidx.core.graphics.get
 import androidx.core.graphics.green
@@ -43,7 +45,14 @@ class ThresholdBitmap(val input: Bitmap, val drawRoi: Rect) {
 
 }
 
+/***/
+fun transformBitmap(bitmap: Bitmap, transform: Matrix): Bitmap {
+    return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, transform, false)
+}
 
+fun rotateBitmap(bitmap: Bitmap, degrees: Int): Bitmap {
+    return transformBitmap(bitmap, Matrix().also{it.setRotate(degrees.toFloat())})
+}
 
 /** Convert a color to its NTSC greyscale ('luminance') value.
  */

@@ -8,6 +8,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.databinding.MappingRecordHolderBinding
+import com.scepticalphysiologist.dmaple.etc.rotateBitmap
 
 class MappingRecordAdaptor (
     private val fragment: Fragment,
@@ -48,7 +49,11 @@ class MappingRecordAdaptor (
         holder.binding.recordDescription.text = roiDescription
 
         // Field image
-        record.field?.let { holder.binding.recordImage.setImageBitmap(it) }
+        record.field?.let {
+            val or = record.struct.keys.first().frame.orientation
+            println("or = $or")
+            holder.binding.recordImage.setImageBitmap(it)
+        }
 
         // Touch to open.
         holder.binding.root.setOnClickListener { openRecord(idx) }

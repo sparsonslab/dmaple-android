@@ -14,6 +14,7 @@ import android.view.WindowManager
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.findViewTreeLifecycleOwner
 import com.scepticalphysiologist.dmaple.etc.Point
+import com.scepticalphysiologist.dmaple.etc.transformBitmap
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -129,7 +130,10 @@ class MapView(context: Context, attributeSet: AttributeSet):
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
-        if(changed) updateViewSize()
+        if(changed) {
+            updateViewSize()
+            if(scope == null) update()
+        }
     }
 
     /** Update the view size [viewSize]. */
@@ -246,9 +250,10 @@ class MapView(context: Context, attributeSet: AttributeSet):
                 crop = Rect(p0.x.toInt(), p0.y.toInt(), p1.x.toInt(), p1.y.toInt()),
                 stepX = pixelStep.x.toInt(), stepY = pixelStep.y.toInt(),
                 backing = bitmapBacking,
-            )?.let { bm -> newBitmap.postValue(
+
+            )?.let { bm ->
                 // Rotate and scale the bitmap and post to the main thread for display.
-                Bitmap.createBitmap(bm, 0, 0, bm.width, bm.height, bitmapMatrix, false)
+                newBitmap.postValue(transformBitmap(bm, bitmapMatrix)
             )}
         }
     }

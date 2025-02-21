@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.hardware.camera2.CaptureRequest
 import android.os.Binder
 import android.os.Environment
@@ -33,6 +34,7 @@ import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.etc.surfaceRotationDegrees
 import com.scepticalphysiologist.dmaple.etc.msg.Warnings
 import com.scepticalphysiologist.dmaple.etc.strftime
+import com.scepticalphysiologist.dmaple.etc.transformBitmap
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import com.scepticalphysiologist.dmaple.map.record.roiCreatorsMap
@@ -428,7 +430,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             // The frame orientation is the sum of the image and analyser target.
             // (see the definition of ImageAnalysis.targetRotation)
             val imageInfo = it.resolutionInfo ?: return null
-            println("rotations: image info = ${imageInfo.rotationDegrees}, surface = ${it.targetRotation}")
+            println("rotations: image info = ${imageInfo.rotationDegrees}, " +
+                    "surface = ${surfaceRotationDegrees(it.targetRotation)}")
             val or = imageInfo.rotationDegrees + surfaceRotationDegrees(it.targetRotation)
             return Frame(
                 Point(imageInfo.resolution.width.toFloat(), imageInfo.resolution.height.toFloat()),
