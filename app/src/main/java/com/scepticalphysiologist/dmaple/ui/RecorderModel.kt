@@ -76,6 +76,7 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
             state = RecState.PRE_RECORD
         }
         else if (state == RecState.OLD_RECORD) {
+            doNotSaveMaps()
             state = RecState.PRE_RECORD
         }
     }
@@ -151,6 +152,6 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
     private fun saveMaps(dir: String) { mapper?.saveAndClear(dir) }
 
     /** Do not save maps, but still clear-up. */
-    private fun doNotSaveMaps(input: String) { mapper?.saveAndClear(null) }
+    private fun doNotSaveMaps(input: String = "") { mapper?.saveAndClear(null) }
 
 }
