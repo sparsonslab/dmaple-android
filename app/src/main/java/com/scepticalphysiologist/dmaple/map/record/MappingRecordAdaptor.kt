@@ -8,7 +8,6 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.databinding.MappingRecordHolderBinding
-import com.scepticalphysiologist.dmaple.ui.Explorer
 
 class MappingRecordAdaptor (
     private val fragment: Fragment,
@@ -34,11 +33,12 @@ class MappingRecordAdaptor (
         return MappingRecordHolder(binding)
     }
 
-    override fun getItemCount(): Int { return Explorer.records.size }
+    override fun getItemCount(): Int { return MappingRecord.records.size }
 
     override fun onBindViewHolder(holder: MappingRecordHolder, position: Int) {
         // The test record to be inserted.
-        val record = Explorer.records[position]
+        val idx = MappingRecord.records.size - position - 1
+        val record = MappingRecord.records[idx]
 
         // Record name and description.
         holder.binding.recordName.text = record.name
@@ -51,7 +51,7 @@ class MappingRecordAdaptor (
         record.field?.let { holder.binding.recordImage.setImageBitmap(it) }
 
         // Touch to open.
-        holder.binding.root.setOnClickListener { openRecord(position) }
+        holder.binding.root.setOnClickListener { openRecord(idx) }
     }
 
     private fun openRecord(idx: Int) {

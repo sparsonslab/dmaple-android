@@ -2,6 +2,7 @@ package com.scepticalphysiologist.dmaple.map.record
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.os.Environment
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.scepticalphysiologist.dmaple.map.MappingRoi
@@ -29,6 +30,13 @@ class MappingRecord(
     val name: String = location.name
 
     companion object {
+
+        val records = mutableListOf<MappingRecord>()
+
+        fun loadRecords() {
+            val root = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+            root.listFiles()?.let { files -> records.addAll(files.map{read(it)}.filterNotNull()) }
+        }
 
         /** Read a record from the [location] folder.*/
         fun read(location: File): MappingRecord? {
@@ -100,7 +108,6 @@ class MappingRecord(
     }
 
 }
-
 
 /** Map ROIs (in the camera's frame) to the creators associated with them. */
 fun roiCreatorsMap(creators: List<MapCreator>): Map<MappingRoi, List<MapCreator>> {
