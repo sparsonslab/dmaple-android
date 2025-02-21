@@ -1,5 +1,6 @@
 package com.scepticalphysiologist.dmaple.map.creator
 
+import android.graphics.Color
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
@@ -31,10 +32,13 @@ abstract class MapBufferView<T : Number>(
     /** The "field type" for the TIFF image. */
     protected abstract val fieldType: FieldType
 
-    /** Convert the map into a TIFF image "directory".
+    /** Convert the map into a TIFF slice/directory.
+     *
+     * @param identifier A string used to identify the map in the TIFF.
      * @param y The yth time pixel up to which to use. Null to use the current position.
+     * @return A TIFF slice with the map's data.
      * */
-    fun tiffDirectory(y: Int? = null, description: String = ""): FileDirectory {
+    fun toTiffDirectory(identifier: String = "", y: Int? = null): FileDirectory {
         val currentTime = floorDiv(buffer.position(), nx)
         val ny = minOf(y ?: currentTime, currentTime)
 
@@ -43,7 +47,7 @@ abstract class MapBufferView<T : Number>(
         dir.setImageHeight(ny)
         dir.samplesPerPixel = nColorChannels
         dir.setBitsPerSample(bitsPerChannel)
-        dir.setStringEntryValue(FieldTagType.ImageDescription, description)
+        dir.setStringEntryValue(FieldTagType.ImageDescription, identifier)
 
         val raster = Rasters(nx, ny, nColorChannels, fieldType)
         dir.compression = TiffConstants.COMPRESSION_NO
@@ -56,19 +60,50 @@ abstract class MapBufferView<T : Number>(
         try {
             for(j in 0 until ny)
                 for(i in 0 until nx)
-                    setPixel(i, j, raster)
+                    toRaster(i, j, raster)
         } catch(_: IndexOutOfBoundsException) {}
         return dir
     }
 
-    /** Set the (i, j) pixel of the image raster. */
-    abstract fun setPixel(i: Int, j: Int, raster: Rasters)
+    /** Load the map from a TIFF image slice/directory.
+     *
+     * @param identifier The map's identifier within its slice/directory.
+     * @param dirs A list of slices/directories that may contain the map's slice.
+     * @return The number of time samples in the map or null if the map's slice could not be found.
+     * */
+    fun fromTiffDirectory(identifier: String = "", dirs: List<FileDirectory>): Int? {
+        // Find the directory matching the description.
+        val dir = dirs.filter{
+            it.getStringEntryValue(FieldTagType.ImageDescription) == identifier
+        }.firstOrNull() ?: return null
 
-    /** Get the value of the (i, j) pixel. */
-    abstract fun get(i: Int, j: Int): T
+        // Read from the raster into the buffer.
+        val raster = dir.readRasters()
+        try {
+            for(j in 0 until raster.height)
+                for(i in 0 until raster.width)
+                    fromRaster(i, j, raster)
+        } catch(_: IndexOutOfBoundsException) {}
+
+        // Set the buffer position to end of the tiff data.
+        buffer.position(bufferPosition(raster.width - 1, raster.height - 1))
+        return raster.height
+    }
+
+    /** Set the (i, j) pixel of an image raster. */
+    abstract fun toRaster(i: Int, j: Int, raster: Rasters)
+
+    /** Get the (i, j) pixel of an image raster. */
+    abstract fun fromRaster(i: Int, j: Int, raster: Rasters)
+
+    /** The buffer position of the (i, j) pixel. */
+    abstract fun bufferPosition(i: Int, j: Int): Int
 
     /** Set the value of the (i, j) pixel. */
     abstract fun set(i: Int, j: Int, value: T)
+
+    /** Get the value of the (i, j) pixel. */
+    abstract fun get(i: Int, j: Int): T
 
     /** Add a value to the map. */
     abstract fun add(value: T)
@@ -86,27 +121,37 @@ class RGBMap(buffer: ByteBuffer, nx: Int): MapBufferView<Int>(buffer, nx) {
 
     override val fieldType = FieldType.BYTE
 
-    override fun setPixel(i: Int, j: Int, raster: Rasters) {
+    override fun toRaster(i: Int, j: Int, raster: Rasters) {
         val color = getColorInt(i, j)
         raster.setPixelSample(0, i, j, color.red)
         raster.setPixelSample(1, i, j, color.green)
         raster.setPixelSample(2, i, j, color.blue)
     }
 
+    override fun fromRaster(i: Int, j: Int, raster: Rasters) {
+        set(i, j, Color.argb(
+            255,
+            raster.getPixelSample(0, i, j).toInt(),
+            raster.getPixelSample(1, i, j).toInt(),
+            raster.getPixelSample(2, i, j).toInt()
+        ))
+    }
+
+    override fun bufferPosition(i: Int, j: Int): Int{ return 3 * (j * nx + i) }
+
+    override fun set(i: Int, j: Int, value: Int) {
+        val k = bufferPosition(i, j)
+        buffer.put(k,     (value shr 16).toByte())
+        buffer.put(k + 1, (value shr 8).toByte())
+        buffer.put(k + 2, (value shr 0).toByte())
+    }
+
     override fun get(i: Int, j: Int): Int {
-        val k = 3 * (j * nx + i)
+        val k = bufferPosition(i, j)
         return  (255 shl 24) or
                 (buffer[k].toInt() and 0xff shl 16) or
                 (buffer[k + 1].toInt() and 0xff shl 8) or
                 (buffer[k + 2].toInt() and 0xff shl 0)
-    }
-
-
-    override fun set(i: Int, j: Int, value: Int) {
-        val k = 3 * (j * nx + i)
-        buffer.put(k,     (value shr 16).toByte())
-        buffer.put(k + 1, (value shr 8).toByte())
-        buffer.put(k + 2, (value shr 0).toByte())
     }
 
     override fun add(value: Int) {
@@ -133,21 +178,22 @@ class ShortMap(buffer: ByteBuffer, nx: Int): MapBufferView<Short>(buffer, nx) {
     val sr = s1 - s0
     val rt = sr / 255f
 
-    override fun setPixel(i: Int, j: Int, raster: Rasters) {
+    override fun toRaster(i: Int, j: Int, raster: Rasters) {
         raster.setPixelSample(0, i, j, get(i, j) - s0)
     }
 
-    override fun get(i: Int, j: Int): Short {
-        return buffer.getShort(2 * (j * nx + i))
+    override fun fromRaster(i: Int, j: Int, raster: Rasters) {
+        val v = (raster.getPixelSample(0, i, j).toInt() + s0.toInt()).toShort()
+        set(i, j, v)
     }
 
-    override fun set(i: Int, j: Int, value: Short) {
-        buffer.putShort(2 * (j * nx + i), value)
-    }
+    override fun bufferPosition(i: Int, j: Int): Int { return 2 * (j * nx + i) }
 
-    override fun add(value: Short) {
-        buffer.putShort(value)
-    }
+    override fun set(i: Int, j: Int, value: Short) { buffer.putShort(bufferPosition(i, j), value) }
+
+    override fun get(i: Int, j: Int): Short { return buffer.getShort(bufferPosition(i, j)) }
+
+    override fun add(value: Short) { buffer.putShort(value) }
 
     override fun getColorInt(i: Int, j: Int): Int {
          val v = ((get(i, j) - s0) / rt).toInt()

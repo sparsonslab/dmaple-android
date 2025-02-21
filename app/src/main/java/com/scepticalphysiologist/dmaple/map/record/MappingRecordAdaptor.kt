@@ -2,8 +2,11 @@ package com.scepticalphysiologist.dmaple.map.record
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
+import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.databinding.MappingRecordHolderBinding
 import com.scepticalphysiologist.dmaple.ui.Explorer
 
@@ -48,11 +51,11 @@ class MappingRecordAdaptor (
         record.field?.let { holder.binding.recordImage.setImageBitmap(it) }
 
         // Touch to open.
-        holder.binding.root.setOnClickListener { openRecord(record) }
+        holder.binding.root.setOnClickListener { openRecord(position) }
     }
 
-    private fun openRecord(record: MappingRecord) {
-        println("OPEN ${record.name}")
+    private fun openRecord(idx: Int) {
+        fragment.findNavController().navigate(R.id.recorder, bundleOf("recordIdx" to idx))
     }
 
 }

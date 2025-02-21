@@ -74,6 +74,11 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
         }
     }
 
+    /** Try to load a record. */
+    fun loadRecord(idx: Int) {
+        if(mapper?.loadRecord(Explorer.records[idx]) == true) state = 2
+    }
+
     // ---------------------------------------------------------------------------------------------
     // Public wrapper to the mapping service.
     // ---------------------------------------------------------------------------------------------
@@ -95,6 +100,7 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
 
     /** Get the currently shown map - its creator and map index. */
     fun getCurrentlyShownMap(): Pair<MapCreator?, Int> { return mapper?.getCurrentMapCreator() ?: Pair(null, 0) }
+
 
     // ---------------------------------------------------------------------------------------------
     // Timer

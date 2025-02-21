@@ -324,6 +324,20 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** Given a selected ROI, set the next map to show. */
     fun setNextMap(roiUID: String) { currentMap = getNextMap(roiUID) }
 
+    /** Load a (old) recording.
+     *
+     * @param record The record to be loaded.
+     * @return Whether the record was loaded (will not be loaded if a record is being created).
+     * */
+    fun loadRecord(record: MappingRecord): Boolean {
+        if(creating) return false
+        setRois(record.struct.keys.toList())
+        clearCreators()
+        record.loadMapTiffs(MappingService::getFreeBuffer)
+        creators.addAll(record.struct.values.flatten())
+        return true
+    }
+
     /** If maps are not being created, save the maps, clear the creators and free-up resources.
      *
      * @param mapFilePrefix A prefix for all map files or null if maps are not to be saved.
@@ -339,9 +353,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             record.write()
             Explorer.records.add(record)
         }
-        creators.clear()
-        freeAllBuffers()
-        System.gc()
+        clearCreators()
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -397,6 +409,15 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         creating = false
         setPreview(autosOn = true)
         return Warnings("Stop Recording")
+    }
+
+    /** Clear all creators, freeing up their buffers and resetting the current map. */
+    private fun clearCreators() {
+        if(creating) return
+        creators.clear()
+        currentMap = Pair(0, 0)
+        freeAllBuffers()
+        System.gc()
     }
 
     /** Get the frame of the image analyser. */

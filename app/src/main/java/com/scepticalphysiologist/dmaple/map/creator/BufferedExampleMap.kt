@@ -106,17 +106,16 @@ class BufferedExampleMap(roi: MappingRoi): MapCreator(roi) {
     // ---------------------------------------------------------------------------------------------
 
     override fun toTiff(): List<FileDirectory>? {
-        return mapView?.let{
+        return mapView?.let{ bufferView ->
             val description = "${MapType.getMapType(this).title}:0"
-            return listOf(it.tiffDirectory(nt, description))
+            return listOf(bufferView.toTiffDirectory(description, nt))
         }
     }
 
     override fun fromTiff(tiff: List<FileDirectory>) {
-        mapView?.let {
+        mapView?.let { bufferView ->
             val description = "${MapType.getMapType(this).title}:0"
-            val dirs = tiff.filter { it.getStringEntryValue(FieldTagType.ImageDescription) == description }
-            // todo - do something here to load image data into buffer
+            bufferView.fromTiffDirectory(description, tiff)?.let { nt = it }
         }
     }
 }
