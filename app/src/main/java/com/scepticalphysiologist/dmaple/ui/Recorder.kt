@@ -93,7 +93,6 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
             findNavController().navigate(R.id.recorder_to_explorer)
         }
 
-
     }
 
     /** Set the UI appearance depending on whether maps are being created. */
