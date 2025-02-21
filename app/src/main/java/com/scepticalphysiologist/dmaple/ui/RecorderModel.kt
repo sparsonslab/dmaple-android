@@ -108,7 +108,6 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
     /** Get the currently shown map - its creator and map index. */
     fun getCurrentlyShownMap(): Pair<MapCreator?, Int> { return mapper?.getCurrentMapCreator() ?: Pair(null, 0) }
 
-
     // ---------------------------------------------------------------------------------------------
     // Timer
     // ---------------------------------------------------------------------------------------------
