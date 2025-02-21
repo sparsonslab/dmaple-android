@@ -1,6 +1,7 @@
 package com.scepticalphysiologist.dmaple.ui
 
 import android.app.Application
+import android.graphics.Bitmap
 import android.text.InputType
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.AndroidViewModel
@@ -107,6 +108,9 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
 
     /** Get the currently shown map - its creator and map index. */
     fun getCurrentlyShownMap(): Pair<MapCreator?, Int> { return mapper?.getCurrentMapCreator() ?: Pair(null, 0) }
+
+    /** Get the last camera frame. */
+    fun getLastFrame(): Bitmap? { return mapper?.lastFrame }
 
     // ---------------------------------------------------------------------------------------------
     // Timer

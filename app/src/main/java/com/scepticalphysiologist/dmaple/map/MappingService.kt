@@ -173,7 +173,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** The instant that creation of maps started. */
     private var startTime: Instant = Instant.now()
 
-    private var lastFrame: Bitmap? = null
+    var lastFrame: Bitmap? = null
     private var scope: CoroutineScope = MainScope()
 
     // ---------------------------------------------------------------------------------------------
@@ -334,6 +334,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         clearCreators()
         record.loadMapTiffs(MappingService::getFreeBuffer)
         creators.addAll(record.struct.values.flatten())
+        lastFrame = record.field
         return true
     }
 
@@ -427,6 +428,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             // The frame orientation is the sum of the image and analyser target.
             // (see the definition of ImageAnalysis.targetRotation)
             val imageInfo = it.resolutionInfo ?: return null
+            println("rotations: image info = ${imageInfo.rotationDegrees}, surface = ${it.targetRotation}")
             val or = imageInfo.rotationDegrees + surfaceRotationDegrees(it.targetRotation)
             return Frame(
                 Point(imageInfo.resolution.width.toFloat(), imageInfo.resolution.height.toFloat()),

@@ -140,6 +140,10 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     /** Allow or block ROI editing. */
     fun allowEditing(allow: Boolean = true) { editable = allow }
 
+    fun setBacking(bitmap: Bitmap?) {
+        background = bitmap?.let{ BitmapDrawable(it) }
+    }
+
     /** Set the saved ROIs. */
     fun setSavedRois(rois: List<MappingRoi>){
         savedRois.clear()
@@ -160,7 +164,7 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     /** Start thresholding the active ROI using the bitmap. */
     fun startThresholding(cameraShot: Bitmap) {
         activeRoi?.let { roi ->
-            background = BitmapDrawable(cameraShot)
+            setBacking(cameraShot)
             thresholdBitmap = ThresholdBitmap.fromImage(cameraShot, roi)
             invalidate()
         }
@@ -177,7 +181,7 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
 
     /** Stop thresholding the active ROI. */
     fun stopThresholding(){
-        background = null
+        setBacking(null)
         thresholdBitmap = null
         invalidate()
     }
@@ -187,8 +191,7 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     // ---------------------------------------------------------------------------------------------
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
-        // Don't do anything if in threshold mode.
-        if((event == null) || background != null) return super.onTouchEvent(event)
+        if(event == null) return super.onTouchEvent(event)
 
         // Detect gesture.
         val isLongPress = gesture == GestureState.LONG_PRESS
@@ -202,7 +205,8 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
         // Double click on saved ROI?
         if(isDoubleClick && clickedOnSavedRoi(tp)) return true
 
-        if(!editable) return true
+        // Don't do anything else if not editable or fixed (non-live) background.
+        if((!editable) || (background != null)) return true
 
         // Click on ruler?
         if(touchedRuler(tp, isDoubleClick)) return true
