@@ -101,19 +101,21 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         when(model.getState()) {
             0 -> {
                 binding.recordButton.setImageResource(R.drawable.play_arrow)
+                binding.maps.stop()
                 binding.toRecordsButton.visibility = View.VISIBLE
                 binding.maps.reset()
                 binding.cameraAndRoi.allowEditing(true)
                 binding.cameraAndRoi.fullSize()
                 binding.cameraTimer.text = ""
-                binding.maps.stop()
             }
             1 -> {
                 binding.recordButton.setImageResource(R.drawable.stop_5f6368)
+                binding.maps.start()
                 setMapView()
             }
             2 -> {
                 binding.recordButton.setImageResource(R.drawable.eject_arrow)
+                binding.maps.stop()
                 setMapView()
             }
         }
@@ -126,7 +128,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         val extent = Point.ofViewExtent(binding.root) * 0.5f
         binding.cameraAndRoi.resize(extent.x.toInt(), extent.y.toInt())
         binding.maps.updateCreator(model.getCurrentlyShownMap())
-        binding.maps.start()
+
     }
 
     /** If the fragment showing maps? */
