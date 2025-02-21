@@ -19,6 +19,13 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+/** The states the recorder. */
+enum class RecState {
+    PRE_RECORD,
+    RECORDING,
+    POST_RECORD,
+    OLD_RECORD
+}
 
 class RecorderModel(application: Application): AndroidViewModel(application) {
 
@@ -31,7 +38,8 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
      * 1 = Record maps.
      * 2 = View maps.
      */
-    private var state = if(mapper?.isCreatingMaps() == true) 1 else 0
+    private var state: RecState =
+        if(mapper?.isCreatingMaps() == true) RecState.RECORDING else RecState.PRE_RECORD
     /** Indicate warning messages that should be shown, e.g. when starting mapping. */
     val messages = MutableLiveData<Message<*>?>(null)
     /** Indicate the elapsed time (seconds) of mapping. */
@@ -44,37 +52,37 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
     // ---------------------------------------------------------------------------------------------
 
     /** Get the model's [state]. */
-    fun getState(): Int { return state }
+    fun getState(): RecState { return state }
 
     /** Update the model [state] when (e.g.) a button is pressed. */
     fun updateState(){
         if(mapper == null) return
-        // Recording (1)
-        if((state == 1) || mapper!!.isCreatingMaps()) {
+        if((state == RecState.RECORDING) || mapper!!.isCreatingMaps()) {
             messages.postValue(mapper!!.startStop())
             if(!mapper!!.isCreatingMaps()) {
                 stopTimer()
-                state = 2
+                state = RecState.POST_RECORD
             }
         }
-        // ROI selection (0)
-        else if(state == 0) {
+        else if(state == RecState.PRE_RECORD) {
             messages.postValue(mapper!!.startStop())
             if(mapper!!.isCreatingMaps()) {
                 startTimer()
-                state = 1
+                state = RecState.RECORDING
             }
         }
-        // Post-recording (2)
-        else if (state == 2) {
+        else if (state == RecState.POST_RECORD) {
             askToSaveMaps()
-            state = 0
+            state = RecState.PRE_RECORD
+        }
+        else if (state == RecState.OLD_RECORD) {
+            state = RecState.PRE_RECORD
         }
     }
 
     /** Try to load a record. */
     fun loadRecord(idx: Int) {
-        if(mapper?.loadRecord(MappingRecord.records[idx]) == true) state = 2
+        if(mapper?.loadRecord(MappingRecord.records[idx]) == true) state = RecState.OLD_RECORD
     }
 
     // ---------------------------------------------------------------------------------------------

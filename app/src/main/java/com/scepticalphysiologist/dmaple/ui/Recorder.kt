@@ -99,7 +99,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
     /** Set the UI appearance depending on whether maps are being created. */
     private fun setUIState() {
         when(model.getState()) {
-            0 -> {
+            RecState.PRE_RECORD -> {
                 binding.recordButton.setImageResource(R.drawable.play_arrow)
                 binding.maps.stop()
                 binding.toRecordsButton.visibility = View.VISIBLE
@@ -108,12 +108,17 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
                 binding.cameraAndRoi.fullSize()
                 binding.cameraTimer.text = ""
             }
-            1 -> {
+            RecState.RECORDING -> {
                 binding.recordButton.setImageResource(R.drawable.stop_5f6368)
                 binding.maps.start()
                 setMapView()
             }
-            2 -> {
+            RecState.POST_RECORD -> {
+                binding.recordButton.setImageResource(R.drawable.eject_arrow)
+                binding.maps.stop()
+                setMapView()
+            }
+            RecState.OLD_RECORD -> {
                 binding.recordButton.setImageResource(R.drawable.eject_arrow)
                 binding.maps.stop()
                 setMapView()
@@ -128,13 +133,12 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         val extent = Point.ofViewExtent(binding.root) * 0.5f
         binding.cameraAndRoi.resize(extent.x.toInt(), extent.y.toInt())
         binding.maps.updateCreator(model.getCurrentlyShownMap())
-
     }
 
     /** If the fragment showing maps? */
     private fun stateShowsMap(): Boolean{
         val state = model.getState()
-        return (state == 1) || (state == 2)
+        return state != RecState.PRE_RECORD
     }
 
     /** While recording, resize the camera view by dragging its lower-right corner. */

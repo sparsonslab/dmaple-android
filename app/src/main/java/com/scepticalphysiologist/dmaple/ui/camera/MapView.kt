@@ -221,7 +221,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
     fun reset() { updateZoom(Point(1f, 1f)) }
 
     // ---------------------------------------------------------------------------------------------
-    // Live display.
+    // Map update.
     // ---------------------------------------------------------------------------------------------
 
     /** Coroutine loop for updating the map live. */
