@@ -1,4 +1,4 @@
-package com.scepticalphysiologist.dmaple.map
+package com.scepticalphysiologist.dmaple.map.field
 
 import android.graphics.Bitmap
 import com.scepticalphysiologist.dmaple.etc.Frame
@@ -9,7 +9,7 @@ import com.scepticalphysiologist.dmaple.etc.rotateBitmap
  * @property frame The reference frame of the image.
  * @property bitmap The field's image.
  */
-class MappingFieldImage(
+class FieldImage(
     var frame: Frame,
     var bitmap: Bitmap
 ) {
@@ -21,15 +21,15 @@ class MappingFieldImage(
     }
 
     /** Get a copy of the image in a new frame. */
-    fun inNewFrame(newFrame: Frame): MappingFieldImage {
+    fun inNewFrame(newFrame: Frame): FieldImage {
         val cpy = this.copy()
         cpy.changeFrame(newFrame)
         return cpy
     }
 
     /** Copy the image. */
-    fun copy(): MappingFieldImage {
-        return MappingFieldImage(
+    fun copy(): FieldImage {
+        return FieldImage(
             frame = this.frame,
             bitmap = this.bitmap
         )

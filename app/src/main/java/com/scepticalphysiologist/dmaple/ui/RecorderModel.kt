@@ -8,10 +8,10 @@ import androidx.lifecycle.MutableLiveData
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.etc.msg.InputRequired
 import com.scepticalphysiologist.dmaple.etc.msg.Message
-import com.scepticalphysiologist.dmaple.map.MappingFieldImage
+import com.scepticalphysiologist.dmaple.map.field.FieldImage
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
-import com.scepticalphysiologist.dmaple.map.MappingRoi
+import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -95,10 +95,10 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
     fun setCameraPreview(preview: PreviewView) { MainActivity.setMappingServiceCameraPreview(preview) }
 
     /** Set the ROIs used for mapping. */
-    fun setMappingRois(viewRois: List<MappingRoi>) { mapper?.setRois(viewRois) }
+    fun setMappingRois(viewRois: List<FieldRoi>) { mapper?.setRois(viewRois) }
 
     /** Get the ROIs used for mapping. */
-    fun getMappingRois(): List<MappingRoi> { return mapper?.getRois() ?: listOf() }
+    fun getMappingRois(): List<FieldRoi> { return mapper?.getRois() ?: listOf() }
 
     /** Set the exposure level. */
     fun setExposure(fraction: Float) { mapper?.setExposure(fraction) }
@@ -110,7 +110,7 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
     fun getCurrentlyShownMap(): Pair<MapCreator?, Int> { return mapper?.getCurrentMapCreator() ?: Pair(null, 0) }
 
     /** Get the last image of the mapping field. */
-    fun getLastFieldImage(): MappingFieldImage? { return mapper?.getLastFieldImage() }
+    fun getLastFieldImage(): FieldImage? { return mapper?.getLastFieldImage() }
 
     // ---------------------------------------------------------------------------------------------
     // Timer

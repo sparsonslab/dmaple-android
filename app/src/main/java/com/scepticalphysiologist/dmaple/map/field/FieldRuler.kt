@@ -1,4 +1,4 @@
-package com.scepticalphysiologist.dmaple.ui.camera
+package com.scepticalphysiologist.dmaple.map.field
 
 import android.content.Context
 import android.graphics.Canvas
@@ -10,7 +10,7 @@ import com.scepticalphysiologist.dmaple.etc.msg.InputRequired
 import kotlin.math.PI
 
 /** A ruler shown on a view used for calibration between pixel units and some measurement unit. */
-class Ruler(
+class FieldRuler(
     /** The ruler's frame. */
     var frame: Frame,
     /** The start point of the ruler in pixel coordinates.. */

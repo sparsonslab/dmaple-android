@@ -5,7 +5,7 @@ import android.graphics.BitmapFactory
 import android.os.Environment
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
-import com.scepticalphysiologist.dmaple.map.MappingRoi
+import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import mil.nga.tiff.TIFFImage
 import mil.nga.tiff.TiffReader
@@ -23,7 +23,7 @@ class MappingRecord(
     /** An image of the mapping field (i.e. a camera frame). */
     val field: Bitmap?,
     /** The mapping ROIs and their map creators. */
-    val struct: Map<MappingRoi, List<MapCreator>>
+    val struct: Map<FieldRoi, List<MapCreator>>
 ) {
 
     /** The name (folder name) of the record. */
@@ -47,10 +47,10 @@ class MappingRecord(
             val roiFiles = location.listFiles()?.filter{it.name.endsWith(".json") } ?: listOf()
             if(roiFiles.isEmpty()) return null
 
-            val struct = mutableMapOf<MappingRoi, List<MapCreator>>()
+            val struct = mutableMapOf<FieldRoi, List<MapCreator>>()
             for(roiFile in roiFiles) {
                 // ROI: deserialize JSON
-                val roi = try { Gson().fromJson(roiFile.readText(), MappingRoi::class.java) }
+                val roi = try { Gson().fromJson(roiFile.readText(), FieldRoi::class.java) }
                 catch (_: JsonSyntaxException) { null }
                 if(roi == null) continue
                 // Maps: creators
@@ -110,9 +110,9 @@ class MappingRecord(
 }
 
 /** Map ROIs (in the camera's frame) to the creators associated with them. */
-fun roiCreatorsMap(creators: List<MapCreator>): Map<MappingRoi, List<MapCreator>> {
+fun roiCreatorsMap(creators: List<MapCreator>): Map<FieldRoi, List<MapCreator>> {
     val uids = creators.map{it.roi.uid}.toSet()
-    val mp = mutableMapOf<MappingRoi, List<MapCreator>>()
+    val mp = mutableMapOf<FieldRoi, List<MapCreator>>()
     for(uid in uids) {
         val roi = creators.first { it.roi.uid == uid }.roi
         mp[roi] = creators.filter { it.roi.uid == uid }

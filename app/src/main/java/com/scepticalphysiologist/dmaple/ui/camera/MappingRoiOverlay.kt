@@ -19,9 +19,10 @@ import com.scepticalphysiologist.dmaple.etc.Frame
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.etc.ThresholdBitmap
 import com.scepticalphysiologist.dmaple.etc.msg.MultipleChoice
-import com.scepticalphysiologist.dmaple.map.MappingFieldImage
-import com.scepticalphysiologist.dmaple.map.MappingRoi
+import com.scepticalphysiologist.dmaple.map.field.FieldImage
+import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.creator.MapType
+import com.scepticalphysiologist.dmaple.map.field.FieldRuler
 
 /** Gesture states for [MappingRoiOverlay]. */
 enum class GestureState {
@@ -30,7 +31,7 @@ enum class GestureState {
     OTHER
 }
 
-/** A view in which mapping ROIs ([MappingRoi]) can be created by finger gestures. This is
+/** A view in which mapping ROIs ([FieldRoi]) can be created by finger gestures. This is
  * intended to overlay a camera preview so that ROIs can be drawn over the preview.
  *
  * A single ROI can be:
@@ -55,7 +56,7 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     // Active ROI
     // ----------
     /** The "active" (i.e. currently being edited) ROI or null if there is no active ROI. */
-    var activeRoi: MappingRoi? = null
+    var activeRoi: FieldRoi? = null
     /** The paint for the [activeRoi]. */
     private val activeRoiPaint = Paint()
     /** A holder for the position of the active ROI as it is dragged. */
@@ -75,7 +76,7 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     // Saved ROIs
     // ----------
     /** The saved ROIs that will be mapped. */
-    val savedRois = mutableListOf<MappingRoi>()
+    val savedRois = mutableListOf<FieldRoi>()
     /** The paint for the saved ROIs. */
     private val savedRoiPaint = Paint()
     /** Indicates (if true) that the saved ROIs have changed (added to or subtracted from). */
@@ -84,7 +85,7 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     // Ruler
     // -----
     /** A ruler for calibrating distance.*/
-    private var ruler: Ruler? = null
+    private var ruler: FieldRuler? = null
     /** The paint for the ruler. */
     private val rulerPaint = Paint()
 
@@ -115,7 +116,7 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
      * Normally the background is transparent (null) but for thresholding and showing the field of
      * old recordings it will be fixed.
      * */
-    private var backgroundField: MappingFieldImage? = null
+    private var backgroundField: FieldImage? = null
 
     init {
         // Paints for active and saved ROIs
@@ -148,20 +149,20 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     /** Set the view's background to a field image.
      * @param field The field image or null for a transparent background.
      * */
-    fun setBacking(field: MappingFieldImage?) {
+    fun setBacking(field: FieldImage?) {
         setBackgroundFromField(field?.copy())
         invalidate()
     }
 
     /** Set the saved ROIs. */
-    fun setSavedRois(rois: List<MappingRoi>){
+    fun setSavedRois(rois: List<FieldRoi>){
         savedRois.clear()
         for(roi in rois) savedRois.add(roi.copy())
         invalidate()
     }
 
     /** Change the active ROI or set it to null (no active ROI). */
-    private fun changeActiveRoi(roi: MappingRoi?){
+    private fun changeActiveRoi(roi: FieldRoi?){
         activeRoi = roi
         activeRoiChanged.postValue(activeRoi?.threshold)
     }
@@ -173,7 +174,7 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     /** Start thresholding the active ROI using the bitmap. */
     fun startThresholding(cameraShot: Bitmap) {
         activeRoi?.let { roi ->
-            setBackgroundFromField(MappingFieldImage(Frame.fromView(this, display), cameraShot))
+            setBackgroundFromField(FieldImage(Frame.fromView(this, display), cameraShot))
             thresholdBitmap = ThresholdBitmap.fromImage(cameraShot, roi)
             invalidate()
         }
@@ -366,7 +367,7 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     /** Initiate an active ROI de novo. */
     private fun initiate(event: MotionEvent) {
         if(event.action != MotionEvent.ACTION_DOWN) return
-        changeActiveRoi(MappingRoi(Frame.fromView(this, display), maps=listOf(MapType.DIAMETER)))
+        changeActiveRoi(FieldRoi(Frame.fromView(this, display), maps=listOf(MapType.DIAMETER)))
         activeRoi?.let { roi ->
             roi.left = event.x - 50f
             roi.right = event.x + 50f
@@ -408,7 +409,7 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     }
 
     /** Set the background from a mapping field. */
-    private fun setBackgroundFromField(field: MappingFieldImage? = backgroundField) {
+    private fun setBackgroundFromField(field: FieldImage? = backgroundField) {
         backgroundField = field
         backgroundField?.changeFrame(Frame.fromView(this, display))
         background = backgroundField?.let{ BitmapDrawable(it.bitmap) }
@@ -416,7 +417,7 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
 
     private fun initiateRuler(frame: Frame) {
         val s = frame.size
-        ruler = Ruler(
+        ruler = FieldRuler(
             frame=frame,
             p0 = Point(s.x * 0.5f, s.y * 0.05f),
             p1 = Point(s.x * 0.9f, s.y * 0.05f),

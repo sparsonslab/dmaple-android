@@ -1,7 +1,6 @@
 package com.scepticalphysiologist.dmaple.map.creator
 
-import com.scepticalphysiologist.dmaple.map.MappingRoi
-import java.nio.MappedByteBuffer
+import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 
 enum class MapType (val title: String){
     DIAMETER(title = "diameter"),
@@ -15,7 +14,7 @@ enum class MapType (val title: String){
      * buffers are available.
      * @return A map creator or null, if not enough buffers are available.
      * */
-    fun makeCreator(roi: MappingRoi): MapCreator {
+    fun makeCreator(roi: FieldRoi): MapCreator {
         return when(this) {
             DIAMETER -> BufferedExampleMap(roi)
             RADIUS -> BufferedExampleMap(roi)

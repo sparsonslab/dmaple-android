@@ -34,6 +34,8 @@ import com.scepticalphysiologist.dmaple.etc.surfaceRotationDegrees
 import com.scepticalphysiologist.dmaple.etc.msg.Warnings
 import com.scepticalphysiologist.dmaple.etc.strftime
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
+import com.scepticalphysiologist.dmaple.map.field.FieldImage
+import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import com.scepticalphysiologist.dmaple.map.record.roiCreatorsMap
 import kotlinx.coroutines.CoroutineScope
@@ -163,7 +165,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     // State
     // -----
     /** The mapping ROIs in their last view frame. */
-    private var rois = mutableListOf<MappingRoi>()
+    private var rois = mutableListOf<FieldRoi>()
     /** Map creators. */
     private var creators = mutableListOf<MapCreator>()
     /** The currently shown map: its [creators] index and map index within that creator. */
@@ -294,13 +296,13 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     }
 
     /** Set the ROIs. e.g. when ROIs are updated in a view. */
-    fun setRois(viewRois: List<MappingRoi>) {
+    fun setRois(viewRois: List<FieldRoi>) {
         rois.clear()
         for(roi in viewRois) rois.add(roi.copy())
     }
 
     /** Get the ROIs. e.g. for when a view of the ROIs needs to be reconstructed. */
-    fun getRois(): List<MappingRoi> { return rois }
+    fun getRois(): List<FieldRoi> { return rois }
 
     /** Start or stop map creation, depending on the current creation state. */
     fun startStop(): Warnings { return if(creating) stop() else start() }
@@ -320,10 +322,10 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     }
 
     /** Get the last image of the mapping field. */
-    fun getLastFieldImage(): MappingFieldImage? {
+    fun getLastFieldImage(): FieldImage? {
         return lastCapture?.let { bitmap ->
             // We can assume that the last captured bitmap is in the same frame as a current creator.
-            creators.firstOrNull()?.roi?.frame?.let { frame -> MappingFieldImage(frame, bitmap) }
+            creators.firstOrNull()?.roi?.frame?.let { frame -> FieldImage(frame, bitmap) }
         }
     }
 

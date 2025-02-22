@@ -1,26 +1,10 @@
 package com.scepticalphysiologist.dmaple
 
-import android.graphics.Color
-import android.os.Build
-import android.view.Surface
-import androidx.annotation.RequiresApi
 import androidx.core.graphics.alpha
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
-import com.google.gson.Gson
-import com.scepticalphysiologist.dmaple.etc.Edge
-import com.scepticalphysiologist.dmaple.etc.Frame
-import com.scepticalphysiologist.dmaple.etc.Point
-import com.scepticalphysiologist.dmaple.map.MappingRoi
-import com.scepticalphysiologist.dmaple.map.creator.MapType
-import com.scepticalphysiologist.dmaple.map.creator.RGBMap
-import mil.nga.tiff.TIFFImage
-import mil.nga.tiff.TiffWriter
 import java.io.File
-import java.nio.ByteBuffer
-
-import android.graphics.RectF
 
 fun printColor(color: Int) {
     println("${color.alpha}, ${color.red}, ${color.green}, ${color.blue}")

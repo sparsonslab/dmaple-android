@@ -4,14 +4,14 @@ import android.graphics.Bitmap
 import android.graphics.Rect
 import android.util.Size
 import com.scepticalphysiologist.dmaple.etc.Point
-import com.scepticalphysiologist.dmaple.map.MappingRoi
+import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import mil.nga.tiff.FileDirectory
 import java.nio.ByteBuffer
 import kotlin.math.ceil
 
 
 /** A class that handles the creation of a spatio-temporal maps. */
-abstract class MapCreator(val roi: MappingRoi) {
+abstract class MapCreator(val roi: FieldRoi) {
 
     /** The number of maps produced by the creator. */
     abstract val nMaps: Int

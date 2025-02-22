@@ -5,15 +5,14 @@ import android.graphics.Color
 import android.graphics.Rect
 import android.util.Size
 import com.scepticalphysiologist.dmaple.etc.Point
-import com.scepticalphysiologist.dmaple.map.MappingRoi
-import mil.nga.tiff.FieldTagType
+import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import mil.nga.tiff.FileDirectory
 import java.lang.IllegalArgumentException
 import java.lang.IndexOutOfBoundsException
 import java.nio.ByteBuffer
 import kotlin.math.abs
 
-class BufferedExampleMap(roi: MappingRoi): MapCreator(roi) {
+class BufferedExampleMap(roi: FieldRoi): MapCreator(roi) {
 
     override val nMaps = 1
 

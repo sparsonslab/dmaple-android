@@ -8,7 +8,7 @@ import com.scepticalphysiologist.dmaple.etc.Frame
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.etc.randomAlphaString
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
-import com.scepticalphysiologist.dmaple.map.MappingRoi
+import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.creator.MapType
 import org.junit.jupiter.api.Test
 import org.robolectric.RobolectricTestRunner
@@ -52,7 +52,7 @@ class ScrapBookTest {
 
     @Test
     fun `example 2`() {
-        val roi = MappingRoi(
+        val roi = FieldRoi(
             frame = Frame(Point(800f, 1200f), orientation = Surface.ROTATION_90),
             threshold = 156,
             seedingEdge = Edge.TOP,
@@ -62,7 +62,7 @@ class ScrapBookTest {
         val gson = Gson()
         val ser = gson.toJson(roi)
 
-        val roi2 = gson.fromJson(ser, MappingRoi::class.java)
+        val roi2 = gson.fromJson(ser, FieldRoi::class.java)
 
         println("=".repeat(30))
         println(ser)
