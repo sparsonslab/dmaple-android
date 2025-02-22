@@ -1,7 +1,6 @@
 package com.scepticalphysiologist.dmaple.ui.camera
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.Color
 import android.util.AttributeSet
 import android.view.Gravity
@@ -20,7 +19,7 @@ import com.scepticalphysiologist.dmaple.etc.SwitchableSlider
 import com.scepticalphysiologist.dmaple.map.MappingRoi
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.etc.aspectRatioRatio
-import com.scepticalphysiologist.dmaple.map.record.MappingRecord
+import com.scepticalphysiologist.dmaple.map.MappingFieldImage
 
 /** The mapping field of view. The camera feed and overlays for:
  * - drawing mapping ROIs and thresholding them.
@@ -106,6 +105,14 @@ class MappingFieldOfView(context: Context, attributeSet: AttributeSet?):
 
     fun setSavedRois(rois: List<MappingRoi>) { roiOverlay.setSavedRois(rois) }
 
+    /** Show a fixed image of a mapping field rather than the camera feed.
+     *
+     * @param field The field image to show or null to show the camera feed.
+     * */
+    fun freezeField(field: MappingFieldImage?) {
+        roiOverlay.setBacking(field)
+    }
+
     fun roiHasBeenSelected(): MutableLiveData<String> { return roiOverlay.selectedRoi }
 
     fun savedRoisHaveChanged(): MutableLiveData<Boolean> { return roiOverlay.savedRoiChange }
@@ -113,12 +120,6 @@ class MappingFieldOfView(context: Context, attributeSet: AttributeSet?):
     fun allowEditing(allow: Boolean = true) {
         exposureSlider.visibility = if(allow) View.VISIBLE else View.INVISIBLE
         roiOverlay.allowEditing(allow)
-    }
-
-    fun setFixedField(bitmap: Bitmap?) {
-        // rotate
-
-        roiOverlay.setBacking(bitmap)
     }
 
     fun getCameraPreview(): PreviewView { return cameraFeed }

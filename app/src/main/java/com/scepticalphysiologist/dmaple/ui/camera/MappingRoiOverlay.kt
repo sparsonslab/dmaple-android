@@ -19,6 +19,7 @@ import com.scepticalphysiologist.dmaple.etc.Frame
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.etc.ThresholdBitmap
 import com.scepticalphysiologist.dmaple.etc.msg.MultipleChoice
+import com.scepticalphysiologist.dmaple.map.MappingFieldImage
 import com.scepticalphysiologist.dmaple.map.MappingRoi
 import com.scepticalphysiologist.dmaple.map.creator.MapType
 
@@ -108,7 +109,13 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     private var editable: Boolean = true
     /** The UID of a saved ROI that has been selected. */
     val selectedRoi = MutableLiveData<String>("")
-
+    /** An image of a mapping field to be shown in this view's background
+     * or null for a transparent background.
+     *
+     * Normally the background is transparent (null) but for thresholding and showing the field of
+     * old recordings it will be fixed.
+     * */
+    private var backgroundField: MappingFieldImage? = null
 
     init {
         // Paints for active and saved ROIs
@@ -128,9 +135,7 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
         gestureDetector.setOnDoubleTapListener(this)
 
         // Background of the view.
-        // Normally is null (i.e. the view is transparent and so the camera preview can be seen).
-        // When thresholding is begun, it is set to latest camera frame. i.e. the camera "freezes".
-        background = null
+        setBackgroundFromField(null)
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -140,8 +145,12 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     /** Allow or block ROI editing. */
     fun allowEditing(allow: Boolean = true) { editable = allow }
 
-    fun setBacking(bitmap: Bitmap?) {
-        background = bitmap?.let{ BitmapDrawable(it) }
+    /** Set the view's background to a field image.
+     * @param field The field image or null for a transparent background.
+     * */
+    fun setBacking(field: MappingFieldImage?) {
+        setBackgroundFromField(field?.copy())
+        invalidate()
     }
 
     /** Set the saved ROIs. */
@@ -164,7 +173,7 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     /** Start thresholding the active ROI using the bitmap. */
     fun startThresholding(cameraShot: Bitmap) {
         activeRoi?.let { roi ->
-            setBacking(cameraShot)
+            setBackgroundFromField(MappingFieldImage(Frame.fromView(this, display), cameraShot))
             thresholdBitmap = ThresholdBitmap.fromImage(cameraShot, roi)
             invalidate()
         }
@@ -181,7 +190,7 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
 
     /** Stop thresholding the active ROI. */
     fun stopThresholding(){
-        setBacking(null)
+        setBackgroundFromField(null)
         thresholdBitmap = null
         invalidate()
     }
@@ -368,7 +377,6 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
         }
     }
 
-
     // ---------------------------------------------------------------------------------------------
     // Drawing & layout
     // ---------------------------------------------------------------------------------------------
@@ -392,10 +400,18 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
             activeRoi?.changeFrame(newFrame)
             for(roi in savedRois) roi.changeFrame(newFrame)
             ruler?.changeFrame(newFrame)
+            setBackgroundFromField()
             invalidate()
         }
         // Update the view frame.
         frame = newFrame
+    }
+
+    /** Set the background from a mapping field. */
+    private fun setBackgroundFromField(field: MappingFieldImage? = backgroundField) {
+        backgroundField = field
+        backgroundField?.changeFrame(Frame.fromView(this, display))
+        background = backgroundField?.let{ BitmapDrawable(it.bitmap) }
     }
 
     private fun initiateRuler(frame: Frame) {

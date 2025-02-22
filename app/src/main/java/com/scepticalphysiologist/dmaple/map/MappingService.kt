@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
-import android.graphics.Matrix
 import android.hardware.camera2.CaptureRequest
 import android.os.Binder
 import android.os.Environment
@@ -34,7 +33,6 @@ import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.etc.surfaceRotationDegrees
 import com.scepticalphysiologist.dmaple.etc.msg.Warnings
 import com.scepticalphysiologist.dmaple.etc.strftime
-import com.scepticalphysiologist.dmaple.etc.transformBitmap
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import com.scepticalphysiologist.dmaple.map.record.roiCreatorsMap
@@ -174,8 +172,9 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     private var creating: Boolean = false
     /** The instant that creation of maps started. */
     private var startTime: Instant = Instant.now()
-
-    var lastFrame: Bitmap? = null
+    /** The last bitmap captured from the camera. */
+    private var lastCapture: Bitmap? = null
+    /** The coroutine scope for recording maps. */
     private var scope: CoroutineScope = MainScope()
 
     // ---------------------------------------------------------------------------------------------
@@ -311,15 +310,21 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     /** The number of seconds since the service started mapping. */
     fun elapsedSeconds(): Long {
-        return startTime?.let {
-            (Duration.between(it, Instant.now()).toMillis() / 1000f).toLong()
-        } ?: 0
+        return (Duration.between(startTime, Instant.now()).toMillis() / 1000f).toLong()
     }
 
     /** Get current map's creator and map index. */
     fun getCurrentMapCreator(): Pair<MapCreator?, Int> {
         val (currentCreatorIdx, currentMapIdx) = currentMap
         return Pair(creators[currentCreatorIdx], currentMapIdx)
+    }
+
+    /** Get the last image of the mapping field. */
+    fun getLastFieldImage(): MappingFieldImage? {
+        return lastCapture?.let { bitmap ->
+            // We can assume that the last captured bitmap is in the same frame as a current creator.
+            creators.firstOrNull()?.roi?.frame?.let { frame -> MappingFieldImage(frame, bitmap) }
+        }
     }
 
     /** Given a selected ROI, set the next map to show. */
@@ -336,7 +341,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         clearCreators()
         record.loadMapTiffs(MappingService::getFreeBuffer)
         creators.addAll(record.struct.values.flatten())
-        lastFrame = record.field
+        lastCapture = record.field
         return true
     }
 
@@ -351,7 +356,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
                 strftime(startTime, "YYMMdd_HHmmss_") + it
             )
-            val record = MappingRecord(loc, lastFrame, roiCreatorsMap(creators))
+            val record = MappingRecord(loc, lastCapture, roiCreatorsMap(creators))
             record.write()
             MappingRecord.records.add(record)
         }
@@ -424,14 +429,21 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     /** Get the frame of the image analyser. */
     private fun imageAnalysisFrame(): Frame? {
+        // The frame orientation is the sum of the ImageInfo and analyser target.
+        // From the definition of ImageAnalysis.targetRotation:
+        // "The rotation value of ImageInfo will be the rotation, which if applied to the output
+        //  image [of the analyser], will make the image match [the] target rotation specified here."
+        // https://developer.android.com/reference/androidx/camera/core/ImageAnalysis.Builder#setTargetRotation(int)
+        // The values for the Samsung SM-X110 are:
+        // target = display    image info      sum
+        // -----------------------------------------
+        //  0                   90              90
+        //  90                  0               90
+        //  180                 270             450
+        //  270                 180             450
         analyser?.let {
-            // Get analyser and update its target orientation.
             it.targetRotation = display.rotation
-            // The frame orientation is the sum of the image and analyser target.
-            // (see the definition of ImageAnalysis.targetRotation)
             val imageInfo = it.resolutionInfo ?: return null
-            println("rotations: image info = ${imageInfo.rotationDegrees}, " +
-                    "surface = ${surfaceRotationDegrees(it.targetRotation)}")
             val or = imageInfo.rotationDegrees + surfaceRotationDegrees(it.targetRotation)
             return Frame(
                 Point(imageInfo.resolution.width.toFloat(), imageInfo.resolution.height.toFloat()),
@@ -444,11 +456,11 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     override fun analyze(image: ImageProxy) {
         if(creating) {
             // Pass the image to each map creator to analyse.
-            lastFrame = image.toBitmap()
+            lastCapture = image.toBitmap()
             // todo - would be faster to have creators access image pixels directly rather
             //    than convert the whole image to a bitmap. But getting pixels out of image
             //    is a pain (decoding, planes, etc) -  I did try!
-            for(creator in creators) creator.updateWithCameraBitmap(lastFrame!!)
+            for(creator in creators) creator.updateWithCameraBitmap(lastCapture!!)
         }
         // Each image must be "closed" to allow preview to continue.
         image.close()

@@ -101,7 +101,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
             RecState.PRE_RECORD -> {
                 binding.recordButton.setImageResource(R.drawable.play_arrow)
                 binding.maps.stop()
-                binding.cameraAndRoi.setFixedField(null)
+                binding.cameraAndRoi.freezeField(null)
                 binding.toRecordsButton.visibility = View.VISIBLE
                 binding.maps.reset()
                 binding.cameraAndRoi.allowEditing(true)
@@ -111,19 +111,19 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
             RecState.RECORDING -> {
                 binding.recordButton.setImageResource(R.drawable.stop_5f6368)
                 binding.maps.start()
-                binding.cameraAndRoi.setFixedField(null)
+                binding.cameraAndRoi.freezeField(null)
                 setMapView()
             }
             RecState.POST_RECORD -> {
                 binding.recordButton.setImageResource(R.drawable.eject_arrow)
                 binding.maps.stop()
-                binding.cameraAndRoi.setFixedField(model.getLastFrame())
+                binding.cameraAndRoi.freezeField(model.getLastFieldImage())
                 setMapView()
             }
             RecState.OLD_RECORD -> {
                 binding.recordButton.setImageResource(R.drawable.eject_arrow)
                 binding.maps.stop()
-                binding.cameraAndRoi.setFixedField(model.getLastFrame())
+                binding.cameraAndRoi.freezeField(model.getLastFieldImage())
                 setMapView()
             }
         }
