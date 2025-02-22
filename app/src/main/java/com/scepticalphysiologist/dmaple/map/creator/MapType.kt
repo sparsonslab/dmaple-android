@@ -10,8 +10,6 @@ enum class MapType (val title: String){
     /** Factory method for map creators (class [MapCreator]).
      *
      * @param roi The mapping ROI.
-     * @param bufferProvider A function that returns a buffer for map creation or null if no
-     * buffers are available.
      * @return A map creator or null, if not enough buffers are available.
      * */
     fun makeCreator(roi: FieldRoi): MapCreator {
