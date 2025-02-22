@@ -10,6 +10,7 @@ import android.os.IBinder
 import androidx.camera.core.Preview.SurfaceProvider
 import androidx.camera.view.PreviewView
 import com.scepticalphysiologist.dmaple.map.MappingService
+import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import java.io.File
 
 
@@ -49,6 +50,9 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         // Connect the mapping service and initiate its buffers.
         MappingService.initialiseBuffers()
         connectMappingService(applicationContext)
+
+        // Load records
+        MappingRecord.loadRecords()
     }
 
     // ---------------------------------------------------------------------------------------------

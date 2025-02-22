@@ -16,9 +16,10 @@ import androidx.lifecycle.MutableLiveData
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.etc.SwitchableSlider
-import com.scepticalphysiologist.dmaple.map.MappingRoi
+import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.etc.aspectRatioRatio
+import com.scepticalphysiologist.dmaple.map.field.FieldImage
 
 /** The mapping field of view. The camera feed and overlays for:
  * - drawing mapping ROIs and thresholding them.
@@ -100,9 +101,17 @@ class MappingFieldOfView(context: Context, attributeSet: AttributeSet?):
     // Public wrappers around child views
     // ---------------------------------------------------------------------------------------------
 
-    fun getSavedRois(): List<MappingRoi> { return roiOverlay.savedRois }
+    fun getSavedRois(): List<FieldRoi> { return roiOverlay.savedRois }
 
-    fun setSavedRois(rois: List<MappingRoi>) { roiOverlay.setSavedRois(rois) }
+    fun setSavedRois(rois: List<FieldRoi>) { roiOverlay.setSavedRois(rois) }
+
+    /** Show a fixed image of a mapping field rather than the camera feed.
+     *
+     * @param field The field image to show or null to show the camera feed.
+     * */
+    fun freezeField(field: FieldImage?) {
+        roiOverlay.setBacking(field)
+    }
 
     fun roiHasBeenSelected(): MutableLiveData<String> { return roiOverlay.selectedRoi }
 

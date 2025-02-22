@@ -4,8 +4,10 @@ import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.text.format.DateUtils
 import android.view.MotionEvent
+import android.view.View
 import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.fragment.findNavController
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.databinding.RecorderBinding
 import com.scepticalphysiologist.dmaple.etc.PermissionSets
@@ -27,6 +29,10 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
 
         // Get the view model.
         model = ViewModelProvider(this.requireActivity()).get(RecorderModel::class.java)
+
+        // A record index has been provided (by navigation from from explorer fragment).
+        // Load the record.
+        arguments?.getInt("recordIdx")?.let { model.loadRecord(it) }
 
         // Keep the screen on, so that the camera stays on.
         //binding.root.keepScreenOn = true
@@ -69,7 +75,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
             if(!dragCameraView(event)) binding.maps.processMotionEvent(event) else true
         }
 
-        // When recording, update the map is an ROI is selected.
+        // When ROI has been selected, update the map shown.
         binding.cameraAndRoi.roiHasBeenSelected().observe(viewLifecycleOwner) { selectedRoiUID ->
             if(stateShowsMap()){
                 model.updateCurrentlyShownMap(selectedRoiUID)
@@ -81,38 +87,61 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         model.timer.observe(viewLifecycleOwner) { elapsedSec ->
             binding.cameraTimer.text = DateUtils.formatElapsedTime(elapsedSec)
         }
+
+        // Got to records.
+        binding.toRecordsButton.setOnClickListener {
+            findNavController().navigate(R.id.recorder_to_explorer)
+        }
+
     }
 
     /** Set the UI appearance depending on whether maps are being created. */
     private fun setUIState() {
         when(model.getState()) {
-            0 -> {
+            RecState.PRE_RECORD -> {
                 binding.recordButton.setImageResource(R.drawable.play_arrow)
+                binding.maps.stop()
+                binding.cameraAndRoi.freezeField(null)
+                binding.toRecordsButton.visibility = View.VISIBLE
                 binding.maps.reset()
                 binding.cameraAndRoi.allowEditing(true)
                 binding.cameraAndRoi.fullSize()
                 binding.cameraTimer.text = ""
-                binding.maps.stop()
             }
-            1 -> {
+            RecState.RECORDING -> {
                 binding.recordButton.setImageResource(R.drawable.stop_5f6368)
-                binding.cameraAndRoi.allowEditing(false)
-                val extent = Point.ofViewExtent(binding.root) * 0.5f
-                binding.cameraAndRoi.resize(extent.x.toInt(), extent.y.toInt())
-                binding.maps.updateCreator(model.getCurrentlyShownMap())
                 binding.maps.start()
+                binding.cameraAndRoi.freezeField(null)
+                setMapView()
             }
-            2 -> {
+            RecState.POST_RECORD -> {
                 binding.recordButton.setImageResource(R.drawable.eject_arrow)
-                binding.cameraAndRoi.allowEditing(false)
+                binding.maps.stop()
+                binding.cameraAndRoi.freezeField(model.getLastFieldImage())
+                setMapView()
+            }
+            RecState.OLD_RECORD -> {
+                binding.recordButton.setImageResource(R.drawable.eject_arrow)
+                binding.maps.stop()
+                binding.cameraAndRoi.freezeField(model.getLastFieldImage())
+                setMapView()
             }
         }
+    }
+
+    /** Set the UI so that is shows the maps. */
+    private fun setMapView() {
+        binding.toRecordsButton.visibility = View.INVISIBLE
+        binding.cameraAndRoi.allowEditing(false)
+        val extent = Point.ofViewExtent(binding.root) * 0.5f
+        binding.cameraAndRoi.resize(extent.x.toInt(), extent.y.toInt())
+        binding.maps.updateCreator(model.getCurrentlyShownMap())
     }
 
     /** If the fragment showing maps? */
     private fun stateShowsMap(): Boolean{
         val state = model.getState()
-        return (state == 1) || (state == 2)
+        return state != RecState.PRE_RECORD
     }
 
     /** While recording, resize the camera view by dragging its lower-right corner. */

@@ -1,4 +1,4 @@
-package com.scepticalphysiologist.dmaple.map
+package com.scepticalphysiologist.dmaple.map.field
 
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -15,7 +15,7 @@ import com.scepticalphysiologist.dmaple.map.creator.MapType
  * @property threshold The threshold (pixel luminance) that distinguishes gut from background.
  * @property seedingEdge The edge of the ROI along which the map is seeded.
  */
-class MappingRoi(
+class FieldRoi(
     var frame: Frame,
     var threshold: Int = 0,
     var seedingEdge: Edge = Edge.BOTTOM,
@@ -23,8 +23,8 @@ class MappingRoi(
     var uid: String = randomAlphaString(20)
 ): RectF(0f, 0f, 0f, 0f) {
 
-
-
+    // Required for unit tests because RectF.hashCode is a stub in the test version of android.graphics
+    override fun hashCode(): Int { return uid.map{it.toInt()}.sum() + threshold }
 
     /** Change the ROI's reference frame. */
     fun changeFrame(newFrame: Frame) {
@@ -34,15 +34,15 @@ class MappingRoi(
     }
 
     /** Get a copy of the ROI in a new frame. */
-    fun inNewFrame(newFrame: Frame): MappingRoi {
+    fun inNewFrame(newFrame: Frame): FieldRoi {
         val cpy = this.copy()
         cpy.changeFrame(newFrame)
         return cpy
     }
 
     /** Copy the ROI. */
-    fun copy(): MappingRoi {
-        val cpy= MappingRoi(
+    fun copy(): FieldRoi {
+        val cpy= FieldRoi(
             frame = this.frame,
             threshold = this.threshold,
             seedingEdge = this.seedingEdge,

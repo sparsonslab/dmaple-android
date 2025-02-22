@@ -14,6 +14,7 @@ import android.view.WindowManager
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.findViewTreeLifecycleOwner
 import com.scepticalphysiologist.dmaple.etc.Point
+import com.scepticalphysiologist.dmaple.etc.transformBitmap
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -105,6 +106,14 @@ class MapView(context: Context, attributeSet: AttributeSet):
     /** The offset of the end of shown map from the end of the view (x = space, y = time). */
     private val offset = Point(0f, 0f)
 
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        // Update this image view's bitmap through a live object.
+        // This avoids doing from within the coroutine during live recording.
+        findViewTreeLifecycleOwner()?.let{ newBitmap.observe(it) { bm-> setImageBitmap(bm) } }
+    }
+
     // ---------------------------------------------------------------------------------------------
     // Map layout, scaling and zoom.
     // ---------------------------------------------------------------------------------------------
@@ -121,7 +130,10 @@ class MapView(context: Context, attributeSet: AttributeSet):
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
-        if(changed) updateViewSize()
+        if(changed) {
+            updateViewSize()
+            if(scope == null) update()
+        }
     }
 
     /** Update the view size [viewSize]. */
@@ -193,19 +205,18 @@ class MapView(context: Context, attributeSet: AttributeSet):
     fun updateCreator(creatorAndMapIdx: Pair<MapCreator?, Int>) {
         creator = creatorAndMapIdx.first
         mapIdx = creatorAndMapIdx.second
+        if(scope == null) update()
     }
 
     /** Start live view of the map being created. */
     fun start() {
         if(scope != null) return
-        findViewTreeLifecycleOwner()?.let{newBitmap.observe(it) {bm-> setImageBitmap(bm)} }
         scope = MainScope()
-        updateMap()
+        updateLive()
     }
 
     /** Stop live view of the map being created. */
     fun stop() {
-        findViewTreeLifecycleOwner()?.let {newBitmap.removeObservers(it)}
         scope?.cancel()
         scope = null
     }
@@ -214,33 +225,36 @@ class MapView(context: Context, attributeSet: AttributeSet):
     fun reset() { updateZoom(Point(1f, 1f)) }
 
     // ---------------------------------------------------------------------------------------------
-    // Live display.
+    // Map update.
     // ---------------------------------------------------------------------------------------------
 
-    /** Coroutine for updating the map. */
-    private fun updateMap() = scope?.launch(Dispatchers.Default){
+    /** Coroutine loop for updating the map live. */
+    private fun updateLive() = scope?.launch(Dispatchers.Default){
         while(true) {
-            creator?.let { mapCreator ->
-                updateBitmapSize(mapCreator.spaceTimeSampleSize())
-                // Extract section of the map as a bitmap.
-                val pE = Point.minOf(bitmapSize, viewSizeInBitmapPixels)
-                val p0 = Point.maxOf(bitmapSize - pE - offset, Point())
-                val p1 = p0 + pE
-                val bm = mapCreator.getMapBitmap(
-                    idx = mapIdx,
-                    crop = Rect(p0.x.toInt(), p0.y.toInt(), p1.x.toInt(), p1.y.toInt()),
-                    stepX = pixelStep.x.toInt(), stepY = pixelStep.y.toInt(),
-                    backing = bitmapBacking,
-                )
-                // Rotate and scale the bitmap and post to the main thread for display.
-                bm?.let {
-                    newBitmap.postValue(Bitmap.createBitmap(
-                        bm, 0, 0, bm.width, bm.height,
-                        bitmapMatrix, false
-                    ))
-                }
-            }
+            update()
             delay(updateInterval)
+        }
+    }
+
+    /** Update the map shown. */
+    private fun update() {
+        creator?.let { mapCreator ->
+            // Update size.
+            updateBitmapSize(mapCreator.spaceTimeSampleSize())
+            // Extract section of the map as a bitmap.
+            val pE = Point.minOf(bitmapSize, viewSizeInBitmapPixels)
+            val p0 = Point.maxOf(bitmapSize - pE - offset, Point())
+            val p1 = p0 + pE
+            mapCreator.getMapBitmap(
+                idx = mapIdx,
+                crop = Rect(p0.x.toInt(), p0.y.toInt(), p1.x.toInt(), p1.y.toInt()),
+                stepX = pixelStep.x.toInt(), stepY = pixelStep.y.toInt(),
+                backing = bitmapBacking,
+
+            )?.let { bm ->
+                // Rotate and scale the bitmap and post to the main thread for display.
+                newBitmap.postValue(transformBitmap(bm, bitmapMatrix)
+            )}
         }
     }
 
@@ -263,6 +277,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
         if(dFinger.x > dFinger.y) zFactor.y = 1f else zFactor.x = 1f
         // Zoom.
         updateZoom(zFactor * zoom)
+        if(scope == null) update()
     }
 
     /** Scroll the map from a scrolling finger movement.
@@ -275,6 +290,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
         val shift = offset + bitmapShift
         if(shift.x > 0) offset.x = shift.x
         if(shift.y > 0) offset.y = shift.y
+        if(scope == null) update()
     }
 
     // ---------------------------------------------------------------------------------------------

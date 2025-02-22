@@ -5,17 +5,16 @@ import android.graphics.Color
 import android.graphics.Rect
 import android.util.Size
 import com.scepticalphysiologist.dmaple.etc.Point
-import com.scepticalphysiologist.dmaple.map.MappingRoi
+import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import mil.nga.tiff.FileDirectory
-import java.io.File
 import java.lang.IllegalArgumentException
 import java.lang.IndexOutOfBoundsException
 import java.nio.ByteBuffer
 import kotlin.math.abs
 
-class BufferedExampleMap(
-    roi: MappingRoi, bufferProvider: (() -> ByteBuffer?)
-): MapCreator(roi, bufferProvider) {
+class BufferedExampleMap(roi: FieldRoi): MapCreator(roi) {
+
+    override val nMaps = 1
 
     // Map geometry
     // ------------
@@ -44,11 +43,15 @@ class BufferedExampleMap(
             pL = edge.first.y.toInt()
         }
         ns = abs(pE.first - pE.second)
-
-        bufferProvider.invoke()?.let { mapView = ShortMap(it, ns) } ?: {
-            throw IndexOutOfBoundsException("There are not enough buffers.")
-        }
     }
+
+    override fun provideBuffers(buffers: List<ByteBuffer>): Boolean {
+        if(buffers.size < nMaps) return false
+        mapView = ShortMap(buffers[0], ns)
+        return true
+    }
+
+
 
     // ---------------------------------------------------------------------------------------------
     // Update and bitmap creation.
@@ -67,8 +70,6 @@ class BufferedExampleMap(
             nt += 1
         } catch (_: java.lang.IndexOutOfBoundsException) { reachedEnd = true }
     }
-
-    override fun nMaps(): Int { return 1 }
 
     override fun getMapBitmap(
         idx: Int,
@@ -103,9 +104,17 @@ class BufferedExampleMap(
     // Map save.
     // ---------------------------------------------------------------------------------------------
 
-    override fun tiffDirectory(): Map<String, FileDirectory> {
-        return mapView?.let{
-            mapOf("map0" to it.tiffDirectory(nt))
-        } ?: mapOf()
+    override fun toTiff(): List<FileDirectory>? {
+        return mapView?.let{ bufferView ->
+            val description = "${MapType.getMapType(this).title}:0"
+            return listOf(bufferView.toTiffDirectory(description, nt))
+        }
+    }
+
+    override fun fromTiff(tiff: List<FileDirectory>) {
+        mapView?.let { bufferView ->
+            val description = "${MapType.getMapType(this).title}:0"
+            bufferView.fromTiffDirectory(description, tiff)?.let { nt = it }
+        }
     }
 }

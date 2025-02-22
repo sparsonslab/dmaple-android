@@ -8,19 +8,25 @@ import androidx.lifecycle.MutableLiveData
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.etc.msg.InputRequired
 import com.scepticalphysiologist.dmaple.etc.msg.Message
-import com.scepticalphysiologist.dmaple.etc.randomAlphaString
+import com.scepticalphysiologist.dmaple.map.field.FieldImage
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
-import com.scepticalphysiologist.dmaple.map.MappingRoi
+import com.scepticalphysiologist.dmaple.map.field.FieldRoi
+import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
+/** The states the recorder. */
+enum class RecState {
+    PRE_RECORD,
+    RECORDING,
+    POST_RECORD,
+    OLD_RECORD
+}
 
 class RecorderModel(application: Application): AndroidViewModel(application) {
 
@@ -33,7 +39,8 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
      * 1 = Record maps.
      * 2 = View maps.
      */
-    private var state = if(mapper?.isCreatingMaps() == true) 1 else 0
+    private var state: RecState =
+        if(mapper?.isCreatingMaps() == true) RecState.RECORDING else RecState.PRE_RECORD
     /** Indicate warning messages that should be shown, e.g. when starting mapping. */
     val messages = MutableLiveData<Message<*>?>(null)
     /** Indicate the elapsed time (seconds) of mapping. */
@@ -46,32 +53,38 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
     // ---------------------------------------------------------------------------------------------
 
     /** Get the model's [state]. */
-    fun getState(): Int { return state }
+    fun getState(): RecState { return state }
 
     /** Update the model [state] when (e.g.) a button is pressed. */
     fun updateState(){
         if(mapper == null) return
-        // Recording (1)
-        if((state == 1) || mapper!!.isCreatingMaps()) {
+        if((state == RecState.RECORDING) || mapper!!.isCreatingMaps()) {
             messages.postValue(mapper!!.startStop())
             if(!mapper!!.isCreatingMaps()) {
                 stopTimer()
-                state = 2
+                state = RecState.POST_RECORD
             }
         }
-        // ROI selection (0)
-        else if(state == 0) {
+        else if(state == RecState.PRE_RECORD) {
             messages.postValue(mapper!!.startStop())
             if(mapper!!.isCreatingMaps()) {
                 startTimer()
-                state = 1
+                state = RecState.RECORDING
             }
         }
-        // Post-recording (2)
-        else if (state == 2) {
+        else if (state == RecState.POST_RECORD) {
             askToSaveMaps()
-            state = 0
+            state = RecState.PRE_RECORD
         }
+        else if (state == RecState.OLD_RECORD) {
+            doNotSaveMaps()
+            state = RecState.PRE_RECORD
+        }
+    }
+
+    /** Try to load a record. */
+    fun loadRecord(idx: Int) {
+        if(mapper?.loadRecord(MappingRecord.records[idx]) == true) state = RecState.OLD_RECORD
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -82,10 +95,10 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
     fun setCameraPreview(preview: PreviewView) { MainActivity.setMappingServiceCameraPreview(preview) }
 
     /** Set the ROIs used for mapping. */
-    fun setMappingRois(viewRois: List<MappingRoi>) { mapper?.setRois(viewRois) }
+    fun setMappingRois(viewRois: List<FieldRoi>) { mapper?.setRois(viewRois) }
 
     /** Get the ROIs used for mapping. */
-    fun getMappingRois(): List<MappingRoi> { return mapper?.getRois() ?: listOf() }
+    fun getMappingRois(): List<FieldRoi> { return mapper?.getRois() ?: listOf() }
 
     /** Set the exposure level. */
     fun setExposure(fraction: Float) { mapper?.setExposure(fraction) }
@@ -95,6 +108,9 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
 
     /** Get the currently shown map - its creator and map index. */
     fun getCurrentlyShownMap(): Pair<MapCreator?, Int> { return mapper?.getCurrentMapCreator() ?: Pair(null, 0) }
+
+    /** Get the last image of the mapping field. */
+    fun getLastFieldImage(): FieldImage? { return mapper?.getLastFieldImage() }
 
     // ---------------------------------------------------------------------------------------------
     // Timer
@@ -139,6 +155,6 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
     private fun saveMaps(dir: String) { mapper?.saveAndClear(dir) }
 
     /** Do not save maps, but still clear-up. */
-    private fun doNotSaveMaps(input: String) { mapper?.saveAndClear(null) }
+    private fun doNotSaveMaps(input: String = "") { mapper?.saveAndClear(null) }
 
 }

@@ -5,8 +5,10 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.graphics.Bitmap
 import android.hardware.camera2.CaptureRequest
 import android.os.Binder
+import android.os.Environment
 import android.os.IBinder
 import android.view.Display
 import android.view.WindowManager
@@ -30,8 +32,12 @@ import com.scepticalphysiologist.dmaple.etc.Frame
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.etc.surfaceRotationDegrees
 import com.scepticalphysiologist.dmaple.etc.msg.Warnings
+import com.scepticalphysiologist.dmaple.etc.strftime
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
-import com.scepticalphysiologist.dmaple.map.creator.saveCreatorsAndMaps
+import com.scepticalphysiologist.dmaple.map.field.FieldImage
+import com.scepticalphysiologist.dmaple.map.field.FieldRoi
+import com.scepticalphysiologist.dmaple.map.record.MappingRecord
+import com.scepticalphysiologist.dmaple.map.record.roiCreatorsMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -159,7 +165,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     // State
     // -----
     /** The mapping ROIs in their last view frame. */
-    private var rois = mutableListOf<MappingRoi>()
+    private var rois = mutableListOf<FieldRoi>()
     /** Map creators. */
     private var creators = mutableListOf<MapCreator>()
     /** The currently shown map: its [creators] index and map index within that creator. */
@@ -168,7 +174,9 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     private var creating: Boolean = false
     /** The instant that creation of maps started. */
     private var startTime: Instant = Instant.now()
-
+    /** The last bitmap captured from the camera. */
+    private var lastCapture: Bitmap? = null
+    /** The coroutine scope for recording maps. */
     private var scope: CoroutineScope = MainScope()
 
     // ---------------------------------------------------------------------------------------------
@@ -288,13 +296,13 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     }
 
     /** Set the ROIs. e.g. when ROIs are updated in a view. */
-    fun setRois(viewRois: List<MappingRoi>) {
+    fun setRois(viewRois: List<FieldRoi>) {
         rois.clear()
         for(roi in viewRois) rois.add(roi.copy())
     }
 
     /** Get the ROIs. e.g. for when a view of the ROIs needs to be reconstructed. */
-    fun getRois(): List<MappingRoi> { return rois }
+    fun getRois(): List<FieldRoi> { return rois }
 
     /** Start or stop map creation, depending on the current creation state. */
     fun startStop(): Warnings { return if(creating) stop() else start() }
@@ -304,9 +312,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     /** The number of seconds since the service started mapping. */
     fun elapsedSeconds(): Long {
-        return startTime?.let {
-            (Duration.between(it, Instant.now()).toMillis() / 1000f).toLong()
-        } ?: 0
+        return (Duration.between(startTime, Instant.now()).toMillis() / 1000f).toLong()
     }
 
     /** Get current map's creator and map index. */
@@ -315,8 +321,31 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         return Pair(creators[currentCreatorIdx], currentMapIdx)
     }
 
+    /** Get the last image of the mapping field. */
+    fun getLastFieldImage(): FieldImage? {
+        return lastCapture?.let { bitmap ->
+            // We can assume that the last captured bitmap is in the same frame as a current creator.
+            creators.firstOrNull()?.roi?.frame?.let { frame -> FieldImage(frame, bitmap) }
+        }
+    }
+
     /** Given a selected ROI, set the next map to show. */
     fun setNextMap(roiUID: String) { currentMap = getNextMap(roiUID) }
+
+    /** Load a (old) recording.
+     *
+     * @param record The record to be loaded.
+     * @return Whether the record was loaded (will not be loaded if a record is being created).
+     * */
+    fun loadRecord(record: MappingRecord): Boolean {
+        if(creating) return false
+        setRois(record.struct.keys.toList())
+        clearCreators()
+        record.loadMapTiffs(MappingService::getFreeBuffer)
+        creators.addAll(record.struct.values.flatten())
+        lastCapture = record.field
+        return true
+    }
 
     /** If maps are not being created, save the maps, clear the creators and free-up resources.
      *
@@ -324,10 +353,16 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
      * */
     fun saveAndClear(folderName: String?) = scope.launch(Dispatchers.Default) {
         if(creating) return@launch
-        folderName?.let { saveCreatorsAndMaps(creators, it, startTime) }
-        creators.clear()
-        freeAllBuffers()
-        System.gc()
+        folderName?.let {
+            val loc = File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
+                strftime(startTime, "YYMMdd_HHmmss_") + it
+            )
+            val record = MappingRecord(loc, lastCapture, roiCreatorsMap(creators))
+            record.write()
+            MappingRecord.records.add(record)
+        }
+        clearCreators()
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -355,8 +390,9 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         creators.clear()
         for(roi in rois) {
             for(map in roi.maps) {
-                val creator = map.makeCreator(roi.inNewFrame(imageFrame), MappingService::getFreeBuffer)
-                if(creator != null) creators.add(creator)
+                val creator = map.makeCreator(roi.inNewFrame(imageFrame))
+                val buffers = (0 until creator.nMaps).map{getFreeBuffer()}.filterNotNull()
+                if(creator.provideBuffers(buffers)) creators.add(creator)
                 else {
                     creators.clear()
                     warning.add(message =
@@ -384,13 +420,31 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         return Warnings("Stop Recording")
     }
 
+    /** Clear all creators, freeing up their buffers and resetting the current map. */
+    private fun clearCreators() {
+        if(creating) return
+        creators.clear()
+        currentMap = Pair(0, 0)
+        freeAllBuffers()
+        System.gc()
+    }
+
     /** Get the frame of the image analyser. */
     private fun imageAnalysisFrame(): Frame? {
+        // The frame orientation is the sum of the ImageInfo and analyser target.
+        // From the definition of ImageAnalysis.targetRotation:
+        // "The rotation value of ImageInfo will be the rotation, which if applied to the output
+        //  image [of the analyser], will make the image match [the] target rotation specified here."
+        // https://developer.android.com/reference/androidx/camera/core/ImageAnalysis.Builder#setTargetRotation(int)
+        // The values for the Samsung SM-X110 are:
+        // target = display    image info      sum
+        // -----------------------------------------
+        //  0                   90              90
+        //  90                  0               90
+        //  180                 270             450
+        //  270                 180             450
         analyser?.let {
-            // Get analyser and update its target orientation.
             it.targetRotation = display.rotation
-            // The frame orientation is the sum of the image and analyser target.
-            // (see the definition of ImageAnalysis.targetRotation)
             val imageInfo = it.resolutionInfo ?: return null
             val or = imageInfo.rotationDegrees + surfaceRotationDegrees(it.targetRotation)
             return Frame(
@@ -404,11 +458,11 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     override fun analyze(image: ImageProxy) {
         if(creating) {
             // Pass the image to each map creator to analyse.
-            val bm = image.toBitmap()
+            lastCapture = image.toBitmap()
             // todo - would be faster to have creators access image pixels directly rather
             //    than convert the whole image to a bitmap. But getting pixels out of image
             //    is a pain (decoding, planes, etc) -  I did try!
-            for(creator in creators) creator.updateWithCameraBitmap(bm)
+            for(creator in creators) creator.updateWithCameraBitmap(lastCapture!!)
         }
         // Each image must be "closed" to allow preview to continue.
         image.close()
@@ -432,7 +486,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         if(currentCreatorIdx !in creatorsFromRoi) return Pair(creatorsFromRoi[0], 0)
         // Current creator does come from the ROI ...
         // ... and it has more maps to show: the next map from the same creator
-        if(currentMapIdx < creators[currentCreatorIdx].nMaps() - 1)
+        if(currentMapIdx < creators[currentCreatorIdx].nMaps - 1)
             return Pair(currentCreatorIdx, currentMapIdx + 1)
         // ... and it does not have more maps: the next creator associated with the ROI.
         var j = 1 + creatorsFromRoi.indexOf(currentCreatorIdx)
