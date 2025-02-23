@@ -60,7 +60,10 @@ class MapCreator(val roi: FieldRoi) {
     private var radiusMapRight: ShortMap? = null
     /** The spine intensity map. */
     private var spineMap: RGBMap? = null
-    /** The maps and their descriptions (must all be valid as part of a file name). */
+    /** The maps and their descriptions.
+     * The description is used both as the prefix to the map's file name (and so must be valid as
+     * part of a file name) and as a TIFF tag to identify the map's creator.
+     * */
     private val mapBuffers: List<Pair<String, MapBufferView<*>?>> get() = listOf(
         Pair("diameter", diameterMap),
         Pair("radius_left", radiusMapLeft),
