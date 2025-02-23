@@ -42,8 +42,8 @@ class MappingRecordAdaptor (
 
         // Record name and description.
         holder.binding.recordName.text = record.name
-        val roiDescription = record.struct.keys.map{
-            it.maps.toString()
+        val roiDescription = record.creators.map{
+            it.roi.maps.toString()
         }.joinToString("\n")
         holder.binding.recordDescription.text = roiDescription
 

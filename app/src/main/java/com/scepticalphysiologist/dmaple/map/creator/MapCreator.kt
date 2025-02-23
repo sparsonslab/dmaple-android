@@ -6,23 +6,117 @@ import android.util.Size
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import mil.nga.tiff.FileDirectory
+import java.lang.IllegalArgumentException
+import java.lang.IndexOutOfBoundsException
 import java.nio.ByteBuffer
+import kotlin.math.abs
 import kotlin.math.ceil
 
 
-/** A class that handles the creation of a spatio-temporal maps. */
-abstract class MapCreator(val roi: FieldRoi) {
+enum class MapType (
+    val title: String,
+    val nMaps: Int,
+){
+    DIAMETER(
+        title = "diameter",
+        nMaps = 1,
+    ),
+    RADIUS(
+        title = "radius",
+        nMaps = 2
+    ),
+    SPINE(
+        title = "spine profile",
+        nMaps = 1
+    );
+}
+
+
+/** Handles the creation of spatio-temporal maps for a single ROI. */
+class MapCreator(val roi: FieldRoi) {
 
     /** The number of maps produced by the creator. */
-    abstract val nMaps: Int
+    val nMaps: Int = roi.maps.sumOf { it.nMaps }
 
-    abstract fun provideBuffers(buffers: List<ByteBuffer>): Boolean
+    // Map geometry
+    // ------------
+    /** The map seeding edge orientation within the input images. */
+    private val isVertical: Boolean = roi.seedingEdge.isVertical()
+    /** Long-axis coordinates of the seeding edge .*/
+    private val pE: Pair<Int, Int>
+    /** Short-axis coordinate of the seeding edge. */
+    private val pL: Int
+    /** Sample size of map - space and time. */
+    private val ns: Int
+    private var nt: Int = 0
+
+    // Buffering
+    // ---------
+    private var diameterMap: ShortMap? = null
+    private var radiusMapLeft: ShortMap? = null
+    private var radiusMapRight: ShortMap? = null
+    private var spineMap: RGBMap? = null
+
+    private val mapBuffers: List<Pair<String, MapBufferView<*>?>> get() = listOf(
+        Pair("diameter", diameterMap),
+        Pair("radius_left", radiusMapLeft),
+        Pair("radius_right", radiusMapRight),
+        Pair("spine", spineMap)
+    )
+
+    private var reachedEnd = false
+
+    init {
+        val edge = Point.ofRectEdge(roi, roi.seedingEdge)
+        if(isVertical) {
+            pE = orderedY(edge)
+            pL = edge.first.x.toInt()
+        } else {
+            pE = orderedX(edge)
+            pL = edge.first.y.toInt()
+        }
+        ns = abs(pE.first - pE.second)
+    }
+
+    fun provideBuffers(buffers: List<ByteBuffer>): Boolean {
+        if(buffers.size < nMaps) return false
+        var i = 0
+        for(map in roi.maps) when(map) {
+            MapType.DIAMETER -> {
+                diameterMap = ShortMap(buffers[i], ns)
+                i += 1
+            }
+            MapType.RADIUS -> {
+                radiusMapLeft = ShortMap(buffers[i], ns)
+                radiusMapRight = ShortMap(buffers[i + 1], ns)
+                i += 2
+            }
+            MapType.SPINE -> {
+                spineMap = RGBMap(buffers[i], ns)
+                i += 1
+            }
+        }
+        return true
+    }
 
     /** The current sample width (space) and height (time) of the map. */
-    abstract fun spaceTimeSampleSize(): Size
+    fun spaceTimeSampleSize(): Size { return Size(ns, nt) }
 
     /** Update the maps from a new camera bitmap. */
-    abstract fun updateWithCameraBitmap(bitmap: Bitmap)
+    fun updateWithCameraBitmap(bitmap: Bitmap) {
+        if(reachedEnd) return
+        try {
+            var p = 0
+            for(k in pE.first until pE.second) {
+                p = if(isVertical) bitmap.getPixel(pL, k) else bitmap.getPixel(k, pL)
+                diameterMap?.addNTSCGrey(p)
+                radiusMapLeft?.addNTSCGrey(p)
+                radiusMapRight?.addNTSCGrey(p)
+                spineMap?.add(p)
+            }
+            nt += 1
+        } catch (_: java.lang.IndexOutOfBoundsException) { reachedEnd = true }
+    }
 
     /** Get a portion of one of the maps as a bitmap.
      *
@@ -33,18 +127,50 @@ abstract class MapCreator(val roi: FieldRoi) {
      * @param stepY The number of time samples to step when sampling the map.
      * @param backing A backing array for the bitmap, into the map samples will be put.
      * */
-    abstract fun getMapBitmap(
+    fun getMapBitmap(
         idx: Int,
         crop: Rect?,
         stepX: Int = 1, stepY: Int = 1,
         backing: IntArray,
-    ): Bitmap?
+    ): Bitmap? {
+
+        val buffer = mapBuffers.mapNotNull {it.second}.getOrNull(idx) ?: return null
+        try {
+            // Only allow a valid area of the map to be returned,
+            val area = Rect(0, 0, ns, nt)
+            crop?.let { area.intersect(crop) }
+            val bs = Size(rangeSize(area.width(), stepX), rangeSize(area.height(), stepY))
+            if(bs.width * bs.height > backing.size) return null
+            // Pass values from buffer to bitmap backing and return bitmap.
+            var k = 0
+            for(j in area.top until area.bottom step stepY)
+                for(i in area.left until area.right step stepX) {
+                    backing[k] = buffer.getColorInt(i, j)
+                    k += 1
+                }
+            return Bitmap.createBitmap(backing, bs.width, bs.height, Bitmap.Config.ARGB_8888)
+        }
+        // On start and rare occasions these might be thrown.
+        catch (_: IndexOutOfBoundsException) {}
+        catch (_: IllegalArgumentException) {}
+        catch (_: NullPointerException) {}
+        return null
+    }
 
     /** Save the maps to TIFF slices/directories. */
-    abstract fun toTiff(): List<FileDirectory>?
+    fun toTiff(): List<FileDirectory> {
+        return mapBuffers.map{ (description, buffer) ->
+            buffer?.toTiffDirectory(description, nt)
+        }.filterNotNull()
+    }
 
     /** Load the maps from TIFF slices/directories. */
-    abstract fun fromTiff(tiff: List<FileDirectory>)
+    fun fromTiff(tiff: List<FileDirectory>) {
+        mapBuffers.map { (description, buffer) ->
+            buffer?.fromTiffDirectory(description, tiff)?.let { nt = it }
+        }
+    }
+
 }
 
 // -------------------------------------------------------------------------------------------------

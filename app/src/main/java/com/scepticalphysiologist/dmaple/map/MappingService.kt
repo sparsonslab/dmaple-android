@@ -37,7 +37,6 @@ import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
-import com.scepticalphysiologist.dmaple.map.record.roiCreatorsMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -124,6 +123,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
                 }
             }
         }
+
+        fun nFreeBuffers(): Int { return mapBuffers.filterValues{it == null}.size }
 
         /** Get a free buffer or null if no buffers are free. */
         fun getFreeBuffer(): MappedByteBuffer? {
@@ -339,10 +340,10 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
      * */
     fun loadRecord(record: MappingRecord): Boolean {
         if(creating) return false
-        setRois(record.struct.keys.toList())
+        setRois(record.creators.map { it.roi })
         clearCreators()
         record.loadMapTiffs(MappingService::getFreeBuffer)
-        creators.addAll(record.struct.values.flatten())
+        creators.addAll(record.creators)
         lastCapture = record.field
         return true
     }
@@ -358,9 +359,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
                 strftime(startTime, "YYMMdd_HHmmss_") + it
             )
-            val record = MappingRecord(loc, lastCapture, roiCreatorsMap(creators))
-            record.write()
-            MappingRecord.records.add(record)
+            MappingRecord(loc, lastCapture, creators).write()
+            MappingRecord.read(loc)?.let {MappingRecord.records.add(it)}
         }
         clearCreators()
     }
@@ -387,22 +387,19 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
         // Create map creators.
         val imageFrame = imageAnalysisFrame() ?: return warning
-        creators.clear()
+        val nBuffersRequired = rois.sumOf { roi -> roi.maps.sumOf { map -> map.nMaps } }
+        if(nBuffersRequired > nFreeBuffers()) {
+            warning.add(message =
+                "There are not enough buffers to process all maps.\n" +
+                "Please reduce the number of ROIs or map types selected.",
+                causesStop = false
+            )
+            return warning
+        }
         for(roi in rois) {
-            for(map in roi.maps) {
-                val creator = map.makeCreator(roi.inNewFrame(imageFrame))
-                val buffers = (0 until creator.nMaps).map{getFreeBuffer()}.filterNotNull()
-                if(creator.provideBuffers(buffers)) creators.add(creator)
-                else {
-                    creators.clear()
-                    warning.add(message =
-                        "There are not enough buffers to process all maps.\n" +
-                        "The last ${rois.size - creators.size} maps will not be created.",
-                        causesStop = false
-                    )
-                    return warning
-                }
-            }
+            val creator = MapCreator(roi.inNewFrame(imageFrame))
+            val buffers = (0 until creator.nMaps).map{getFreeBuffer()}.filterNotNull()
+            if(creator.provideBuffers(buffers)) creators.add(creator)
         }
 
         // State
