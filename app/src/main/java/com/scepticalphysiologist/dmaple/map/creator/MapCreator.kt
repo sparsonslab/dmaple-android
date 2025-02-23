@@ -134,7 +134,7 @@ class MapCreator(val roi: FieldRoi) {
         backing: IntArray,
     ): Bitmap? {
 
-        val buffer = mapBuffers.mapNotNull {(_, buffer) -> buffer}.getOrNull(idx) ?: return null
+        val buffer = mapBuffers.mapNotNull {it.second}.getOrNull(idx) ?: return null
         try {
             // Only allow a valid area of the map to be returned,
             val area = Rect(0, 0, ns, nt)
