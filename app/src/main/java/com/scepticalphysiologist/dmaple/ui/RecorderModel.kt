@@ -34,11 +34,7 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
     private val mapper: MappingService?
         get() = MainActivity.mapService
 
-    /** Model state.
-     * 0 = Create mapping ROIs.
-     * 1 = Record maps.
-     * 2 = View maps.
-     */
+    /** Model state.*/
     private var state: RecState =
         if(mapper?.isCreatingMaps() == true) RecState.RECORDING else RecState.PRE_RECORD
     /** Indicate warning messages that should be shown, e.g. when starting mapping. */
