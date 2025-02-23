@@ -52,18 +52,22 @@ class MapCreator(val roi: FieldRoi) {
 
     // Buffering
     // ---------
+    /** The diameter map.  */
     private var diameterMap: ShortMap? = null
+    /** The left-radius map. */
     private var radiusMapLeft: ShortMap? = null
+    /** The right-radius map. */
     private var radiusMapRight: ShortMap? = null
+    /** The spine intensity map. */
     private var spineMap: RGBMap? = null
-
+    /** The maps and their descriptions (must all be valid as part of a file name). */
     private val mapBuffers: List<Pair<String, MapBufferView<*>?>> get() = listOf(
         Pair("diameter", diameterMap),
         Pair("radius_left", radiusMapLeft),
         Pair("radius_right", radiusMapRight),
         Pair("spine", spineMap)
     )
-
+    /** The end of any one of the buffers has been reached. */
     private var reachedEnd = false
 
     init {

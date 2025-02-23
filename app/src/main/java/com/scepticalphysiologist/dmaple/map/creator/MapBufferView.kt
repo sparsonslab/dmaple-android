@@ -24,7 +24,7 @@ abstract class MapBufferView<T : Number>(
     protected val nx: Int
 ) {
 
-    /** The number of bits per color channel. */
+    /** The number of bits in each channel. */
     protected abstract val bitsPerChannel: List<Int>
 
     /** The "field type" for the TIFF image. */
