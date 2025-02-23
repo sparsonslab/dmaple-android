@@ -1,6 +1,7 @@
 package com.scepticalphysiologist.dmaple.ui
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.text.format.DateUtils
 import android.view.MotionEvent
@@ -9,6 +10,7 @@ import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import com.scepticalphysiologist.dmaple.R
+import com.scepticalphysiologist.dmaple.SettingsActivity
 import com.scepticalphysiologist.dmaple.databinding.RecorderBinding
 import com.scepticalphysiologist.dmaple.etc.PermissionSets
 import com.scepticalphysiologist.dmaple.etc.Point
@@ -91,6 +93,11 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         // Got to records.
         binding.toRecordsButton.setOnClickListener {
             findNavController().navigate(R.id.recorder_to_explorer)
+        }
+
+        // Go to settings
+        binding.toSettingsButton.setOnClickListener {
+            activity?.startActivity(Intent(activity, SettingsActivity::class.java))
         }
 
     }

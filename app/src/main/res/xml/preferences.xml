@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <SwitchPreference
+        android:key="THRESHOLD_INVERTED"
+        android:title="Threshold Inversion"
+        android:summary="If the gut is dark against a light background,"/>
+
+    <SeekBarPreference
+        android:key="SEED_MIN_WIDTH"
+        android:title="Minimum Detection Width"
+        android:summary="The minimum pixel width of the gut for it to be detected."
+        app:showSeekBarValue="true"
+        app:min="2"
+        android:max="30"/>
+
+    <SeekBarPreference
+        android:key="SPINE_SMOOTH"
+        android:title="Spine Smooth"
+        android:summary="The pixel size of the kernel used to smooth the spine. Make larger for radius maps."
+        app:showSeekBarValue="true"
+        app:min="1"
+        android:max="50"/>
+
+    <SeekBarPreference
+        android:key="SPINE_MAX_GAP"
+        android:title="Spine Gap"
+        android:summary="The maximum below-threshold pixel gap the spine can jump"
+        app:showSeekBarValue="true"
+        app:min="0"
+        android:max="10"/>
+
+</androidx.preference.PreferenceScreen>
