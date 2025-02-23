@@ -1,28 +1,89 @@
 package com.scepticalphysiologist.dmaple.map.creator
 
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.graphics.Rect
 import android.util.Size
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import mil.nga.tiff.FileDirectory
+import java.lang.IllegalArgumentException
+import java.lang.IndexOutOfBoundsException
 import java.nio.ByteBuffer
+import kotlin.math.abs
 import kotlin.math.ceil
 
 
+enum class MapType (val title: String, val nMaps: Int){
+    DIAMETER(
+        title = "diameter",
+        nMaps = 1
+    ),
+    RADIUS(
+        title = "radius",
+        nMaps = 2
+    ),
+    SPINE(
+        title = "spine profile",
+        nMaps = 1
+    );
+}
+
+
 /** A class that handles the creation of a spatio-temporal maps. */
-abstract class MapCreator(val roi: FieldRoi) {
+class MapCreator(val roi: FieldRoi) {
 
     /** The number of maps produced by the creator. */
-    abstract val nMaps: Int
+    val nMaps: Int = roi.maps.sumOf { it.nMaps }
 
-    abstract fun provideBuffers(buffers: List<ByteBuffer>): Boolean
+    // Map geometry
+    // ------------
+    /** The map seeding edge orientation within the input images. */
+    private val isVertical: Boolean = roi.seedingEdge.isVertical()
+    /** Long-axis coordinates of the seeding edge .*/
+    private val pE: Pair<Int, Int>
+    /** Short-axis coordinate of the seeding edge. */
+    private val pL: Int
+    /** Sample size of map - space and time. */
+    private val ns: Int
+    private var nt: Int = 0
+
+    // Buffering
+    // ---------
+    private var mapView: ShortMap? = null
+    private var reachedEnd = false
+
+    init {
+        val edge = Point.ofRectEdge(roi, roi.seedingEdge)
+        if(isVertical) {
+            pE = orderedY(edge)
+            pL = edge.first.x.toInt()
+        } else {
+            pE = orderedX(edge)
+            pL = edge.first.y.toInt()
+        }
+        ns = abs(pE.first - pE.second)
+    }
+
+    fun provideBuffers(buffers: List<ByteBuffer>): Boolean {
+        if(buffers.size < nMaps) return false
+        mapView = ShortMap(buffers[0], ns)
+        return true
+    }
 
     /** The current sample width (space) and height (time) of the map. */
-    abstract fun spaceTimeSampleSize(): Size
+    fun spaceTimeSampleSize(): Size { return Size(ns, nt) }
 
     /** Update the maps from a new camera bitmap. */
-    abstract fun updateWithCameraBitmap(bitmap: Bitmap)
+    fun updateWithCameraBitmap(bitmap: Bitmap) {
+        if(reachedEnd) return
+        try {
+            (pE.first until pE.second).map {
+                mapView?.addNTSCGrey(if(isVertical) bitmap.getPixel(pL, it) else bitmap.getPixel(it, pL))
+            }
+            nt += 1
+        } catch (_: java.lang.IndexOutOfBoundsException) { reachedEnd = true }
+    }
 
     /** Get a portion of one of the maps as a bitmap.
      *
@@ -33,18 +94,50 @@ abstract class MapCreator(val roi: FieldRoi) {
      * @param stepY The number of time samples to step when sampling the map.
      * @param backing A backing array for the bitmap, into the map samples will be put.
      * */
-    abstract fun getMapBitmap(
+    fun getMapBitmap(
         idx: Int,
         crop: Rect?,
         stepX: Int = 1, stepY: Int = 1,
         backing: IntArray,
-    ): Bitmap?
+    ): Bitmap? {
+        try {
+            // Only allow a valid area of the map to be returned,
+            val area = Rect(0, 0, ns, nt)
+            crop?.let { area.intersect(crop) }
+            val bs = Size(rangeSize(area.width(), stepX), rangeSize(area.height(), stepY))
+            if(bs.width * bs.height > backing.size) return null
+            // Pass values from buffer to bitmap backing and return bitmap.
+            var k = 0
+            for(j in area.top until area.bottom step stepY)
+                for(i in area.left until area.right step stepX) {
+                    backing[k] = mapView?.getColorInt(i, j) ?: Color.BLACK
+                    k += 1
+                }
+            return Bitmap.createBitmap(backing, bs.width, bs.height, Bitmap.Config.ARGB_8888)
+        }
+        // On start and rare occasions these might be thrown.
+        catch (_: IndexOutOfBoundsException) {}
+        catch (_: IllegalArgumentException) {}
+        catch (_: NullPointerException) {}
+        return null
+    }
 
     /** Save the maps to TIFF slices/directories. */
-    abstract fun toTiff(): List<FileDirectory>?
+    fun toTiff(): List<FileDirectory> {
+        return mapView?.let{ bufferView ->
+            val description = "${MapType.DIAMETER.title}:0"
+            return listOf(bufferView.toTiffDirectory(description, nt))
+        } ?: listOf()
+    }
 
     /** Load the maps from TIFF slices/directories. */
-    abstract fun fromTiff(tiff: List<FileDirectory>)
+    fun fromTiff(tiff: List<FileDirectory>) {
+        mapView?.let { bufferView ->
+            val description = "${MapType.DIAMETER.title}:0"
+            bufferView.fromTiffDirectory(description, tiff)?.let { nt = it }
+        }
+    }
+
 }
 
 // -------------------------------------------------------------------------------------------------
