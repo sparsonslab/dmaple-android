@@ -1,7 +1,6 @@
 package com.scepticalphysiologist.dmaple.map.creator
 
 import android.graphics.Bitmap
-import android.graphics.Color
 import android.graphics.Rect
 import android.util.Size
 import com.scepticalphysiologist.dmaple.etc.Point
@@ -14,10 +13,13 @@ import kotlin.math.abs
 import kotlin.math.ceil
 
 
-enum class MapType (val title: String, val nMaps: Int){
+enum class MapType (
+    val title: String,
+    val nMaps: Int,
+){
     DIAMETER(
         title = "diameter",
-        nMaps = 1
+        nMaps = 1,
     ),
     RADIUS(
         title = "radius",
@@ -30,7 +32,7 @@ enum class MapType (val title: String, val nMaps: Int){
 }
 
 
-/** A class that handles the creation of a spatio-temporal maps. */
+/** Handles the creation of spatio-temporal maps for a single ROI. */
 class MapCreator(val roi: FieldRoi) {
 
     /** The number of maps produced by the creator. */
@@ -50,7 +52,18 @@ class MapCreator(val roi: FieldRoi) {
 
     // Buffering
     // ---------
-    private var mapView: ShortMap? = null
+    private var diameterMap: ShortMap? = null
+    private var radiusMapLeft: ShortMap? = null
+    private var radiusMapRight: ShortMap? = null
+    private var spineMap: RGBMap? = null
+
+    private val mapBuffers: List<Pair<String, MapBufferView<*>?>> get() = listOf(
+        Pair("diameter", diameterMap),
+        Pair("radius_left", radiusMapLeft),
+        Pair("radius_right", radiusMapRight),
+        Pair("spine", spineMap)
+    )
+
     private var reachedEnd = false
 
     init {
@@ -67,7 +80,22 @@ class MapCreator(val roi: FieldRoi) {
 
     fun provideBuffers(buffers: List<ByteBuffer>): Boolean {
         if(buffers.size < nMaps) return false
-        mapView = ShortMap(buffers[0], ns)
+        var i = 0
+        for(map in roi.maps) when(map) {
+            MapType.DIAMETER -> {
+                diameterMap = ShortMap(buffers[i], ns)
+                i += 1
+            }
+            MapType.RADIUS -> {
+                radiusMapLeft = ShortMap(buffers[i], ns)
+                radiusMapRight = ShortMap(buffers[i + 1], ns)
+                i += 2
+            }
+            MapType.SPINE -> {
+                spineMap = RGBMap(buffers[i], ns)
+                i += 1
+            }
+        }
         return true
     }
 
@@ -78,8 +106,13 @@ class MapCreator(val roi: FieldRoi) {
     fun updateWithCameraBitmap(bitmap: Bitmap) {
         if(reachedEnd) return
         try {
-            (pE.first until pE.second).map {
-                mapView?.addNTSCGrey(if(isVertical) bitmap.getPixel(pL, it) else bitmap.getPixel(it, pL))
+            var p = 0
+            for(k in pE.first until pE.second) {
+                p = if(isVertical) bitmap.getPixel(pL, k) else bitmap.getPixel(k, pL)
+                diameterMap?.addNTSCGrey(p)
+                radiusMapLeft?.addNTSCGrey(p)
+                radiusMapRight?.addNTSCGrey(p)
+                spineMap?.add(p)
             }
             nt += 1
         } catch (_: java.lang.IndexOutOfBoundsException) { reachedEnd = true }
@@ -100,6 +133,8 @@ class MapCreator(val roi: FieldRoi) {
         stepX: Int = 1, stepY: Int = 1,
         backing: IntArray,
     ): Bitmap? {
+
+        val buffer = mapBuffers.mapNotNull {(_, buffer) -> buffer}.getOrNull(idx) ?: return null
         try {
             // Only allow a valid area of the map to be returned,
             val area = Rect(0, 0, ns, nt)
@@ -110,7 +145,7 @@ class MapCreator(val roi: FieldRoi) {
             var k = 0
             for(j in area.top until area.bottom step stepY)
                 for(i in area.left until area.right step stepX) {
-                    backing[k] = mapView?.getColorInt(i, j) ?: Color.BLACK
+                    backing[k] = buffer.getColorInt(i, j)
                     k += 1
                 }
             return Bitmap.createBitmap(backing, bs.width, bs.height, Bitmap.Config.ARGB_8888)
@@ -124,17 +159,15 @@ class MapCreator(val roi: FieldRoi) {
 
     /** Save the maps to TIFF slices/directories. */
     fun toTiff(): List<FileDirectory> {
-        return mapView?.let{ bufferView ->
-            val description = "${MapType.DIAMETER.title}:0"
-            return listOf(bufferView.toTiffDirectory(description, nt))
-        } ?: listOf()
+        return mapBuffers.map{ (description, buffer) ->
+            buffer?.toTiffDirectory(description, nt)
+        }.filterNotNull()
     }
 
     /** Load the maps from TIFF slices/directories. */
     fun fromTiff(tiff: List<FileDirectory>) {
-        mapView?.let { bufferView ->
-            val description = "${MapType.DIAMETER.title}:0"
-            bufferView.fromTiffDirectory(description, tiff)?.let { nt = it }
+        mapBuffers.map { (description, buffer) ->
+            buffer?.fromTiffDirectory(description, tiff)?.let { nt = it }
         }
     }
 

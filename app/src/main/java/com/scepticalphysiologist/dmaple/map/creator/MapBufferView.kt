@@ -23,11 +23,9 @@ abstract class MapBufferView<T : Number>(
     protected val buffer: ByteBuffer,
     protected val nx: Int
 ) {
-    /** The number of color channels per pixel. */
-    protected abstract val nColorChannels: Int
 
     /** The number of bits per color channel. */
-    protected abstract val bitsPerChannel: Int
+    protected abstract val bitsPerChannel: List<Int>
 
     /** The "field type" for the TIFF image. */
     protected abstract val fieldType: FieldType
@@ -45,11 +43,11 @@ abstract class MapBufferView<T : Number>(
         val dir = FileDirectory()
         dir.setImageWidth(nx)
         dir.setImageHeight(ny)
-        dir.samplesPerPixel = nColorChannels
+        dir.samplesPerPixel = bitsPerChannel.size
         dir.setBitsPerSample(bitsPerChannel)
         dir.setStringEntryValue(FieldTagType.ImageDescription, identifier)
 
-        val raster = Rasters(nx, ny, nColorChannels, fieldType)
+        val raster = Rasters(nx, ny, bitsPerChannel.size, fieldType)
         dir.compression = TiffConstants.COMPRESSION_NO
         dir.planarConfiguration = TiffConstants.PLANAR_CONFIGURATION_CHUNKY
         dir.setRowsPerStrip(raster.calculateRowsPerStrip(dir.planarConfiguration))
@@ -115,9 +113,7 @@ abstract class MapBufferView<T : Number>(
 /** A map consisting of RGB color values. */
 class RGBMap(buffer: ByteBuffer, nx: Int): MapBufferView<Int>(buffer, nx) {
 
-    override val nColorChannels = 3
-
-    override val bitsPerChannel = 8
+    override val bitsPerChannel = listOf(8, 8, 8)
 
     override val fieldType = FieldType.BYTE
 
@@ -167,9 +163,7 @@ class RGBMap(buffer: ByteBuffer, nx: Int): MapBufferView<Int>(buffer, nx) {
 /** A map consisting of short integers. */
 class ShortMap(buffer: ByteBuffer, nx: Int): MapBufferView<Short>(buffer, nx) {
 
-    override val nColorChannels = 1
-
-    override val bitsPerChannel = 16
+    override val bitsPerChannel = listOf(16)
 
     override val fieldType = FieldType.SHORT
 

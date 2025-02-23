@@ -7,6 +7,8 @@ import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
+import mil.nga.tiff.FieldTagType
+import mil.nga.tiff.FileDirectory
 import mil.nga.tiff.TIFFImage
 import mil.nga.tiff.TiffReader
 import mil.nga.tiff.TiffWriter
@@ -53,9 +55,6 @@ class MappingRecord(
                 val roi = try { Gson().fromJson(roiFile.readText(), FieldRoi::class.java) }
                 catch (_: JsonSyntaxException) { null }
                 if(roi == null) continue
-                // Maps: creators
-                val mapsFile = File(location, "${roi.uid}.tiff")
-                if(!mapsFile.exists()) continue
                 creators.add(MapCreator(roi))
             }
 
@@ -71,10 +70,15 @@ class MappingRecord(
 
     /** Once a record has been read, load the map TIFFs. */
     fun loadMapTiffs(bufferProvider: (() -> ByteBuffer?)) {
+
+        val tiffFiles = location.listFiles()?.filter { it.name.endsWith(".tiff") } ?: return
+
         for(creator in creators) {
-            val mapsFile = File(location, "${creator.roi.uid}.tiff")
-            if(!mapsFile.exists()) continue
-            val dirs = TiffReader.readTiff(mapsFile).fileDirectories
+            val dirs = mutableListOf<FileDirectory>()
+            for(file in tiffFiles) {
+                if(!file.name.startsWith(creator.roi.uid)) continue
+                dirs.addAll(TiffReader.readTiff(file).fileDirectories)
+            }
             val buffers = (0 until creator.nMaps).map{bufferProvider.invoke()}.filterNotNull()
             if(buffers.size < creator.nMaps) return
             creator.provideBuffers(buffers)
@@ -93,9 +97,11 @@ class MappingRecord(
             val roiFile = File(location, "${creator.roi.uid}.json")
             roiFile.writeText(Gson().toJson(creator.roi))
             // Maps: to TIFF (one slice/directory per map)
-            val img = TIFFImage()
-            for(tiff in creator.toTiff()) img.add(tiff)
-            TiffWriter.writeTiff(File(location, "${creator.roi.uid}.tiff"), img)
+            for(tiff in creator.toTiff()) {
+                val img = TIFFImage().also{it.add(tiff)}
+                val des = tiff.getStringEntryValue(FieldTagType.ImageDescription)
+                TiffWriter.writeTiff(File(location, "${creator.roi.uid}_$des.tiff"), img)
+            }
         }
 
         // Mapping field.
