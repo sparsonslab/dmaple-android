@@ -7,4 +7,10 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+
+    <color name="button_icon">#FFA1AF</color>
+    <color name="roi">#fe2452</color>
+    <color name="ruler">#fe2452</color>
+
 </resources>

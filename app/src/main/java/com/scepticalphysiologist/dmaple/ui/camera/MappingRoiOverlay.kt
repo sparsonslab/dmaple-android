@@ -14,6 +14,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import androidx.lifecycle.MutableLiveData
+import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.etc.Edge
 import com.scepticalphysiologist.dmaple.etc.Frame
 import com.scepticalphysiologist.dmaple.etc.Point
@@ -120,14 +121,14 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
 
     init {
         // Paints for active and saved ROIs
-        activeRoiPaint.color = Color.RED
+        activeRoiPaint.color = resources.getColor(R.color.roi)
         activeRoiPaint.style = Paint.Style.STROKE
         activeRoiPaint.strokeWidth = 1.6f
-        savedRoiPaint.color = Color.rgb(255, 150, 150)
+        savedRoiPaint.color = resources.getColor(R.color.roi)
         savedRoiPaint.style = Paint.Style.STROKE
         savedRoiPaint.setPathEffect(DashPathEffect(floatArrayOf(10f, 5f), 0f))
         savedRoiPaint.strokeWidth = 1.6f
-        rulerPaint.color = Color.RED
+        rulerPaint.color = resources.getColor(R.color.ruler)
         rulerPaint.style = Paint.Style.STROKE
         rulerPaint.strokeWidth = 3.2f
 
