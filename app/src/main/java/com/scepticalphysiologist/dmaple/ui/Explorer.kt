@@ -9,11 +9,7 @@ class Explorer: DMapLEPage<ExplorerBinding>(ExplorerBinding::inflate) {
 
     override fun createUI() {
         // Set recycler view properties, layout and adaptor.
-        val recycler = binding.mappingRecords
-        recycler.setHasFixedSize(true)
-        recycler.setLayoutManager(LinearLayoutManager(binding.root.getContext()))
-        val recordAdapter = MappingRecordAdaptor(this)
-        recycler.setAdapter(recordAdapter)
+        binding.mappingRecords.setAdapter(MappingRecordAdaptor(this))
     }
 
 }
