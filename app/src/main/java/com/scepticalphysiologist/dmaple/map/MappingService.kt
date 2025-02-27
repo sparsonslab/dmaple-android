@@ -6,13 +6,16 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
+import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CaptureRequest
 import android.os.Binder
 import android.os.Environment
 import android.os.IBinder
+import android.util.Range
 import android.view.Display
 import android.view.WindowManager
 import androidx.annotation.OptIn
+import androidx.camera.camera2.interop.Camera2CameraInfo
 import androidx.camera.camera2.interop.Camera2Interop
 import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.AspectRatio
@@ -49,6 +52,7 @@ import java.nio.channels.FileChannel
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.Executors
+import kotlin.system.measureTimeMillis
 
 /** A foreground service that will run the camera, record spatio-temporal maps and keep ROI state.
  *
@@ -74,8 +78,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         // ------
         /** The aspect ratio of the camera. */
         const val CAMERA_ASPECT_RATIO = AspectRatio.RATIO_16_9
-        /** Approximate interval between frames (milliseconds). */
-        const val APPROX_FRAME_INTERVAL_MS: Long = 33
 
         // Map data buffering
         // ------------------
@@ -163,8 +165,18 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** The camera image analyser. */
     private var analyser: ImageAnalysis? = null
 
-    // State
-    // -----
+    // Camera State
+    // ------------
+    /** Approximate frame rate (frames/second). */
+    private var frameRateFps: Int = getAvailableFps().max()
+    /** Approximate interval between frames (milliseconds). */
+    private val frameIntervalMs: Long
+        get() = (1000f / frameRateFps.toFloat()).toLong()
+    /** Auto exposure, white-balance and focus are on. */
+    private var autosOn: Boolean = true
+
+    // Recording State
+    // ---------------
     /** The mapping ROIs in their last view frame. */
     private var rois = mutableListOf<FieldRoi>()
     /** Map creators. */
@@ -190,7 +202,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         display = (this.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay
         cameraProvider = ProcessCameraProvider.getInstance(this).get()
         cameraProvider.unbindAll()
-        setPreview(autosOn = true)
+        setPreview()
         setAnalyser()
     }
 
@@ -198,16 +210,24 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
      * @param autosOn Auto-focus, -exposure and -white-balance are on
      * (this also applies to the image analyser).
      * */
-    private fun setPreview(autosOn: Boolean) {
+    private fun setPreview() {
         unBindUse(preview)
         preview = Preview.Builder().also { builder ->
             builder.setTargetAspectRatio(CAMERA_ASPECT_RATIO)
-            if(!autosOn) {
-                val interOperator = Camera2Interop.Extender(builder)
-                interOperator.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_LOCK, true)
-                interOperator.setCaptureRequestOption(CaptureRequest.CONTROL_AE_LOCK, true)
-                interOperator.setCaptureRequestOption(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF)
-            }
+            val inop = Camera2Interop.Extender(builder)
+
+            // Frame rate.
+            inop.setCaptureRequestOption(
+                CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, Range(frameRateFps, frameRateFps)
+            )
+
+            // Auto exposure and white-balance.
+            inop.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_LOCK, !autosOn)
+            inop.setCaptureRequestOption(CaptureRequest.CONTROL_AE_LOCK, !autosOn)
+            inop.setCaptureRequestOption(CaptureRequest.CONTROL_AF_MODE,
+                if(autosOn) CaptureRequest.CONTROL_AF_MODE_AUTO else CaptureRequest.CONTROL_AF_MODE_OFF
+            )
+
         }.build().also { use ->
             surface?.let {s -> use.surfaceProvider = s}
             bindUse(use)
@@ -220,7 +240,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         analyser = ImageAnalysis.Builder().also { builder ->
             builder.setTargetAspectRatio(CAMERA_ASPECT_RATIO)
             builder.setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-            builder.setImageQueueDepth(10)
+            builder.setImageQueueDepth(5)
         }.build().also { use ->
             use.setAnalyzer(Executors.newFixedThreadPool(5), this)
             bindUse(use)
@@ -234,6 +254,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     /** Unbind a CameraX use case. */
     private fun unBindUse(use: UseCase?) { cameraProvider.unbind(use) }
+
 
     // ---------------------------------------------------------------------------------------------
     // Binding access to the service
@@ -249,6 +270,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         super.onBind(intent)
         return binder
     }
+
 
     // ---------------------------------------------------------------------------------------------
     // Service start and stop.
@@ -294,6 +316,25 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         val range = camera.cameraInfo.exposureState.exposureCompensationRange
         val exposure = (range.lower + fraction * (range.upper - range.lower)).toInt()
         camera.cameraControl.setExposureCompensationIndex(exposure)
+    }
+
+    /** Set the frame rate (frames per second). */
+    fun setFps(fps: Int) {
+        val available = getAvailableFps()
+        frameRateFps = if(fps in available) fps else available.max()
+        setPreview()
+    }
+
+    /** Get the available frame rates (frames per second). */
+    fun getAvailableFps(): List<Int> {
+        if(::camera.isInitialized) {
+            Camera2CameraInfo.from(camera.cameraInfo).getCameraCharacteristic(
+                CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES
+            )?.let { ranges ->
+                return ranges.filter { it.lower == it.upper }.map{ it.lower }
+            }
+        }
+        return listOf(30)
     }
 
     /** Set the ROIs. e.g. when ROIs are updated in a view. */
@@ -403,7 +444,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         }
 
         // State
-        setPreview(autosOn = false)
+        autosOn = false
         creating = true
         startTime = Instant.now()
         return warning
@@ -413,7 +454,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     private fun stop(): Warnings {
         // State
         creating = false
-        setPreview(autosOn = true)
+        autosOn = true
         return Warnings("Stop Recording")
     }
 
@@ -451,21 +492,32 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         } ?: return null
     }
 
+    var t0: Instant = Instant.now()
+
     /** Analyse each image from the camera feed. Called continuously during the life of the service. */
     override fun analyze(image: ImageProxy) {
-        if(creating) {
-            // Pass the image to each map creator to analyse.
-            lastCapture = image.toBitmap()
-            // todo - would be faster to have creators access image pixels directly rather
-            //    than convert the whole image to a bitmap. But getting pixels out of image
-            //    is a pain (decoding, planes, etc) -  I did try!
-            for(creator in creators) creator.updateWithCameraBitmap(lastCapture!!)
-        }
-        // Each image must be "closed" to allow preview to continue.
-        image.close()
+        // Uses the pattern given in
+        // https://stackoverflow.com/questions/61252975/how-to-decrease-frame-rate-of-android-camerax-imageanalysis
+        // to keep the frame-rate fairly constant.
+        val elapsed = measureTimeMillis {
+            if(creating) {
+                val t1 = Instant.now()
+                println(Duration.between(t0, t1).toMillis())
 
-        // Wait for a while before grabbing the next frame.
-        Thread.sleep(APPROX_FRAME_INTERVAL_MS)
+                t0 = t1
+
+                // Pass the image to each map creator to analyse.
+                lastCapture = image.toBitmap()
+                // todo - would be faster to have creators access image pixels directly rather
+                //    than convert the whole image to a bitmap. But getting pixels out of image
+                //    is a pain (decoding, planes, etc) -  I did try!
+                for(creator in creators) creator.updateWithCameraBitmap(lastCapture!!)
+            }
+        }
+        image.use {
+            if(elapsed < frameIntervalMs)
+                Thread.sleep(frameIntervalMs - elapsed)
+        }
     }
 
     // ---------------------------------------------------------------------------------------------

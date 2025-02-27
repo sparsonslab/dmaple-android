@@ -106,7 +106,6 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
     private fun setUIState() {
         when(model.getState()) {
             RecState.PRE_RECORD -> {
-
                 binding.recordButton.setImageResource(R.drawable.play_arrow)
                 binding.maps.stop()
                 binding.cameraAndRoi.freezeField(null)

@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.os.IBinder
 import androidx.camera.core.Preview.SurfaceProvider
 import androidx.camera.view.PreviewView
+import androidx.preference.PreferenceManager
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import java.io.File
@@ -40,6 +41,11 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
             surface = preview.surfaceProvider
             mapService?.setSurface(surface!!)
         }
+
+        /** Set the rate at which camera frames will be grabbed for mapping. */
+        fun setMappingServiceFrameRate(fps: Any) {
+            fps.toString().toIntOrNull()?.let { mapService?.setFps(it) }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -69,7 +75,8 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
     /** Once the service is connected, get an instance of it set its surface. */
     override fun onServiceConnected(p0: ComponentName?, binder: IBinder?) {
         mapService = (binder as MappingService.MappingBinder).getService()
-        surface?.let { mapService!!.setSurface(it)}
+        // Set the preview surface.
+        surface?.let { mapService!!.setSurface(it) }
     }
 
     override fun onServiceDisconnected(p0: ComponentName?) { }

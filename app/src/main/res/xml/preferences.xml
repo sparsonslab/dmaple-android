@@ -7,6 +7,11 @@
         android:title="Threshold Inversion"
         android:summary="If the gut is dark against a light background,"/>
 
+    <DropDownPreference
+        android:key="FRAME_RATE_FPS"
+        android:title="Frame Rate"
+        android:summary="The approximate number of frame per second.\t%s fps." />
+
     <SeekBarPreference
         android:key="SEED_MIN_WIDTH"
         android:title="Minimum Detection Width"
