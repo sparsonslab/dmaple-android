@@ -3,8 +3,10 @@ package com.scepticalphysiologist.dmaple.ui
 import android.os.Bundle
 import androidx.preference.DropDownPreference
 import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.SwitchPreference
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.R
+import com.scepticalphysiologist.dmaple.etc.ThresholdBitmap
 
 class Settings: PreferenceFragmentCompat() {
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
@@ -19,6 +21,15 @@ class Settings: PreferenceFragmentCompat() {
             MainActivity.setMappingServiceFrameRate(pref.entry.toString())
             pref.setOnPreferenceChangeListener { _, newValue ->
                 MainActivity.setMappingServiceFrameRate(newValue)
+                true
+            }
+        }
+
+        // Thresholding
+        findPreference<SwitchPreference>("THRESHOLD_INVERTED")?.let { pref ->
+            ThresholdBitmap.highlightAbove = !pref.isChecked
+            pref.setOnPreferenceChangeListener { _, newValue ->
+                ThresholdBitmap.highlightAbove = !newValue.toString().toBoolean()
                 true
             }
         }

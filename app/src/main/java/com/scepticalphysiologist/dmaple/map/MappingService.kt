@@ -214,20 +214,17 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         unBindUse(preview)
         preview = Preview.Builder().also { builder ->
             builder.setTargetAspectRatio(CAMERA_ASPECT_RATIO)
-            val inop = Camera2Interop.Extender(builder)
-
             // Frame rate.
+            val inop = Camera2Interop.Extender(builder)
             inop.setCaptureRequestOption(
                 CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, Range(frameRateFps, frameRateFps)
             )
-
             // Auto exposure and white-balance.
             inop.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_LOCK, !autosOn)
             inop.setCaptureRequestOption(CaptureRequest.CONTROL_AE_LOCK, !autosOn)
             inop.setCaptureRequestOption(CaptureRequest.CONTROL_AF_MODE,
                 if(autosOn) CaptureRequest.CONTROL_AF_MODE_AUTO else CaptureRequest.CONTROL_AF_MODE_OFF
             )
-
         }.build().also { use ->
             surface?.let {s -> use.surfaceProvider = s}
             bindUse(use)
@@ -503,7 +500,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             if(creating) {
                 val t1 = Instant.now()
                 println(Duration.between(t0, t1).toMillis())
-
                 t0 = t1
 
                 // Pass the image to each map creator to analyse.

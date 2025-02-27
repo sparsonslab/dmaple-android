@@ -16,10 +16,14 @@ import androidx.core.graphics.set
 class ThresholdBitmap(val input: Bitmap, val drawRoi: Rect) {
 
     private val output: Bitmap = input.copy(input.config, true)
-    private val under = Color.argb(0, 0, 0, 0)
-    private val over = Color.argb(125, 0, 255, 0)
+    private val neutral = Color.argb(0, 0, 0, 0)
+    private val highlight = Color.argb(125, 0, 255, 0)
 
     companion object {
+
+        /** Whether to highlight above threshold or below. */
+        var highlightAbove: Boolean = true
+
         fun fromImage(image: Bitmap, roi: RectF): ThresholdBitmap? {
             try {
                 val r = validRect(roi)
@@ -35,7 +39,7 @@ class ThresholdBitmap(val input: Bitmap, val drawRoi: Rect) {
     fun updateThreshold(threshold: Float) {
         for(i in 0 until input.width)
             for(j in 0 until input.height)
-                output[i, j] = if(ntscGrey(input[i, j]) > threshold) under else over
+                output[i, j] = if((ntscGrey(input[i, j]) < threshold) xor highlightAbove) highlight else neutral
     }
 
     fun draw(canvas: Canvas) {
