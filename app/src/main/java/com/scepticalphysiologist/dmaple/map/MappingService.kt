@@ -220,11 +220,11 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
                 CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, Range(frameRateFps, frameRateFps)
             )
             // Auto exposure and white-balance.
-            inop.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_LOCK, !autosOn)
-            inop.setCaptureRequestOption(CaptureRequest.CONTROL_AE_LOCK, !autosOn)
-            inop.setCaptureRequestOption(CaptureRequest.CONTROL_AF_MODE,
-                if(autosOn) CaptureRequest.CONTROL_AF_MODE_AUTO else CaptureRequest.CONTROL_AF_MODE_OFF
-            )
+            if(!autosOn) {
+                inop.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_LOCK, true)
+                inop.setCaptureRequestOption(CaptureRequest.CONTROL_AE_LOCK, true)
+                inop.setCaptureRequestOption(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF)
+            }
         }.build().also { use ->
             surface?.let {s -> use.surfaceProvider = s}
             bindUse(use)
@@ -442,6 +442,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
         // State
         autosOn = false
+        setPreview()
         creating = true
         startTime = Instant.now()
         return warning
@@ -452,6 +453,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         // State
         creating = false
         autosOn = true
+        setPreview()
         return Warnings("Stop Recording")
     }
 
