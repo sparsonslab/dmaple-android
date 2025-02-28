@@ -2,15 +2,20 @@
 <androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <SwitchPreference
-        android:key="THRESHOLD_INVERTED"
-        android:title="Threshold Inversion"
-        android:summary="If the gut is dark against a light background,"/>
+    <DropDownPreference
+        android:key="SCREEN_ORIENTATION"
+        android:title="Screen Orientation"
+        app:useSimpleSummaryProvider="true"/>
 
     <DropDownPreference
         android:key="FRAME_RATE_FPS"
         android:title="Frame Rate"
         android:summary="The approximate number of frame per second.\t%s fps." />
+
+    <SwitchPreference
+        android:key="THRESHOLD_INVERTED"
+        android:title="Threshold Inversion"
+        android:summary="If the gut is dark against a light background,"/>
 
     <SeekBarPreference
         android:key="SEED_MIN_WIDTH"

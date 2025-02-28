@@ -43,9 +43,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         }
 
         /** Set the rate at which camera frames will be grabbed for mapping. */
-        fun setMappingServiceFrameRate(fps: Any) {
-            fps.toString().toIntOrNull()?.let { mapService?.setFps(it) }
-        }
+        fun setMappingServiceFrameRate(fps: Int) { mapService?.setFps(fps) }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
