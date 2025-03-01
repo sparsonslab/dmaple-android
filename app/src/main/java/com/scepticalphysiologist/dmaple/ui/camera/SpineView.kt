@@ -41,13 +41,13 @@ class SpineView(context: Context, attributeSet: AttributeSet?): View(context, at
     private var canvasMatrix: Matrix? = null
 
     private val spinePaint = Paint()
-    private var spinePoints: FloatArray = FloatArray(0)
+    private var spinePoints: FloatArray? = null
 
 
     init {
         spinePaint.color = Color.GREEN
         spinePaint.style = Paint.Style.STROKE
-        spinePaint.strokeWidth = 1.6f
+        spinePaint.strokeWidth = 1.9f
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -70,6 +70,8 @@ class SpineView(context: Context, attributeSet: AttributeSet?): View(context, at
     fun stop() {
         scope?.cancel()
         scope = null
+        spinePoints = null
+        invalidate()
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -88,7 +90,18 @@ class SpineView(context: Context, attributeSet: AttributeSet?): View(context, at
     private fun update() {
         creator?.let { mapCreator ->
             val r = mapCreator.roi
+
             spinePoints = listOf(r.left, r.bottom, r.right, r.top).toFloatArray()
+
+            /*
+            spinePoints = Point.toFloatArray(mapCreator.spine.indices.map{ k ->
+                val i = mapCreator.longIdx[k].toFloat()
+                val j = mapCreator.spine[k].toFloat()
+                if(mapCreator.gutIsHorizontal) Point(i, j) else Point(j, i)
+            })
+
+             */
+
             invalidate()
         }
     }
@@ -97,17 +110,15 @@ class SpineView(context: Context, attributeSet: AttributeSet?): View(context, at
         super.onLayout(changed, left, top, right, bottom)
         if(!changed) return
         creator?.let { mapCreator ->
-            val roiFrame = mapCreator.roi.frame
             val canvasFrame = Frame.fromView(this, display)
-            canvasMatrix = roiFrame.transformMatrix(canvasFrame, resize = true)
-            println("change matrix!")
+            canvasMatrix = mapCreator.roi.frame.transformMatrix(canvasFrame, resize = true)
         }
 
     }
 
     override fun onDraw(canvas: Canvas) {
         canvas.setMatrix(canvasMatrix)
-        canvas.drawLines(spinePoints, spinePaint)
+        spinePoints?.let{canvas.drawLines(it, spinePaint)}
     }
 
 }

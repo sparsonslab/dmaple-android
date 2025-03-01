@@ -41,7 +41,7 @@ class MapCreator(val roi: FieldRoi) {
     // Map geometry
     // ------------
     /** The map seeding edge orientation within the input images. */
-    private val gutIsHorizontal: Boolean = roi.seedingEdge.isVertical()
+    val gutIsHorizontal: Boolean = roi.seedingEdge.isVertical()
     private val offset = -roi.threshold.toFloat()
     private val gain = if(ThresholdBitmap.highlightAbove) -1f else 1f
 
@@ -52,12 +52,13 @@ class MapCreator(val roi: FieldRoi) {
 
     // Coordinate arrays
     // -----------------
-    private val longIdx: IntArray
-    private val transIdx: IntArray
+    val longIdx: IntArray
+    val transIdx: IntArray
 
-    private val spine: IntArray
-    private val upperBound: IntArray
-    private val lowerBound: IntArray
+
+    val spine: IntArray
+    val upperBound: IntArray
+    val lowerBound: IntArray
 
 
     // Buffering
@@ -116,7 +117,8 @@ class MapCreator(val roi: FieldRoi) {
 
 
         // (as example)
-        val j = transIdx[0] + (transIdx[1] - transIdx[0]) / 2
+        val j = transIdx.first() + (transIdx.last() - transIdx.first()) / 2
+        println("j = $j")
         for(i in 0 until ns) {
             spine[i] = j
             upperBound[i] = j + 10
