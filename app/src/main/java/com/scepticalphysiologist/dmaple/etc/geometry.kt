@@ -163,6 +163,10 @@ class Point(var x: Float = 0f, var y: Float = 0f) {
         /** The point with unit length from the origin for a given angle. */
         fun unitLength(theta: Float): Point { return Point(cos(theta), sin(theta)) }
 
+        fun toFloatArray(ps: List<Point>): FloatArray {
+            return ps.map{ listOf(it.x, it.y) }.flatten().toFloatArray()
+        }
+
         /** The two opposing corners of a rectangle.*/
         fun fromRect(r: RectF): List<Point> {
             return listOf(Point(r.left, r.top), Point(r.right, r.bottom))
@@ -177,6 +181,7 @@ class Point(var x: Float = 0f, var y: Float = 0f) {
                 maxOf(ps[i].y, ps[i + 1].y)
             )
         }
+
 
         /** The points at the edge of a rectangle. */
         fun ofRectEdge(r: RectF, edge: Edge): Pair<Point, Point> {
@@ -292,15 +297,12 @@ class Frame(val size: Point, val orientation: Int = 0) {
         val offsetRotated = newSize * 0.5f
 
         val matrix = Matrix()
-        matrix.preTranslate(-offset.x, -offset.y)
-        matrix.setRotate(-rotation)
-        matrix.postScale(expansion.x, expansion.y)
-        matrix.postTranslate(offsetRotated.x, offsetRotated.y)
+        matrix.preConcat(Matrix().also{ it.setTranslate(offsetRotated.x, offsetRotated.y)})
+        matrix.preConcat(Matrix().also{ it.setScale(expansion.x, expansion.y) })
+        matrix.preConcat(Matrix().also{ it.setRotate(-rotation) })
+        matrix.preConcat(Matrix().also{ it.setTranslate(-offset.x, -offset.y) })
         return matrix
     }
 
-
 }
-
-
 

@@ -10,6 +10,8 @@ import android.os.IBinder
 import androidx.camera.core.Preview.SurfaceProvider
 import androidx.camera.view.PreviewView
 import androidx.preference.PreferenceManager
+import com.scepticalphysiologist.dmaple.etc.Frame
+import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import java.io.File
