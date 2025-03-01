@@ -150,6 +150,8 @@ class Point(var x: Float = 0f, var y: Float = 0f) {
         )
     }
 
+    fun toRect(): RectF { return RectF(0f, 0f, x, y) }
+
     /** Functions that operate on collections of points. */
     companion object {
 
@@ -227,6 +229,7 @@ class Frame(val size: Point, val orientation: Int = 0) {
     override fun toString(): String {
         return "x = ${size.x}, y = ${size.y}, o =  $orientation"
     }
+
 
     /** Translate points from this frame to another.
      *

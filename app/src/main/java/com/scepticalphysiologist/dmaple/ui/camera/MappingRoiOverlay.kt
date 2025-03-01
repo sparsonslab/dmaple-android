@@ -278,6 +278,7 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     /** Save the active ROI. */
     private fun saveActiveRoi() {
         activeRoi?.let {
+            it.cropToFrame()
             savedRois.add(it)
             savedRoiChange.postValue(true)
             clearActiveRoi()

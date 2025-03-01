@@ -10,15 +10,37 @@ import android.graphics.RectF
 import android.graphics.drawable.BitmapDrawable
 import android.util.AttributeSet
 import android.view.View
+import android.view.WindowManager
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
+import com.scepticalphysiologist.dmaple.etc.Frame
+import com.scepticalphysiologist.dmaple.map.creator.MapCreator
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
-class SpineView(context: Context?, attributeSet: AttributeSet?): View(context, attributeSet) {
+class SpineView(context: Context, attributeSet: AttributeSet?): View(context, attributeSet) {
 
 
-    val spines = mutableListOf<Path>()
-    val spinePaint = Paint()
+    /** The creator of the map spines being shown by this view. */
+    private var creator: MapCreator? = null
+    /** The coroutine scope used for the live (during mapping) extracting of the viewed bitmap
+     * from the map creator. */
+    private var scope: CoroutineScope? = null
+    /** The approximate update interval (ms) for live display. */
+    private val updateInterval: Long = 100L
+
+
+    private val display = (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay
+    private lateinit var frame: Frame
+
+    private val spinePaint = Paint()
+
+
 
     init {
         spinePaint.color = Color.GREEN
@@ -26,29 +48,64 @@ class SpineView(context: Context?, attributeSet: AttributeSet?): View(context, a
         spinePaint.strokeWidth = 0.8f
     }
 
+    // ---------------------------------------------------------------------------------------------
+    // Public interface
+    // ---------------------------------------------------------------------------------------------
 
+    /** Update the map being shown. */
+    fun updateCreator(creatorAndMapIdx: Pair<MapCreator?, Int>) {
+        creator = creatorAndMapIdx.first
+    }
+
+    /** Start live view of the map being created. */
+    fun start() {
+        if(scope != null) return
+        scope = MainScope()
+        updateLive()
+    }
+
+    /** Stop live view of the map being created. */
+    fun stop() {
+        scope?.cancel()
+        scope = null
+    }
 
     // ---------------------------------------------------------------------------------------------
-    // Spines
+    // Spine update
     // ---------------------------------------------------------------------------------------------
+
+    /** Coroutine loop for updating the map live. */
+    private fun updateLive() = scope?.launch(Dispatchers.Default){
+        while(true) {
+            update()
+            delay(updateInterval)
+        }
+    }
+
+    /** Update the map shown. */
+    private fun update() {
+        creator?.let { mapCreator ->
+
+
+
+        }
+    }
 
 
     fun drawSpine(bm: Bitmap, roi: RectF) {
 
-        val p = Path()
-        p.setLastPoint(roi.left, roi.top)
-        p.lineTo(roi.right, roi.bottom)
-        val c = bm.getPixel(roi.left.toInt(), roi.top.toInt())
-        println("RGB, L = ${c.red}, ${c.green}, ${c.blue}")
-        spines.add(p)
-        invalidate()
     }
 
 
 
     fun clear() {
-        spines.clear()
+
         invalidate()
+    }
+
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+        frame = Frame.fromView(this, display)
     }
 
     override fun onDraw(canvas: Canvas) {

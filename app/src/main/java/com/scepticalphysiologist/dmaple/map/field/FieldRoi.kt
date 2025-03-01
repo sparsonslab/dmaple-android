@@ -40,9 +40,33 @@ class FieldRoi(
         return cpy
     }
 
+    /** Make the ROI a "valid" RectF object. i.e. left < right && top < bottom. */
+    fun makeValid() {
+        if(left > right) {
+            val p = right
+            right = left
+            left = p
+            if(seedingEdge == Edge.LEFT) seedingEdge = Edge.RIGHT
+            else if(seedingEdge == Edge.RIGHT) seedingEdge = Edge.RIGHT
+        }
+        if(top > bottom) {
+            val p = bottom
+            bottom = top
+            top = p
+            if(seedingEdge == Edge.BOTTOM) seedingEdge = Edge.TOP
+            else if(seedingEdge == Edge.TOP) seedingEdge = Edge.BOTTOM
+        }
+    }
+
+    /** Crop the ROI to its frame. */
+    fun cropToFrame() {
+        makeValid()
+        this.intersect(frame.size.toRect())
+    }
+
     /** Copy the ROI. */
     fun copy(): FieldRoi {
-        val cpy= FieldRoi(
+        val cpy = FieldRoi(
             frame = this.frame,
             threshold = this.threshold,
             seedingEdge = this.seedingEdge,

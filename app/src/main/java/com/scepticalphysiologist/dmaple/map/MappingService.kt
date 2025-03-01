@@ -501,7 +501,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         val elapsed = measureTimeMillis {
             if(creating) {
                 val t1 = Instant.now()
-                println(Duration.between(t0, t1).toMillis())
+                //println(Duration.between(t0, t1).toMillis())
                 t0 = t1
 
                 // Pass the image to each map creator to analyse.

@@ -128,6 +128,8 @@ class MappingFieldOfView(context: Context, attributeSet: AttributeSet?):
         exposureSlider.setPosition((fraction * 100).toInt())
     }
 
+
+
     // ---------------------------------------------------------------------------------------------
     // Layout
     // ---------------------------------------------------------------------------------------------
