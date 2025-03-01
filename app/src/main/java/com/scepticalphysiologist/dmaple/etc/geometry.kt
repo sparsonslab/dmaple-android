@@ -1,5 +1,6 @@
 package com.scepticalphysiologist.dmaple.etc
 
+import android.graphics.Matrix
 import android.graphics.Rect
 import android.graphics.RectF
 import android.view.Display
@@ -273,6 +274,31 @@ class Frame(val size: Point, val orientation: Int = 0) {
     fun transformRect(r: RectF, newFrame: Frame, resize: Boolean = true): RectF {
         return Point.toRect(transform(Point.fromRect(r), newFrame, resize))!!
     }
+
+
+    fun transformMatrix(newFrame: Frame, resize: Boolean = true): Matrix {
+
+        // Rotation angle.
+        val rotation = (newFrame.orientation - this.orientation).toFloat()
+        val theta = (Math.PI * rotation / 180.0).toFloat()
+
+        // Offset from origin of original frame.
+        val offset = this.size * 0.5f
+
+        // Expansion and offset for new frame size.
+        val rotatedFrameSize = this.size.rotate(theta).abs()
+        val newSize = if(resize) newFrame.size else rotatedFrameSize
+        val expansion = newSize / rotatedFrameSize
+        val offsetRotated = newSize * 0.5f
+
+        val matrix = Matrix()
+        matrix.preTranslate(-offset.x, -offset.y)
+        matrix.setRotate(-rotation)
+        matrix.postScale(expansion.x, expansion.y)
+        matrix.postTranslate(offsetRotated.x, offsetRotated.y)
+        return matrix
+    }
+
 
 }
 

@@ -81,7 +81,9 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         binding.cameraAndRoi.roiHasBeenSelected().observe(viewLifecycleOwner) { selectedRoiUID ->
             if(stateShowsMap()){
                 model.updateCurrentlyShownMap(selectedRoiUID)
-                binding.maps.updateCreator(model.getCurrentlyShownMap())
+                val creator = model.getCurrentlyShownMap()
+                binding.maps.updateCreator(creator)
+                binding.cameraAndRoi.updateCreator(creator)
             }
         }
 
@@ -108,6 +110,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
             RecState.PRE_RECORD -> {
                 binding.recordButton.setImageResource(R.drawable.play_arrow)
                 binding.maps.stop()
+                binding.cameraAndRoi.startSpine(false)
                 binding.cameraAndRoi.freezeField(null)
                 binding.toRecordsButton.visibility = View.VISIBLE
                 binding.maps.reset()
@@ -118,18 +121,21 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
             RecState.RECORDING -> {
                 binding.recordButton.setImageResource(R.drawable.stop_5f6368)
                 binding.maps.start()
+                binding.cameraAndRoi.startSpine(true)
                 binding.cameraAndRoi.freezeField(null)
                 setMapView()
             }
             RecState.POST_RECORD -> {
                 binding.recordButton.setImageResource(R.drawable.eject_arrow)
                 binding.maps.stop()
+                binding.cameraAndRoi.startSpine(false)
                 binding.cameraAndRoi.freezeField(model.getLastFieldImage())
                 setMapView()
             }
             RecState.OLD_RECORD -> {
                 binding.recordButton.setImageResource(R.drawable.eject_arrow)
                 binding.maps.stop()
+                binding.cameraAndRoi.startSpine(false)
                 binding.cameraAndRoi.freezeField(model.getLastFieldImage())
                 setMapView()
             }

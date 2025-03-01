@@ -19,6 +19,7 @@ import com.scepticalphysiologist.dmaple.etc.SwitchableSlider
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.etc.aspectRatioRatio
+import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
 
 /** The mapping field of view. The camera feed and overlays for:
@@ -61,8 +62,8 @@ class MappingFieldOfView(context: Context, attributeSet: AttributeSet?):
 
         // Camera and overlays.
         this.addView(cameraFeed)
-        this.addView(spineOverlay)
         this.addView(roiOverlay)
+        this.addView(spineOverlay)
 
         // Slider controls.
         val sliderGroup = LinearLayout(context)
@@ -128,7 +129,13 @@ class MappingFieldOfView(context: Context, attributeSet: AttributeSet?):
         exposureSlider.setPosition((fraction * 100).toInt())
     }
 
+    fun updateCreator(creatorAndMapIdx: Pair<MapCreator?, Int>) {
+        spineOverlay.updateCreator(creatorAndMapIdx)
+    }
 
+    fun startSpine(start: Boolean = true){
+        if(start) spineOverlay.start() else spineOverlay.stop()
+    }
 
     // ---------------------------------------------------------------------------------------------
     // Layout
