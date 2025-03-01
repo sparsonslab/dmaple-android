@@ -18,7 +18,7 @@ class Settings: PreferenceFragmentCompat() {
          * The user may want to set the orientation of rhe screen when the tablet is flat (e.g.
          * above an organ bath) and so the device will not detect an orientation.
          * */
-        val ORIENTATION_MAP = mapOf(
+        private val ORIENTATION_MAP = mapOf(
             "auto" to ActivityInfo.SCREEN_ORIENTATION_SENSOR,
             "landscape" to ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE,
             "landscape rev" to ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE,
@@ -56,7 +56,7 @@ class Settings: PreferenceFragmentCompat() {
             }
         }
 
-        // Thresholding
+        // Thresholding.
         findPreference<SwitchPreference>("THRESHOLD_INVERTED")?.let { pref ->
             setThresholdInverted(pref.isChecked)
             pref.setOnPreferenceChangeListener { _, newValue ->
