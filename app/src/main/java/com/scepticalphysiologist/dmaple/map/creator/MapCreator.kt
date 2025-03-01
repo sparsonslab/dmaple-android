@@ -73,6 +73,10 @@ class MapCreator(val roi: FieldRoi) {
     /** The end of any one of the buffers has been reached. */
     private var reachedEnd = false
 
+    // ---------------------------------------------------------------------------------------------
+    // Construction
+    // ---------------------------------------------------------------------------------------------
+
     init {
         val edge = Point.ofRectEdge(roi, roi.seedingEdge)
         if(isVertical) {
@@ -109,6 +113,10 @@ class MapCreator(val roi: FieldRoi) {
     /** The current sample width (space) and height (time) of the map. */
     fun spaceTimeSampleSize(): Size { return Size(ns, nt) }
 
+    // ---------------------------------------------------------------------------------------------
+    // Calculation
+    // ---------------------------------------------------------------------------------------------
+
     /** Update the maps from a new camera bitmap. */
     fun updateWithCameraBitmap(bitmap: Bitmap) {
         if(reachedEnd) return
@@ -124,6 +132,10 @@ class MapCreator(val roi: FieldRoi) {
             nt += 1
         } catch (_: java.lang.IndexOutOfBoundsException) { reachedEnd = true }
     }
+
+    // ---------------------------------------------------------------------------------------------
+    // Display
+    // ---------------------------------------------------------------------------------------------
 
     /** Get a portion of one of the maps as a bitmap.
      *
@@ -163,6 +175,10 @@ class MapCreator(val roi: FieldRoi) {
         catch (_: NullPointerException) {}
         return null
     }
+
+    // ---------------------------------------------------------------------------------------------
+    // I/O
+    // ---------------------------------------------------------------------------------------------
 
     /** Save the maps to TIFF slices/directories. */
     fun toTiff(): List<FileDirectory> {
