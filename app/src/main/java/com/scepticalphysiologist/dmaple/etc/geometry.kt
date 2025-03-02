@@ -83,8 +83,6 @@ fun printRectF(r: RectF, name: String = "") {
     println("$name = ${r.left} - ${r.right}, ${r.top} - ${r.bottom}")
 }
 
-
-
 // -------------------------------------------------------------------------------------------------
 // Geometric classes
 // -------------------------------------------------------------------------------------------------
@@ -163,6 +161,10 @@ class Point(var x: Float = 0f, var y: Float = 0f) {
         /** The point with unit length from the origin for a given angle. */
         fun unitLength(theta: Float): Point { return Point(cos(theta), sin(theta)) }
 
+        /** Flatten a list of Points to a float array of (x, y, x, y, ...) pairs.
+         *
+         * Passed to methods of [android.graphics.Canvas] for drawing points, lines, etc.
+         * */
         fun toFloatArray(ps: List<Point>): FloatArray {
             return ps.map{ listOf(it.x, it.y) }.flatten().toFloatArray()
         }
@@ -181,7 +183,6 @@ class Point(var x: Float = 0f, var y: Float = 0f) {
                 maxOf(ps[i].y, ps[i + 1].y)
             )
         }
-
 
         /** The points at the edge of a rectangle. */
         fun ofRectEdge(r: RectF, edge: Edge): Pair<Point, Point> {
@@ -210,8 +211,6 @@ class Point(var x: Float = 0f, var y: Float = 0f) {
  */
 class Frame(val size: Point, val orientation: Int = 0) {
 
-    //val size: Point = Point(width, height)
-
     companion object {
 
         /**  Get a view's frame. */
@@ -236,6 +235,15 @@ class Frame(val size: Point, val orientation: Int = 0) {
         return "x = ${size.x}, y = ${size.y}, o =  $orientation"
     }
 
+    /** The centre of the frame */
+    val centre: Point get() = this.size * 0.5f
+
+    /** The difference in orientation with another frame in degrees and radians. */
+    private fun deltaOrientation(other: Frame): Pair<Float, Float> {
+        val degrees = (other.orientation - this.orientation).toFloat()
+        val radians = (Math.PI * degrees / 180.0).toFloat()
+        return Pair(degrees, radians)
+    }
 
     /** Translate points from this frame to another.
      *
@@ -250,24 +258,33 @@ class Frame(val size: Point, val orientation: Int = 0) {
      * @param resize The frame transform includes re-sizing.
      * @return The transformed points.
      */
-    fun transform(ps:List<Point>, newFrame: Frame, resize: Boolean = true): List<Point> {
-        // Rotation angle.
-        val rotation = newFrame.orientation - this.orientation
-        val theta = (Math.PI * rotation / 180.0).toFloat()
-
-        // Offset from origin of original frame.
-        val offset = this.size * 0.5f
-
-        // Expansion and offset for new frame size.
+    fun transformPoints(ps:List<Point>, newFrame: Frame, resize: Boolean = true): List<Point> {
+        val (rotation, theta) = deltaOrientation(newFrame)
         val rotatedFrameSize = this.size.rotate(theta).abs()
         val newSize = if(resize) newFrame.size else rotatedFrameSize
         val expansion = newSize / rotatedFrameSize
         val offsetRotated = newSize * 0.5f
 
         // Transform.
-        return ps.map {(it - offset).rotate(theta) * expansion + offsetRotated}
+        return ps.map {(it - this.centre).rotate(theta) * expansion + offsetRotated}
     }
 
+    /** Create a graphics matrix for transforming from this to a new frame. */
+    fun transformMatrix(newFrame: Frame, resize: Boolean = true): Matrix {
+        val (rotation, theta) = deltaOrientation(newFrame)
+        val rotatedFrameSize = this.size.rotate(theta).abs()
+        val newSize = if(resize) newFrame.size else rotatedFrameSize
+        val expansion = newSize / rotatedFrameSize
+        val offsetRotated = newSize * 0.5f
+
+        // Transform matrix.
+        val matrix = Matrix()
+        matrix.preConcat(Matrix().also{ it.setTranslate(offsetRotated.x, offsetRotated.y)})
+        matrix.preConcat(Matrix().also{ it.setScale(expansion.x, expansion.y) })
+        matrix.preConcat(Matrix().also{ it.setRotate(-rotation) })
+        matrix.preConcat(Matrix().also{ it.setTranslate(-this.centre.x, -this.centre.y) })
+        return matrix
+    }
 
     /** Translate a rectangle from this frame to another.
      *
@@ -277,32 +294,7 @@ class Frame(val size: Point, val orientation: Int = 0) {
      * @return The transformed rectangle.
      */
     fun transformRect(r: RectF, newFrame: Frame, resize: Boolean = true): RectF {
-        return Point.toRect(transform(Point.fromRect(r), newFrame, resize))!!
-    }
-
-
-    fun transformMatrix(newFrame: Frame, resize: Boolean = true): Matrix {
-
-        // Rotation angle.
-        val rotation = (newFrame.orientation - this.orientation).toFloat()
-        val theta = (Math.PI * rotation / 180.0).toFloat()
-
-        // Offset from origin of original frame.
-        val offset = this.size * 0.5f
-
-        // Expansion and offset for new frame size.
-        val rotatedFrameSize = this.size.rotate(theta).abs()
-        val newSize = if(resize) newFrame.size else rotatedFrameSize
-        val expansion = newSize / rotatedFrameSize
-        val offsetRotated = newSize * 0.5f
-
-        val matrix = Matrix()
-        matrix.preConcat(Matrix().also{ it.setTranslate(offsetRotated.x, offsetRotated.y)})
-        matrix.preConcat(Matrix().also{ it.setScale(expansion.x, expansion.y) })
-        matrix.preConcat(Matrix().also{ it.setRotate(-rotation) })
-        matrix.preConcat(Matrix().also{ it.setTranslate(-offset.x, -offset.y) })
-        return matrix
+        return Point.toRect(transformPoints(Point.fromRect(r), newFrame, resize))!!
     }
 
 }
-

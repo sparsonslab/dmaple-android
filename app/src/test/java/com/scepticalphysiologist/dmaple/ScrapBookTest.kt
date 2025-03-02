@@ -1,15 +1,11 @@
 package com.scepticalphysiologist.dmaple
 
 
-import android.view.Surface
-import com.google.gson.Gson
-import com.scepticalphysiologist.dmaple.etc.Edge
 import com.scepticalphysiologist.dmaple.etc.Frame
 import com.scepticalphysiologist.dmaple.etc.Point
 
 import org.junit.jupiter.api.Test
 import org.robolectric.RobolectricTestRunner
-import java.io.File
 import org.junit.runner.RunWith
 
 
@@ -32,7 +28,7 @@ class ScrapBookTest {
 
         val frame2 = Frame(Point(200f, 800f), 120)
 
-        for(p in frame1.transform(p1, frame2, resize = true)) println(p)
+        for(p in frame1.transformPoints(p1, frame2, resize = true)) println(p)
 
         val mat = frame1.transformMatrix(frame2, resize = true)
         val ps = Point.toFloatArray(p1)

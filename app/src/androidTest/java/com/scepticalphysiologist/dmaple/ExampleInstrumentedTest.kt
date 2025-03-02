@@ -1,14 +1,11 @@
 package com.scepticalphysiologist.dmaple
 
-import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.scepticalphysiologist.dmaple.etc.Frame
 import com.scepticalphysiologist.dmaple.etc.Point
 
 import org.junit.Test
 import org.junit.runner.RunWith
-
-import org.junit.Assert.*
 
 /**
  * Instrumented test, which will execute on an Android device.
@@ -28,7 +25,7 @@ class ExampleInstrumentedTest {
 
         val frame2 = Frame(Point(200f, 800f), 120)
 
-        for(p in frame1.transform(p1, frame2, resize = true)) println(p)
+        for(p in frame1.transformPoints(p1, frame2, resize = true)) println(p)
 
         val mat = frame1.transformMatrix(frame2, resize = true)
         val ps = Point.toFloatArray(p1)

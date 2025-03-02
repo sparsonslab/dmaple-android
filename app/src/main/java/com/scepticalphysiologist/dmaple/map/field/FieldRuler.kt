@@ -37,7 +37,7 @@ class FieldRuler(
 
     fun changeFrame(newFrame: Frame) {
         val lengthRatio = length / (p1 - p0).l2()
-        val points = frame.transform(listOf(p0, p1), newFrame, resize=true)
+        val points = frame.transformPoints(listOf(p0, p1), newFrame, resize=true)
         p0 = points[0]
         p1 = points[1]
         length = (p1 - p0).l2() * lengthRatio
