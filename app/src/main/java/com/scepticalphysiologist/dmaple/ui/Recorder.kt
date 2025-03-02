@@ -14,6 +14,7 @@ import com.scepticalphysiologist.dmaple.SettingsActivity
 import com.scepticalphysiologist.dmaple.databinding.RecorderBinding
 import com.scepticalphysiologist.dmaple.etc.PermissionSets
 import com.scepticalphysiologist.dmaple.etc.Point
+import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 
 
 class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
@@ -81,9 +82,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         binding.cameraAndRoi.roiHasBeenSelected().observe(viewLifecycleOwner) { selectedRoiUID ->
             if(stateShowsMap()){
                 model.updateCurrentlyShownMap(selectedRoiUID)
-                val creator = model.getCurrentlyShownMap()
-                binding.maps.updateCreator(creator)
-                binding.cameraAndRoi.updateCreator(creator)
+                showMapAndCreator(model.getCurrentlyShownMap())
             }
         }
 
@@ -148,7 +147,13 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         binding.cameraAndRoi.allowEditing(false)
         val extent = Point.ofViewExtent(binding.root) * 0.5f
         binding.cameraAndRoi.resize(extent.x.toInt(), extent.y.toInt())
-        binding.maps.updateCreator(model.getCurrentlyShownMap())
+        showMapAndCreator(model.getCurrentlyShownMap())
+    }
+
+    /** Set the creator and map being shown in the map and camera field views. */
+    private fun showMapAndCreator(creatorAndMapIdx: Pair<MapCreator?, Int>) {
+        binding.maps.updateCreator(creatorAndMapIdx)
+        binding.cameraAndRoi.updateCreator(creatorAndMapIdx)
     }
 
     /** If the fragment showing maps? */

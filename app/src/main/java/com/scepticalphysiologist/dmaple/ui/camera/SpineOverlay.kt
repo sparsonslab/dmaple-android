@@ -1,20 +1,13 @@
 package com.scepticalphysiologist.dmaple.ui.camera
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
-import android.graphics.Path
-import android.graphics.RectF
-import android.graphics.drawable.BitmapDrawable
 import android.util.AttributeSet
 import android.view.View
 import android.view.WindowManager
-import androidx.core.graphics.blue
-import androidx.core.graphics.green
-import androidx.core.graphics.red
 import com.scepticalphysiologist.dmaple.etc.Frame
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
@@ -25,29 +18,36 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-class SpineView(context: Context, attributeSet: AttributeSet?): View(context, attributeSet) {
+/** A view for o showing a mapping spine and boundaries over the camera field. */
+class SpineOverlay(context: Context, attributeSet: AttributeSet?): View(context, attributeSet) {
 
-
+    // Map and creator
+    // ---------------
     /** The creator of the map spines being shown by this view. */
     private var creator: MapCreator? = null
-    /** The coroutine scope used for the live (during mapping) extracting of the viewed bitmap
-     * from the map creator. */
+    /** The spine points to be plotted. */
+    private var spinePoints: FloatArray? = null
+
+    //
+    /** The coroutine scope used for live plotting the spine points, etc. */
     private var scope: CoroutineScope? = null
     /** The approximate update interval (ms) for live display. */
     private val updateInterval: Long = 100L
 
-
+    // Drawing
+    // -------
+    /** Information about the display. */
     private val display = (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay
-    private var canvasMatrix: Matrix? = null
-
+    /** The geometric transform matrix applied to the canvas so that points drawn onto to it
+     * have the same frame as the map's spine (i.e. the camerax analysis frame) */
+    private var canvasTransform: Matrix? = null
+    /** The paint used for drawing the spine. */
     private val spinePaint = Paint()
-    private var spinePoints: FloatArray? = null
-
 
     init {
         spinePaint.color = Color.GREEN
-        spinePaint.style = Paint.Style.STROKE
-        spinePaint.strokeWidth = 1.9f
+        spinePaint.style = Paint.Style.FILL
+        spinePaint.strokeWidth = 5f
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -63,6 +63,7 @@ class SpineView(context: Context, attributeSet: AttributeSet?): View(context, at
     fun start() {
         if(scope != null) return
         scope = MainScope()
+        updateCanvasTransform()
         updateLive()
     }
 
@@ -86,39 +87,34 @@ class SpineView(context: Context, attributeSet: AttributeSet?): View(context, at
         }
     }
 
-    /** Update the map shown. */
+    /** Update the spine shown. */
     private fun update() {
         creator?.let { mapCreator ->
-            val r = mapCreator.roi
-
-            spinePoints = listOf(r.left, r.bottom, r.right, r.top).toFloatArray()
-
-            /*
-            spinePoints = Point.toFloatArray(mapCreator.spine.indices.map{ k ->
+            // Plot every 10th point along the spine.
+            spinePoints = Point.toFloatArray(mapCreator.spine.indices.filter{it % 10 == 0}.map{ k ->
                 val i = mapCreator.longIdx[k].toFloat()
                 val j = mapCreator.spine[k].toFloat()
                 if(mapCreator.gutIsHorizontal) Point(i, j) else Point(j, i)
             })
-
-             */
-
             invalidate()
         }
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        canvas.setMatrix(canvasTransform)
+        spinePoints?.let{canvas.drawPoints(it, spinePaint)}
     }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
         if(!changed) return
+        updateCanvasTransform()
+    }
+
+    private fun updateCanvasTransform() {
         creator?.let { mapCreator ->
             val canvasFrame = Frame.fromView(this, display)
-            canvasMatrix = mapCreator.roi.frame.transformMatrix(canvasFrame, resize = true)
+            canvasTransform = mapCreator.roi.frame.transformMatrix(canvasFrame, resize = true)
         }
-
     }
-
-    override fun onDraw(canvas: Canvas) {
-        canvas.setMatrix(canvasMatrix)
-        spinePoints?.let{canvas.drawLines(it, spinePaint)}
-    }
-
 }

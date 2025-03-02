@@ -37,7 +37,7 @@ class MappingFieldOfView(context: Context, attributeSet: AttributeSet?):
     /** An overlay over the camera feed unto which mappings ROIs can eb drawn. */
     private val roiOverlay = MappingRoiOverlay(context, attributeSet)
     /** An overlay over the camera feed unto which mapping processes *such as spines) can be drawn. */
-    private val spineOverlay = SpineView(context, attributeSet)
+    private val spineOverlay = SpineOverlay(context, attributeSet)
 
     // Controls
     // --------
