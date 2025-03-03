@@ -41,26 +41,15 @@ class MapCreator(val roi: FieldRoi) {
 
     // Map geometry
     // ------------
-    /** The map seeding edge orientation within the input images. */
-    val gutIsHorizontal: Boolean = roi.seedingEdge.isVertical()
-    private val offset = -roi.threshold.toFloat()
-    private val gain = if(ThresholdBitmap.highlightAbove) -1f else 1f
 
     /** Sample size of map - space and time. */
     private val ns: Int
     private var nt: Int = 0
 
-
     // Coordinate arrays
     // -----------------
+    private val seedRange: Pair<Int, Int>
     val analyser: BitmapFieldAnalyser
-    val longIdx: IntArray
-    val transIdx: IntArray
-
-    val spine: IntArray
-    val upperBound: IntArray
-    val lowerBound: IntArray
-
 
     // Buffering
     // ---------
@@ -94,12 +83,6 @@ class MapCreator(val roi: FieldRoi) {
         // Make sure the ROI fits in the image frame.
         roi.cropToFrame()
 
-        analyser = BitmapFieldAnalyser()
-        analyser.threshold = roi.threshold.toFloat()
-        analyser.gutIsHorizontal = roi.seedingEdge.isVertical()
-        analyser.gutIsAboveThreshold = !ThresholdBitmap.highlightAbove
-
-
         // Axes longitudinal and transverse to gut.
         val axesLongAndTrans = when(roi.seedingEdge) {
             Edge.LEFT -> Pair(Pair(roi.left, roi.right), Pair(roi.top, roi.bottom))
@@ -108,31 +91,17 @@ class MapCreator(val roi: FieldRoi) {
             Edge.BOTTOM -> Pair(Pair(roi.bottom, roi.top), Pair(roi.left, roi.right))
         }
         val (longAxis, transAxis) = axesLongAndTrans
-        longIdx = pointsAlong(longAxis)
-        transIdx = pointsAlong(transAxis)
 
-        //println("long idx")
-        //println(longIdx.toList())
-        //println("trans idx")
-        //println(transIdx.toList())
+        analyser = BitmapFieldAnalyser()
+        analyser.threshold = roi.threshold.toFloat()
+        analyser.gutIsHorizontal = roi.seedingEdge.isVertical()
+        analyser.gutIsAboveThreshold = !ThresholdBitmap.highlightAbove
+        analyser.minWidth = 10
+        analyser.maxGap = 2
+        analyser.setLongSection(longAxis.first.toInt(), longAxis.second.toInt())
 
-        // Spine positions.
-        ns = longIdx.size
-        spine = IntArray(ns)
-        upperBound = IntArray(ns)
-        lowerBound = IntArray(ns)
-
-
-        // (as example)
-        val j = transIdx.first() + (transIdx.last() - transIdx.first()) / 2
-        println("j = $j")
-        for(i in 0 until ns) {
-            spine[i] = j
-            upperBound[i] = j + 10
-            lowerBound[i] = j - 10
-        }
-
-
+        seedRange = Pair(transAxis.first.toInt(), transAxis.second.toInt())
+        ns = analyser.longIdx.size
     }
 
     fun provideBuffers(buffers: List<ByteBuffer>): Boolean {
@@ -169,13 +138,14 @@ class MapCreator(val roi: FieldRoi) {
         try {
 
             analyser.setImage(bitmap)
-            if(nt == 0) seedSpine()
+            if(nt == 0) analyser.seedSpine(seedRange.first, seedRange.second)
+            else analyser.updateSpine()
 
             var p = 0
-            val j = spine[0]
-            for(i in longIdx) {
+            val j = analyser.spine[0]
+            for(i in analyser.longIdx) {
 
-                p = if(gutIsHorizontal) bitmap.getPixel(i, j) else bitmap.getPixel(j, i)
+                p = if(analyser.gutIsHorizontal) bitmap.getPixel(i, j) else bitmap.getPixel(j, i)
                 diameterMap?.addNTSCGrey(p)
                 radiusMapLeft?.addNTSCGrey(p)
                 radiusMapRight?.addNTSCGrey(p)
@@ -186,13 +156,6 @@ class MapCreator(val roi: FieldRoi) {
         } catch (_: java.lang.IndexOutOfBoundsException) { reachedEnd = true }
     }
 
-
-    private fun seedSpine() {
-        analyser.findGut(longIdx[0], Pair(transIdx[0], transIdx[1]), minWidth = 10)?.let { gut ->
-            val j = gut.first + (gut.second - gut.first)
-            for(i in 0 until ns) spine[i] = j
-        }
-    }
 
     // ---------------------------------------------------------------------------------------------
     // Display

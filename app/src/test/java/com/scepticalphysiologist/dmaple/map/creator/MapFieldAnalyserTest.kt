@@ -14,21 +14,35 @@ class MapFieldAnalyserTest {
         val h = 100
         val image = Array(h) {FloatArray(w)}
         for(i in 0 until w)
-            for(j in 0 until h)
-                image[j][i] = if((j in 50..70) && (i in 20..60)) 1f else 0f
+            for(j in 0 until h) {
+                image[j][i] = if ((j in 50..80) && (i in 20..60)) 1f else 0f
+                if((j in 60..62) || (i in 33..34)) image[j][i] = 0f
+            }
+
+
+
 
 
         val analyser = ArrayFieldAnalyser()
         analyser.setImage(image)
         analyser.threshold = 0.5f
         analyser.gutIsAboveThreshold = true
+        analyser.minWidth = 10
+        analyser.maxGap = 5
 
+
+
+        // Horizontal
         analyser.gutIsHorizontal = true
-        println(analyser.findGut(25, Pair(20, 80)))
+        analyser.setLongSection(58, 10)
+        analyser.seedSpine(0, 90)
+        println(analyser.spine.toList())
 
-
+        // Vertical
         analyser.gutIsHorizontal = false
-        println(analyser.findGut(60, Pair(20, 80)))
+        analyser.setLongSection(51, 80)
+        analyser.seedSpine(0, 90)
+        println(analyser.spine.toList())
 
 
 

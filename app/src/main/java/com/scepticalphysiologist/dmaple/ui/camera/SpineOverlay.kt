@@ -89,12 +89,12 @@ class SpineOverlay(context: Context, attributeSet: AttributeSet?): View(context,
 
     /** Update the spine shown. */
     private fun update() {
-        creator?.let { mapCreator ->
+        creator?.analyser?.let { analyser ->
             // Plot every 10th point along the spine.
-            spinePoints = Point.toFloatArray(mapCreator.spine.indices.filter{it % 10 == 0}.map{ k ->
-                val i = mapCreator.longIdx[k].toFloat()
-                val j = mapCreator.spine[k].toFloat()
-                if(mapCreator.gutIsHorizontal) Point(i, j) else Point(j, i)
+            spinePoints = Point.toFloatArray(analyser.spine.indices.filter{it % 10 == 0}.map{ k ->
+                val i = analyser.longIdx[k].toFloat()
+                val j = analyser.spine[k].toFloat()
+                if(analyser.gutIsHorizontal) Point(i, j) else Point(j, i)
             })
             invalidate()
         }
