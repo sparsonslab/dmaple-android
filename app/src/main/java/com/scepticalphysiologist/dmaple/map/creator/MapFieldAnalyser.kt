@@ -23,6 +23,10 @@ abstract class MapFieldAnalyser {
 
     abstract fun getPixel(i: Int, j: Int): Float
 
+    // ---------------------------------------------------------------------------------------------
+    // Initiation
+    // ---------------------------------------------------------------------------------------------
+
     fun setLongSection(l0: Int, l1: Int) {
         longIdx = if(l0 < l1) (l0..l1).toList().toIntArray() else (l1..l0).toList().toIntArray()
         val nl = longIdx.size
@@ -31,34 +35,70 @@ abstract class MapFieldAnalyser {
         lower = IntArray(nl)
     }
 
-    fun findEdge(iLong: Int, iTrans: Int, goUp: Boolean, ofGut: Boolean=true): Int {
-
-        val d = if(goUp) 1 else -1
-        val findAbove = !gutIsAboveThreshold xor ofGut
-
-        if(gutIsHorizontal){
-            var y = iTrans
-            if(findAbove) while((y >= 0) && (y < fieldHeight) && (getPixel(iLong, y) > threshold)) y += d
-            else while((y >= 0) && (y < fieldHeight) && (getPixel(iLong, y) < threshold)) y += d
-            return y - d
-        }
-        else {
-            var x = iTrans
-            if(findAbove) while((x >= 0) && (x < fieldWidth) && (getPixel(x, iLong)) > threshold) x += d
-            else while((x >= 0) && (x < fieldWidth) && (getPixel(x, iLong) < threshold)) x += d
-            return x - d
-        }
-
+    fun seedSpine(t0: Int, t1: Int): Boolean {
+        val gut = findWidestGut(longIdx.first(), Pair(t0, t1)) ?: return false
+        spine[0] = gut.first + (gut.second - gut.first) / 2
+        updateSpine()
+        return true
     }
 
-    fun findEdge2(iLong: Int, iTrans: Int, goUp: Boolean, ofGut: Boolean=true): Int {
+    fun findWidestGut(iLong: Int, rTrans: Pair<Int, Int>): Pair<Int, Int>? {
+        val guts = findGuts(iLong, rTrans)
+        if(guts.isEmpty()) return null
+        return guts.maxBy { it.second - it.first }
+    }
 
+    fun findGuts(iLong: Int, rTrans: Pair<Int, Int>): List<Pair<Int, Int>> {
+        val section = transverseSection(iLong, rTrans)
+        val guts = mutableListOf<Pair<Int, Int>>()
+        var w = 0
+        var g = 0
+        for((i, v) in section.withIndex()) {
+            if(v || ((w > 0) && (g < maxGap))) {
+                w += 1
+                if(!v) g += 1 else g = 0
+            }
+            else {
+                if(w >= minWidth) guts.add(Pair(rTrans.first + i - w, rTrans.first + i - g - 1))
+                g = 0
+                w = 0
+            }
+        }
+        return guts
+    }
+
+    fun transverseSection(iLong: Int, rTrans: Pair<Int, Int>): BooleanArray {
+        if(gutIsHorizontal) {
+            return (rTrans.first..rTrans.second).map{
+                (getPixel(iLong, it) > threshold) xor !gutIsAboveThreshold
+            }.toBooleanArray()
+        }
+        else {
+            return (rTrans.first..rTrans.second).map{
+                (getPixel(it, iLong) > threshold) xor !gutIsAboveThreshold
+            }.toBooleanArray()
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Update
+    // ---------------------------------------------------------------------------------------------
+
+    fun updateSpine(){
+        var transIdx = spine[0]
+        for(i in longIdx.indices) {
+            upper[i] = findEdge(longIdx[i], transIdx, goUp = true, ofGut = true)
+            lower[i] = findEdge(longIdx[i], transIdx, goUp = false, ofGut = true)
+            transIdx = lower[i] + (upper[i] - lower[i]) / 2
+            spine[i] = transIdx
+        }
+    }
+
+    private fun findEdge(iLong: Int, iTrans: Int, goUp: Boolean, ofGut: Boolean=true): Int {
         val d = if(goUp) 1 else -1
         val findAbove = !gutIsAboveThreshold xor ofGut
-
         var i = iTrans
         var g = 0
-
         if(gutIsHorizontal){
             if(findAbove) while((i >= 0) && (i < fieldHeight) && (g < maxGap)) {
                 if(getPixel(iLong, i) > threshold) g = 0 else g += 1
@@ -78,70 +118,21 @@ abstract class MapFieldAnalyser {
                 if(getPixel(i, iLong) < threshold) g = 0 else g += 1
                 i += d
             }
-
         }
-
         return i - d * g
-
     }
 
-    fun seedSpine(t0: Int, t1: Int): Boolean {
-        val gut = findWidestGut(longIdx.first(), Pair(t0, t1)) ?: return false
-        spine[0] = gut.first + (gut.second - gut.first) / 2
-        updateSpine()
-        return true
-    }
+    // ---------------------------------------------------------------------------------------------
+    // Values
+    // ---------------------------------------------------------------------------------------------
 
-    fun updateSpine(){
-        var transIdx = spine[0]
-        for(i in longIdx.indices) {
-            upper[i] = findEdge2(longIdx[i], transIdx, goUp = true, ofGut = true)
-            lower[i] = findEdge2(longIdx[i], transIdx, goUp = false, ofGut = true)
-            transIdx = lower[i] + (upper[i] - lower[i]) / 2
-            spine[i] = transIdx
-        }
-    }
+    fun getDiameter(i: Int): Int { return upper[i] - lower[i] }
 
+    fun getUpperRadius(i: Int): Int { return upper[i] - spine[i] }
 
-    fun transverseSection(iLong: Int, rTrans: Pair<Int, Int>): BooleanArray {
-        if(gutIsHorizontal) {
-            return (rTrans.first..rTrans.second).map{
-                (getPixel(iLong, it) > threshold) xor !gutIsAboveThreshold
-            }.toBooleanArray()
-        }
-        else {
-            return (rTrans.first..rTrans.second).map{
-                (getPixel(it, iLong) > threshold) xor !gutIsAboveThreshold
-            }.toBooleanArray()
-        }
-    }
+    fun getLowerRadius(i: Int): Int { return spine[i] - lower[i] }
 
-
-    fun findGuts(iLong: Int, rTrans: Pair<Int, Int>): List<Pair<Int, Int>> {
-        val section = transverseSection(iLong, rTrans)
-        val guts = mutableListOf<Pair<Int, Int>>()
-        var w = 0
-        var g = 0
-        for((i, v) in section.withIndex()) {
-            if(v || ((w > 0) && (g < maxGap))) {
-                w += 1
-                if(!v) g += 1 else g = 0
-            }
-            else {
-                if(w >= minWidth) guts.add(Pair(rTrans.first + i - w, rTrans.first + i - g - 1))
-                g = 0
-                w = 0
-            }
-            //println("$i, $v > $g, $w")
-        }
-        return guts
-    }
-
-    fun findWidestGut(iLong: Int, rTrans: Pair<Int, Int>): Pair<Int, Int>? {
-        val guts = findGuts(iLong, rTrans)
-        if(guts.isEmpty()) return null
-        return guts.maxBy { it.second - it.first }
-    }
+    fun getSpine(i: Int): Int { return spine[i] }
 
 }
 

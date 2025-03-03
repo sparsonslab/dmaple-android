@@ -5,13 +5,11 @@ import android.graphics.Rect
 import android.util.Size
 import com.scepticalphysiologist.dmaple.etc.Edge
 import com.scepticalphysiologist.dmaple.etc.ThresholdBitmap
-import com.scepticalphysiologist.dmaple.etc.ntscGrey
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import mil.nga.tiff.FileDirectory
 import java.lang.IllegalArgumentException
 import java.lang.IndexOutOfBoundsException
 import java.nio.ByteBuffer
-import kotlin.math.abs
 
 
 enum class MapType (
@@ -92,6 +90,7 @@ class MapCreator(val roi: FieldRoi) {
         }
         val (longAxis, transAxis) = axesLongAndTrans
 
+        // Analysis object.
         analyser = BitmapFieldAnalyser()
         analyser.threshold = roi.threshold.toFloat()
         analyser.gutIsHorizontal = roi.seedingEdge.isVertical()
@@ -99,7 +98,6 @@ class MapCreator(val roi: FieldRoi) {
         analyser.minWidth = 10
         analyser.maxGap = 2
         analyser.setLongSection(longAxis.first.toInt(), longAxis.second.toInt())
-
         seedRange = Pair(transAxis.first.toInt(), transAxis.second.toInt())
         ns = analyser.longIdx.size
     }
@@ -136,26 +134,27 @@ class MapCreator(val roi: FieldRoi) {
     fun updateWithCameraBitmap(bitmap: Bitmap) {
         if(reachedEnd) return
         try {
-
+            // Analyse the bitmap.
             analyser.setImage(bitmap)
             if(nt == 0) analyser.seedSpine(seedRange.first, seedRange.second)
             else analyser.updateSpine()
 
+            // Update the map values.
+            var j = 0
             var p = 0
-            val j = analyser.spine[0]
-            for(i in analyser.longIdx) {
-
-                p = if(analyser.gutIsHorizontal) bitmap.getPixel(i, j) else bitmap.getPixel(j, i)
-                diameterMap?.addNTSCGrey(p)
-                radiusMapLeft?.addNTSCGrey(p)
-                radiusMapRight?.addNTSCGrey(p)
-                spineMap?.add(p)
+            for(i in 0 until ns) {
+                diameterMap?.add(analyser.getDiameter(i).toShort())
+                radiusMapLeft?.add(analyser.getLowerRadius(i).toShort())
+                radiusMapRight?.add(analyser.getUpperRadius(i).toShort())
+                spineMap?.let { map ->
+                    j = analyser.getSpine(i)
+                    p = if(analyser.gutIsHorizontal) bitmap.getPixel(i, j) else bitmap.getPixel(j, i)
+                    map.add(p)
+                }
             }
-
             nt += 1
         } catch (_: java.lang.IndexOutOfBoundsException) { reachedEnd = true }
     }
-
 
     // ---------------------------------------------------------------------------------------------
     // Display

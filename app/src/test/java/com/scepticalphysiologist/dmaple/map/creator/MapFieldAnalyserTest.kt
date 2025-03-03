@@ -20,7 +20,8 @@ class MapFieldAnalyserTest {
             }
 
 
-
+        val j: Int = 130
+        println(j.toShort())
 
 
         val analyser = ArrayFieldAnalyser()
