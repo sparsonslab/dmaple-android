@@ -190,7 +190,7 @@ class ShortMap(buffer: ByteBuffer, nx: Int): MapBufferView<Short>(buffer, nx) {
     override fun add(value: Short) { buffer.putShort(value) }
 
     override fun getColorInt(i: Int, j: Int): Int {
-         val v = ((get(i, j) - s0) / rt).toInt()
+         val v = ((get(i, j) - s0)).toInt()
          return (255 shl 24) or
                 (v and 0xff shl 16) or
                 (v and 0xff shl 8) or

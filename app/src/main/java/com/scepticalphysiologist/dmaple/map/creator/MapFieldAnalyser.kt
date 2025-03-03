@@ -165,8 +165,3 @@ class ArrayFieldAnalyser: MapFieldAnalyser() {
     override fun getPixel(i: Int, j: Int): Float { return array[j][i] }
 
 }
-
-
-
-
-

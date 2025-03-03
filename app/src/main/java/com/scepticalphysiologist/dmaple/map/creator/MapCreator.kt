@@ -39,13 +39,12 @@ class MapCreator(val roi: FieldRoi) {
 
     // Map geometry
     // ------------
-
     /** Sample size of map - space and time. */
     private val ns: Int
     private var nt: Int = 0
 
-    // Coordinate arrays
-    // -----------------
+    // Map calculation
+    // ---------------
     private val seedRange: Pair<Int, Int>
     val analyser: BitmapFieldAnalyser
 
