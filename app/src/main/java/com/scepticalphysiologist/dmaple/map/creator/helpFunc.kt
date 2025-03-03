@@ -1,6 +1,7 @@
 package com.scepticalphysiologist.dmaple.map.creator
 
 import android.graphics.Bitmap
+import com.scepticalphysiologist.dmaple.etc.Edge
 import com.scepticalphysiologist.dmaple.etc.ntscGrey
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 
@@ -16,7 +17,8 @@ fun pointsAlong(range: Pair<Float, Float>): IntArray {
 
 
 
-fun findEdge(
+
+fun findEdgx(
     bitmap: Bitmap,
     threshold: Int,
     findAbove: Boolean,
@@ -28,13 +30,13 @@ fun findEdge(
     val d = if(increment) 1 else -1
 
     if(findAbove && scanVertical) {
-        var y = j
-        while((y > 0) && (y < bitmap.height - 1) && (ntscGrey(bitmap.getPixel(i, y)) < threshold)) y += d
+        var y = i
+        while((y > 0) && (y < bitmap.height - 1) && (ntscGrey(bitmap.getPixel(j, y)) < threshold)) y += d
         return y
     }
     else if(!findAbove && scanVertical) {
-        var y = j
-        while((y > 0) && (y < bitmap.height - 1) && (ntscGrey(bitmap.getPixel(i, y)) > threshold)) y += d
+        var y = i
+        while((y > 0) && (y < bitmap.height - 1) && (ntscGrey(bitmap.getPixel(j, y)) > threshold)) y += d
         return y
     }
     else if(findAbove) {
@@ -51,13 +53,6 @@ fun findEdge(
 }
 
 
-fun scanAcross(
-    bitmap: Bitmap,
-    roi: FieldRoi,
-
-) {
-
-}
 
 
 

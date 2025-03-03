@@ -16,6 +16,7 @@ import com.scepticalphysiologist.dmaple.etc.Frame
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
+import com.scepticalphysiologist.dmaple.ui.Settings
 import java.io.File
 
 
@@ -63,6 +64,9 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
 
         // Load records
         MappingRecord.loadRecords()
+
+        // Set static attributes from preferences
+        Settings.set(this)
     }
 
     // ---------------------------------------------------------------------------------------------

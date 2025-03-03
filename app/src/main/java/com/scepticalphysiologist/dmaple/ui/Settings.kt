@@ -1,9 +1,12 @@
 package com.scepticalphysiologist.dmaple.ui
 
+import android.app.Activity
+import android.content.Context
 import android.content.pm.ActivityInfo
 import android.os.Bundle
 import androidx.preference.DropDownPreference
 import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.PreferenceManager
 import androidx.preference.SwitchPreference
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.R
@@ -26,6 +29,25 @@ class Settings: PreferenceFragmentCompat() {
             "portrait rev" to ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT
         )
 
+        fun set(activity: Activity){
+            val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
+            setScreenRotation(prefs.getString("SCREEN_ORIENTATION", "auto"), activity)
+            setFrameRate(prefs.getString("FRAME_RATE_FPS", "30"))
+            setThresholdInverted(prefs.getBoolean("THRESHOLD_INVERTED", false))
+        }
+
+        private fun setScreenRotation(entry: Any?, activity: Activity) {
+            activity.requestedOrientation = ORIENTATION_MAP[entry.toString()] ?: ActivityInfo.SCREEN_ORIENTATION_SENSOR
+        }
+
+        private fun setFrameRate(entry: Any?) {
+            entry.toString().toIntOrNull()?.let { MainActivity.setMappingServiceFrameRate(it) }
+        }
+
+        private fun setThresholdInverted(entry: Any?) {
+            ThresholdBitmap.highlightAbove = if(entry is Boolean) entry else entry.toString().toBoolean()
+        }
+
     }
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
@@ -36,9 +58,8 @@ class Settings: PreferenceFragmentCompat() {
             val entries = ORIENTATION_MAP.keys.toTypedArray()
             pref.entries = entries
             pref.entryValues = entries
-            setScreenRotation(pref.entry)
             pref.setOnPreferenceChangeListener { _, newValue ->
-                setScreenRotation(newValue)
+                setScreenRotation(newValue, requireActivity())
                 true
             }
         }
@@ -49,7 +70,6 @@ class Settings: PreferenceFragmentCompat() {
             val entries = fps.map { it.toString() }.toTypedArray()
             pref.entries = entries
             pref.entryValues = entries
-            setFrameRate(pref.entry)
             pref.setOnPreferenceChangeListener { _, newValue ->
                 setFrameRate(newValue)
                 true
@@ -58,7 +78,6 @@ class Settings: PreferenceFragmentCompat() {
 
         // Thresholding.
         findPreference<SwitchPreference>("THRESHOLD_INVERTED")?.let { pref ->
-            setThresholdInverted(pref.isChecked)
             pref.setOnPreferenceChangeListener { _, newValue ->
                 setThresholdInverted(newValue)
                 true
@@ -67,16 +86,6 @@ class Settings: PreferenceFragmentCompat() {
 
     }
 
-    private fun setScreenRotation(entry: Any?) {
-        activity?.requestedOrientation = ORIENTATION_MAP[entry.toString()] ?: ActivityInfo.SCREEN_ORIENTATION_SENSOR
-    }
 
-    private fun setFrameRate(entry: Any?) {
-        entry.toString().toIntOrNull()?.let { MainActivity.setMappingServiceFrameRate(it) }
-    }
-
-    private fun setThresholdInverted(entry: Any?) {
-        ThresholdBitmap.highlightAbove = if(entry is Boolean) entry else entry.toString().toBoolean()
-    }
 
 }

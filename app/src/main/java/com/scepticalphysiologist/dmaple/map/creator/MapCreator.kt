@@ -11,6 +11,7 @@ import mil.nga.tiff.FileDirectory
 import java.lang.IllegalArgumentException
 import java.lang.IndexOutOfBoundsException
 import java.nio.ByteBuffer
+import kotlin.math.abs
 
 
 enum class MapType (
@@ -52,9 +53,9 @@ class MapCreator(val roi: FieldRoi) {
 
     // Coordinate arrays
     // -----------------
+    val analyser: BitmapFieldAnalyser
     val longIdx: IntArray
     val transIdx: IntArray
-
 
     val spine: IntArray
     val upperBound: IntArray
@@ -92,6 +93,12 @@ class MapCreator(val roi: FieldRoi) {
 
         // Make sure the ROI fits in the image frame.
         roi.cropToFrame()
+
+        analyser = BitmapFieldAnalyser()
+        analyser.threshold = roi.threshold.toFloat()
+        analyser.gutIsHorizontal = roi.seedingEdge.isVertical()
+        analyser.gutIsAboveThreshold = !ThresholdBitmap.highlightAbove
+
 
         // Axes longitudinal and transverse to gut.
         val axesLongAndTrans = when(roi.seedingEdge) {
@@ -161,6 +168,9 @@ class MapCreator(val roi: FieldRoi) {
         if(reachedEnd) return
         try {
 
+            analyser.setImage(bitmap)
+            if(nt == 0) seedSpine()
+
             var p = 0
             val j = spine[0]
             for(i in longIdx) {
@@ -177,32 +187,12 @@ class MapCreator(val roi: FieldRoi) {
     }
 
 
-    fun seedSpine(bitmap: Bitmap) {
-
-        //
-        val transSection = transIdx.map{gain * offset + ntscGrey(
-            if(gutIsHorizontal) bitmap.getPixel(longIdx[0], it) else bitmap.getPixel(it, longIdx[0])
-        ) }.map{it > 0}
-
-
+    private fun seedSpine() {
+        analyser.findGut(longIdx[0], Pair(transIdx[0], transIdx[1]), minWidth = 10)?.let { gut ->
+            val j = gut.first + (gut.second - gut.first)
+            for(i in 0 until ns) spine[i] = j
+        }
     }
-
-
-
-
-
-    /*
-    findEdge(
-            bitmap = bitmap,
-            threshold = roi.threshold.toFloat(),
-            findAbove = !ThresholdBitmap.highlightAbove,
-            i = if(gutIsHorizontal) longIdx[0] else transIdx[0],
-            j = if(gutIsHorizontal) transIdx[0] else longIdx[0],
-            scanVertical = gutIsHorizontal,
-            increment = transIdx[1] > transIdx[0]
-        )
-     */
-
 
     // ---------------------------------------------------------------------------------------------
     // Display
