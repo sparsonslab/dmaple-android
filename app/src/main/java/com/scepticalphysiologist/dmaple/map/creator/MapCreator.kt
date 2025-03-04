@@ -46,7 +46,7 @@ class MapCreator(val roi: FieldRoi) {
     // Map calculation
     // ---------------
     private val seedRange: Pair<Int, Int>
-    val analyser: BitmapFieldAnalyser
+    val analyser: BitmapGutSegmentor
 
     // Buffering
     // ---------
@@ -89,8 +89,8 @@ class MapCreator(val roi: FieldRoi) {
         }
         val (longAxis, transAxis) = axesLongAndTrans
 
-        // Analysis object.
-        analyser = BitmapFieldAnalyser()
+        // Gut segmentor.
+        analyser = BitmapGutSegmentor()
         analyser.threshold = roi.threshold.toFloat()
         analyser.gutIsHorizontal = roi.seedingEdge.isVertical()
         analyser.gutIsAboveThreshold = !ThresholdBitmap.highlightAbove
@@ -134,9 +134,9 @@ class MapCreator(val roi: FieldRoi) {
         if(reachedEnd) return
         try {
             // Analyse the bitmap.
-            analyser.setImage(bitmap)
-            if(nt == 0) analyser.seedSpine(seedRange.first, seedRange.second)
-            else analyser.updateSpine()
+            analyser.setFieldImage(bitmap)
+            if(nt == 0) analyser.detectGutAndSeedSpine(seedRange)
+            else analyser.updateBoundaries()
 
             // Update the map values.
             var j = 0

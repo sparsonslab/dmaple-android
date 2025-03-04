@@ -24,8 +24,8 @@ class MapFieldAnalyserTest {
         println(j.toShort())
 
 
-        val analyser = ArrayFieldAnalyser()
-        analyser.setImage(image)
+        val analyser = ArrayGutSegmentor()
+        analyser.setFieldImage(image)
         analyser.threshold = 0.5f
         analyser.gutIsAboveThreshold = true
         analyser.minWidth = 10
@@ -36,13 +36,13 @@ class MapFieldAnalyserTest {
         // Horizontal
         analyser.gutIsHorizontal = true
         analyser.setLongSection(58, 10)
-        analyser.seedSpine(0, 90)
+        analyser.detectGutAndSeedSpine(0, 90)
         println(analyser.spine.toList())
 
         // Vertical
         analyser.gutIsHorizontal = false
         analyser.setLongSection(51, 80)
-        analyser.seedSpine(0, 90)
+        analyser.detectGutAndSeedSpine(0, 90)
         println(analyser.spine.toList())
 
 
