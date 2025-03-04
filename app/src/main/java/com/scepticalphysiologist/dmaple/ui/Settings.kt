@@ -8,7 +8,7 @@ import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.R
-import com.scepticalphysiologist.dmaple.etc.ThresholdBitmap
+import com.scepticalphysiologist.dmaple.ui.camera.ThresholdBitmap
 import com.scepticalphysiologist.dmaple.map.creator.GutSegmentor
 
 class Settings: PreferenceFragmentCompat() {

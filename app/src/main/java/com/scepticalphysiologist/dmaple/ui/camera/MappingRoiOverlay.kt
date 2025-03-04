@@ -18,7 +18,6 @@ import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.etc.Edge
 import com.scepticalphysiologist.dmaple.etc.Frame
 import com.scepticalphysiologist.dmaple.etc.Point
-import com.scepticalphysiologist.dmaple.etc.ThresholdBitmap
 import com.scepticalphysiologist.dmaple.etc.msg.MultipleChoice
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
