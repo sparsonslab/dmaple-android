@@ -1,16 +1,10 @@
 package com.scepticalphysiologist.dmaple.etc
 
 import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Matrix
-import android.graphics.Rect
-import android.graphics.RectF
 import androidx.core.graphics.blue
-import androidx.core.graphics.get
 import androidx.core.graphics.green
 import androidx.core.graphics.red
-import androidx.core.graphics.set
 
 
 /** Transform a bitmap with a matrix. */
