@@ -36,7 +36,6 @@ class Settings: PreferenceFragmentCompat() {
             setSeedMinWidth(prefs.getInt("SEED_MIN_WIDTH", 10))
             setSpineSmooth(prefs.getInt("SPINE_SMOOTH", 1))
             setSpineMaxGap(prefs.getInt("SPINE_MAX_GAP", 2))
-            println("set all!!")
         }
 
         private fun setScreenRotation(entry: Any?, activity: Activity) {
