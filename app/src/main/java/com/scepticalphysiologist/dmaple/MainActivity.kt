@@ -7,13 +7,8 @@ import android.content.ServiceConnection
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.IBinder
-import android.view.Display
-import android.view.WindowManager
 import androidx.camera.core.Preview.SurfaceProvider
 import androidx.camera.view.PreviewView
-import androidx.preference.PreferenceManager
-import com.scepticalphysiologist.dmaple.etc.Frame
-import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import com.scepticalphysiologist.dmaple.ui.Settings
@@ -66,7 +61,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         MappingRecord.loadRecords()
 
         // Set static attributes from preferences
-        Settings.set(this)
+        Settings.setFromPreferences(this)
     }
 
     // ---------------------------------------------------------------------------------------------

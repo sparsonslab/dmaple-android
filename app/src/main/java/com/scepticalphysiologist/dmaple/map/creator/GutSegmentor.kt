@@ -14,6 +14,16 @@ import com.scepticalphysiologist.dmaple.etc.ntscGrey
  */
 abstract class GutSegmentor {
 
+    companion object {
+        /** The minimum pixel width of the gut at its seeding edge. */
+        var minWidth: Int = 10
+        /** The maximum pixel gap (below threshold region) for thresholding. */
+        var maxGap: Int = 2
+        /** The size of the smoothing window applied to the spine (required for radius mapping). */
+        var spineSmooth: Int = 1
+        // todo - implement spine smoothing.
+    }
+
     // The gut and its field
     // ----------------------
     /** The gut is horizontal within the field of view. */
@@ -29,10 +39,7 @@ abstract class GutSegmentor {
     var threshold: Float = 1f
     /** The gut is above threshold (light against a dark background). */
     var gutIsAboveThreshold: Boolean = true
-    /** The minimum pixel width of the gut at its seeding edge. */
-    var minWidth: Int = 1
-    /** The maximum pixel gap (below threshold region) for thresholding. */
-    var maxGap: Int = 0
+
 
     // Boundaries
     // ----------

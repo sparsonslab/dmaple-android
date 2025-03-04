@@ -59,6 +59,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
 
         // Start/stop recording.
         binding.recordButton.setOnClickListener {
+            println("PRESSED!!!")
             model.updateState()
             setUIState()
         }
@@ -105,6 +106,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
 
     /** Set the UI appearance depending on whether maps are being created. */
     private fun setUIState() {
+        println("STATE = ${model.getState()}")
         when(model.getState()) {
             RecState.PRE_RECORD -> {
                 binding.recordButton.setImageResource(R.drawable.play_arrow)

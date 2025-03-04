@@ -94,8 +94,6 @@ class MapCreator(val roi: FieldRoi) {
         analyser.threshold = roi.threshold.toFloat()
         analyser.gutIsHorizontal = roi.seedingEdge.isVertical()
         analyser.gutIsAboveThreshold = !ThresholdBitmap.highlightAbove
-        analyser.minWidth = 10
-        analyser.maxGap = 2
         analyser.setLongSection(longAxis.first.toInt(), longAxis.second.toInt())
         seedRange = Pair(transAxis.first.toInt(), transAxis.second.toInt())
         ns = analyser.longIdx.size

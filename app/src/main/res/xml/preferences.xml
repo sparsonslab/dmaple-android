@@ -23,7 +23,8 @@
         android:summary="The minimum pixel width of the gut for it to be detected."
         app:showSeekBarValue="true"
         app:min="2"
-        android:max="30"/>
+        android:max="30"
+        android:defaultValue="10"/>
 
     <SeekBarPreference
         android:key="SPINE_SMOOTH"
@@ -31,7 +32,8 @@
         android:summary="The pixel size of the kernel used to smooth the spine. Make larger for radius maps."
         app:showSeekBarValue="true"
         app:min="1"
-        android:max="50"/>
+        android:max="50"
+        android:defaultValue="1"/>
 
     <SeekBarPreference
         android:key="SPINE_MAX_GAP"
@@ -39,6 +41,7 @@
         android:summary="The maximum below-threshold pixel gap the spine can jump"
         app:showSeekBarValue="true"
         app:min="0"
-        android:max="10"/>
+        android:max="10"
+        android:defaultValue="2"/>
 
 </androidx.preference.PreferenceScreen>

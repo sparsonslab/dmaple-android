@@ -36,13 +36,13 @@ class MapFieldAnalyserTest {
         // Horizontal
         analyser.gutIsHorizontal = true
         analyser.setLongSection(58, 10)
-        analyser.detectGutAndSeedSpine(0, 90)
+        analyser.detectGutAndSeedSpine(Pair(0, 90))
         println(analyser.spine.toList())
 
         // Vertical
         analyser.gutIsHorizontal = false
         analyser.setLongSection(51, 80)
-        analyser.detectGutAndSeedSpine(0, 90)
+        analyser.detectGutAndSeedSpine(Pair(0, 90))
         println(analyser.spine.toList())
 
 
