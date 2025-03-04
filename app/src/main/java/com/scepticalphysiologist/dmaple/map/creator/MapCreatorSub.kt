@@ -3,50 +3,33 @@ package com.scepticalphysiologist.dmaple.map.creator
 import android.graphics.Bitmap
 import android.graphics.Rect
 import android.util.Size
-import com.scepticalphysiologist.dmaple.etc.Edge
-import com.scepticalphysiologist.dmaple.ui.camera.ThresholdBitmap
+import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import mil.nga.tiff.FileDirectory
 import java.lang.IllegalArgumentException
 import java.lang.IndexOutOfBoundsException
 import java.nio.ByteBuffer
-
-
-enum class MapType (
-    val title: String,
-    val nMaps: Int,
-){
-    DIAMETER(
-        title = "diameter",
-        nMaps = 1,
-    ),
-    RADIUS(
-        title = "radius",
-        nMaps = 2
-    ),
-    SPINE(
-        title = "spine profile",
-        nMaps = 1
-    );
-}
+import kotlin.math.abs
+import kotlin.math.ceil
 
 
 /** Handles the creation of spatio-temporal maps for a single ROI. */
-class MapCreator(val roi: FieldRoi) {
+class MapCreatorSub(val roi: FieldRoi) {
 
     /** The number of maps produced by the creator. */
     val nMaps: Int = roi.maps.sumOf { it.nMaps }
 
     // Map geometry
     // ------------
+    /** The map seeding edge orientation within the input images. */
+    private val isVertical: Boolean = roi.seedingEdge.isVertical()
+    /** Long-axis coordinates of the seeding edge .*/
+    private val pE: Pair<Int, Int>
+    /** Short-axis coordinate of the seeding edge. */
+    private val pL: Int
     /** Sample size of map - space and time. */
     private val ns: Int
     private var nt: Int = 0
-
-    // Map calculation
-    // ---------------
-    private val seedRange: Pair<Int, Int>
-    val analyser: BitmapGutSegmentor
 
     // Buffering
     // ---------
@@ -76,27 +59,15 @@ class MapCreator(val roi: FieldRoi) {
     // ---------------------------------------------------------------------------------------------
 
     init {
-
-        // Make sure the ROI fits in the image frame.
-        roi.cropToFrame()
-
-        // Axes longitudinal and transverse to gut.
-        val axesLongAndTrans = when(roi.seedingEdge) {
-            Edge.LEFT -> Pair(Pair(roi.left, roi.right), Pair(roi.top, roi.bottom))
-            Edge.RIGHT -> Pair(Pair(roi.right, roi.left), Pair(roi.top, roi.bottom))
-            Edge.TOP -> Pair(Pair(roi.top, roi.bottom), Pair(roi.left, roi.right))
-            Edge.BOTTOM -> Pair(Pair(roi.bottom, roi.top), Pair(roi.left, roi.right))
+        val edge = Point.ofRectEdge(roi, roi.seedingEdge)
+        if(isVertical) {
+            pE = orderedY(edge)
+            pL = edge.first.x.toInt()
+        } else {
+            pE = orderedX(edge)
+            pL = edge.first.y.toInt()
         }
-        val (longAxis, transAxis) = axesLongAndTrans
-
-        // Gut segmentor.
-        analyser = BitmapGutSegmentor()
-        analyser.threshold = roi.threshold.toFloat()
-        analyser.gutIsHorizontal = roi.seedingEdge.isVertical()
-        analyser.gutIsAboveThreshold = !ThresholdBitmap.highlightAbove
-        analyser.setLongSection(longAxis.first.toInt(), longAxis.second.toInt())
-        seedRange = Pair(transAxis.first.toInt(), transAxis.second.toInt())
-        ns = analyser.longIdx.size
+        ns = abs(pE.first - pE.second)
     }
 
     fun provideBuffers(buffers: List<ByteBuffer>): Boolean {
@@ -131,23 +102,13 @@ class MapCreator(val roi: FieldRoi) {
     fun updateWithCameraBitmap(bitmap: Bitmap) {
         if(reachedEnd) return
         try {
-            // Analyse the bitmap.
-            analyser.setFieldImage(bitmap)
-            if(nt == 0) analyser.detectGutAndSeedSpine(seedRange)
-            else analyser.updateBoundaries()
-
-            // Update the map values.
-            var j = 0
             var p = 0
-            for(i in 0 until ns) {
-                diameterMap?.add(analyser.getDiameter(i).toShort())
-                radiusMapLeft?.add(analyser.getLowerRadius(i).toShort())
-                radiusMapRight?.add(analyser.getUpperRadius(i).toShort())
-                spineMap?.let { map ->
-                    j = analyser.getSpine(i)
-                    p = if(analyser.gutIsHorizontal) bitmap.getPixel(i, j) else bitmap.getPixel(j, i)
-                    map.add(p)
-                }
+            for(k in pE.first until pE.second) {
+                p = if(isVertical) bitmap.getPixel(pL, k) else bitmap.getPixel(k, pL)
+                diameterMap?.addNTSCGrey(p)
+                radiusMapLeft?.addNTSCGrey(p)
+                radiusMapRight?.addNTSCGrey(p)
+                spineMap?.add(p)
             }
             nt += 1
         } catch (_: java.lang.IndexOutOfBoundsException) { reachedEnd = true }
@@ -214,4 +175,21 @@ class MapCreator(val roi: FieldRoi) {
         }
     }
 
+}
+
+
+fun rangeSize(range: Int, step: Int): Int {
+    return ceil(range.toFloat() / step.toFloat()).toInt()
+}
+
+fun orderedX(pp: Pair<Point, Point>): Pair<Int, Int> {
+    val p0 = pp.first.x.toInt()
+    val p1 = pp.second.x.toInt()
+    return Pair(minOf(p0, p1), maxOf(p0, p1))
+}
+
+fun orderedY(pp: Pair<Point, Point>): Pair<Int, Int> {
+    val p0 = pp.first.y.toInt()
+    val p1 = pp.second.y.toInt()
+    return Pair(minOf(p0, p1), maxOf(p0, p1))
 }

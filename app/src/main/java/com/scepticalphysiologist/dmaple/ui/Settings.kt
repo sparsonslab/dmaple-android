@@ -1,13 +1,15 @@
 package com.scepticalphysiologist.dmaple.ui
 
+import android.app.Activity
 import android.content.pm.ActivityInfo
 import android.os.Bundle
 import androidx.preference.DropDownPreference
 import androidx.preference.PreferenceFragmentCompat
-import androidx.preference.SwitchPreference
+import androidx.preference.PreferenceManager
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.R
-import com.scepticalphysiologist.dmaple.etc.ThresholdBitmap
+import com.scepticalphysiologist.dmaple.ui.camera.ThresholdBitmap
+import com.scepticalphysiologist.dmaple.map.creator.GutSegmentor
 
 class Settings: PreferenceFragmentCompat() {
 
@@ -26,57 +28,61 @@ class Settings: PreferenceFragmentCompat() {
             "portrait rev" to ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT
         )
 
+        fun setFromPreferences(activity: Activity){
+            val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
+            setScreenRotation(prefs.getString("SCREEN_ORIENTATION", "auto"), activity)
+            setFrameRate(prefs.getString("FRAME_RATE_FPS", "30"))
+            setThresholdInverted(prefs.getBoolean("THRESHOLD_INVERTED", false))
+            setSeedMinWidth(prefs.getInt("SEED_MIN_WIDTH", 10))
+            setSpineSmooth(prefs.getInt("SPINE_SMOOTH", 1))
+            setSpineMaxGap(prefs.getInt("SPINE_MAX_GAP", 2))
+        }
+
+        private fun setScreenRotation(entry: Any?, activity: Activity) {
+            activity.requestedOrientation = ORIENTATION_MAP[entry.toString()] ?: ActivityInfo.SCREEN_ORIENTATION_SENSOR
+        }
+
+        private fun setFrameRate(entry: Any?) {
+            entry.toString().toIntOrNull()?.let { MainActivity.setMappingServiceFrameRate(it) }
+        }
+
+        private fun setThresholdInverted(entry: Any?) {
+            ThresholdBitmap.highlightAbove = if(entry is Boolean) entry else entry.toString().toBoolean()
+        }
+
+        private fun setSeedMinWidth(entry: Any?) {
+            entry.toString().toIntOrNull()?.let { GutSegmentor.minWidth = it }
+        }
+
+        private fun setSpineSmooth(entry: Any?) {
+            entry.toString().toIntOrNull()?.let { GutSegmentor.spineSmooth = it }
+        }
+
+        private fun setSpineMaxGap(entry: Any?) {
+            entry.toString().toIntOrNull()?.let { GutSegmentor.maxGap = it }
+        }
+
     }
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.preferences, rootKey)
-
-        // Screen orientation.
+        // Fill drop-down options.
         findPreference<DropDownPreference>("SCREEN_ORIENTATION")?.let { pref ->
             val entries = ORIENTATION_MAP.keys.toTypedArray()
             pref.entries = entries
             pref.entryValues = entries
-            setScreenRotation(pref.entry)
-            pref.setOnPreferenceChangeListener { _, newValue ->
-                setScreenRotation(newValue)
-                true
-            }
         }
-
-        // Frame rate.
         findPreference<DropDownPreference>("FRAME_RATE_FPS")?.let { pref ->
             val fps = MainActivity.mapService?.getAvailableFps() ?: listOf(30)
             val entries = fps.map { it.toString() }.toTypedArray()
             pref.entries = entries
             pref.entryValues = entries
-            setFrameRate(pref.entry)
-            pref.setOnPreferenceChangeListener { _, newValue ->
-                setFrameRate(newValue)
-                true
-            }
         }
-
-        // Thresholding.
-        findPreference<SwitchPreference>("THRESHOLD_INVERTED")?.let { pref ->
-            setThresholdInverted(pref.isChecked)
-            pref.setOnPreferenceChangeListener { _, newValue ->
-                setThresholdInverted(newValue)
-                true
-            }
-        }
-
     }
 
-    private fun setScreenRotation(entry: Any?) {
-        activity?.requestedOrientation = ORIENTATION_MAP[entry.toString()] ?: ActivityInfo.SCREEN_ORIENTATION_SENSOR
-    }
-
-    private fun setFrameRate(entry: Any?) {
-        entry.toString().toIntOrNull()?.let { MainActivity.setMappingServiceFrameRate(it) }
-    }
-
-    private fun setThresholdInverted(entry: Any?) {
-        ThresholdBitmap.highlightAbove = if(entry is Boolean) entry else entry.toString().toBoolean()
+    override fun onDestroy() {
+        super.onDestroy()
+        setFromPreferences(requireActivity())
     }
 
 }

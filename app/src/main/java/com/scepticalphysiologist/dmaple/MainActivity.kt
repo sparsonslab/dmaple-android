@@ -9,9 +9,9 @@ import android.os.Bundle
 import android.os.IBinder
 import androidx.camera.core.Preview.SurfaceProvider
 import androidx.camera.view.PreviewView
-import androidx.preference.PreferenceManager
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
+import com.scepticalphysiologist.dmaple.ui.Settings
 import java.io.File
 
 
@@ -49,6 +49,8 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        // Storage
         storageDirectory = applicationContext.getExternalFilesDir(null)
 
         // Connect the mapping service and initiate its buffers.
@@ -57,6 +59,9 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
 
         // Load records
         MappingRecord.loadRecords()
+
+        // Set static attributes from preferences
+        Settings.setFromPreferences(this)
     }
 
     // ---------------------------------------------------------------------------------------------

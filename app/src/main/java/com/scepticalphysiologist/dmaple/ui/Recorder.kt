@@ -14,6 +14,7 @@ import com.scepticalphysiologist.dmaple.SettingsActivity
 import com.scepticalphysiologist.dmaple.databinding.RecorderBinding
 import com.scepticalphysiologist.dmaple.etc.PermissionSets
 import com.scepticalphysiologist.dmaple.etc.Point
+import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 
 
 class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
@@ -58,6 +59,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
 
         // Start/stop recording.
         binding.recordButton.setOnClickListener {
+            println("PRESSED!!!")
             model.updateState()
             setUIState()
         }
@@ -81,7 +83,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         binding.cameraAndRoi.roiHasBeenSelected().observe(viewLifecycleOwner) { selectedRoiUID ->
             if(stateShowsMap()){
                 model.updateCurrentlyShownMap(selectedRoiUID)
-                binding.maps.updateCreator(model.getCurrentlyShownMap())
+                showMapAndCreator(model.getCurrentlyShownMap())
             }
         }
 
@@ -104,10 +106,12 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
 
     /** Set the UI appearance depending on whether maps are being created. */
     private fun setUIState() {
+        println("STATE = ${model.getState()}")
         when(model.getState()) {
             RecState.PRE_RECORD -> {
                 binding.recordButton.setImageResource(R.drawable.play_arrow)
                 binding.maps.stop()
+                binding.cameraAndRoi.startSpine(false)
                 binding.cameraAndRoi.freezeField(null)
                 binding.toRecordsButton.visibility = View.VISIBLE
                 binding.maps.reset()
@@ -118,18 +122,21 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
             RecState.RECORDING -> {
                 binding.recordButton.setImageResource(R.drawable.stop_5f6368)
                 binding.maps.start()
+                binding.cameraAndRoi.startSpine(true)
                 binding.cameraAndRoi.freezeField(null)
                 setMapView()
             }
             RecState.POST_RECORD -> {
                 binding.recordButton.setImageResource(R.drawable.eject_arrow)
                 binding.maps.stop()
+                binding.cameraAndRoi.startSpine(false)
                 binding.cameraAndRoi.freezeField(model.getLastFieldImage())
                 setMapView()
             }
             RecState.OLD_RECORD -> {
                 binding.recordButton.setImageResource(R.drawable.eject_arrow)
                 binding.maps.stop()
+                binding.cameraAndRoi.startSpine(false)
                 binding.cameraAndRoi.freezeField(model.getLastFieldImage())
                 setMapView()
             }
@@ -142,7 +149,13 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         binding.cameraAndRoi.allowEditing(false)
         val extent = Point.ofViewExtent(binding.root) * 0.5f
         binding.cameraAndRoi.resize(extent.x.toInt(), extent.y.toInt())
-        binding.maps.updateCreator(model.getCurrentlyShownMap())
+        showMapAndCreator(model.getCurrentlyShownMap())
+    }
+
+    /** Set the creator and map being shown in the map and camera field views. */
+    private fun showMapAndCreator(creatorAndMapIdx: Pair<MapCreator?, Int>) {
+        binding.maps.updateCreator(creatorAndMapIdx)
+        binding.cameraAndRoi.updateCreator(creatorAndMapIdx)
     }
 
     /** If the fragment showing maps? */
