@@ -249,7 +249,6 @@ fun setResolution(
     tiff.setStringEntryValue(FieldTagType.ResolutionUnit, xr.second)
     tiff.setStringEntryValue(FieldTagType.XResolution, xr.first.toString())
     tiff.setStringEntryValue(FieldTagType.YResolution, yr.first.toString())
-    println("set res to $xr, $yr")
 }
 
 /** Get the x and y resolutions of a tiff directory. */
