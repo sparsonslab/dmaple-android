@@ -13,6 +13,7 @@ import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
+import com.scepticalphysiologist.dmaple.ui.camera.RoisAndRuler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -51,9 +52,13 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
     /** Get the model's [state]. */
     fun getState(): RecState { return state }
 
-    /** Update the model [state] when (e.g.) a button is pressed. */
-    fun updateState(){
+    /** Update the model [state] when (e.g.) a button is pressed.
+     *
+     * @param obj The current ROIs and ruler.
+     * */
+    fun updateState(field: RoisAndRuler){
         if(mapper == null) return
+
         if((state == RecState.RECORDING) || mapper!!.isCreatingMaps()) {
             messages.postValue(mapper!!.startStop())
             if(!mapper!!.isCreatingMaps()) {
@@ -62,6 +67,7 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
             }
         }
         else if(state == RecState.PRE_RECORD) {
+            mapper!!.setRoisAndRuler(field)
             messages.postValue(mapper!!.startStop())
             if(mapper!!.isCreatingMaps()) {
                 startTimer()
@@ -90,11 +96,10 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
     /** Provide the camera preview (surface provider) for the mapping service. */
     fun setCameraPreview(preview: PreviewView) { MainActivity.setMappingServiceCameraPreview(preview) }
 
-    /** Set the ROIs used for mapping. */
-    fun setMappingRois(viewRois: List<FieldRoi>) { mapper?.setRois(viewRois) }
-
     /** Get the ROIs used for mapping. */
-    fun getMappingRois(): List<FieldRoi> { return mapper?.getRois() ?: listOf() }
+    fun getRoisAndRuler(): RoisAndRuler {
+        return mapper?.getRoisAndRuler() ?: RoisAndRuler(listOf(), null)
+    }
 
     /** Set the exposure level. */
     fun setExposure(fraction: Float) { mapper?.setExposure(fraction) }

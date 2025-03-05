@@ -3,7 +3,6 @@ package com.scepticalphysiologist.dmaple.ui.camera
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.drawable.BitmapDrawable
@@ -23,6 +22,9 @@ import com.scepticalphysiologist.dmaple.map.field.FieldImage
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.creator.MapType
 import com.scepticalphysiologist.dmaple.map.field.FieldRuler
+
+/** A camera field's set of mapping ROIs and measurement ruler. */
+data class RoisAndRuler(val rois: List<FieldRoi>, val ruler: FieldRuler?)
 
 /** Gesture states for [MappingRoiOverlay]. */
 enum class GestureState {
@@ -79,8 +81,6 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     val savedRois = mutableListOf<FieldRoi>()
     /** The paint for the saved ROIs. */
     private val savedRoiPaint = Paint()
-    /** Indicates (if true) that the saved ROIs have changed (added to or subtracted from). */
-    val savedRoiChange = MutableLiveData<Boolean>(false)
 
     // Ruler
     // -----
@@ -154,15 +154,15 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
         invalidate()
     }
 
-    /** Set the saved ROIs. */
-    fun setSavedRois(rois: List<FieldRoi>){
-        savedRois.clear()
-        for(roi in rois) savedRois.add(roi.copy())
-        invalidate()
-    }
+    /** Get the saved ROIs and ruler. */
+    fun getRoisAndRuler(): RoisAndRuler { return RoisAndRuler(savedRois, ruler) }
 
-    fun getPixelResolution(): Pair<Float, String> {
-        return ruler?.getResolution() ?: Pair(1f, "")
+    /** Set the saved ROIs and ruler. */
+    fun setRoisAndRuler(field: RoisAndRuler){
+        savedRois.clear()
+        for(roi in field.rois) savedRois.add(roi.copy())
+        field.ruler?.let { ruler = it }
+        invalidate()
     }
 
     /** Change the active ROI or set it to null (no active ROI). */
@@ -283,7 +283,6 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
         activeRoi?.let {
             it.cropToFrame()
             savedRois.add(it)
-            savedRoiChange.postValue(true)
             clearActiveRoi()
         }
     }
@@ -315,7 +314,6 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
                 // If editable - change the saved ROI to the active
                 if(editable) {
                     changeActiveRoi(savedRois.removeAt(i))
-                    savedRoiChange.postValue(true)
                     drag = touchPoint
                     invalidate()
                 }

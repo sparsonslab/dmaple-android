@@ -102,11 +102,9 @@ class MappingFieldOfView(context: Context, attributeSet: AttributeSet?):
     // Public wrappers around child views
     // ---------------------------------------------------------------------------------------------
 
-    fun getSavedRois(): List<FieldRoi> { return roiOverlay.savedRois }
+    fun getRoisAndRuler(): RoisAndRuler { return roiOverlay.getRoisAndRuler() }
 
-    fun setSavedRois(rois: List<FieldRoi>) { roiOverlay.setSavedRois(rois) }
-
-    fun getPixelResolution(): Pair<Float, String> { return roiOverlay.getPixelResolution() }
+    fun setRoisAndRuler(field: RoisAndRuler) { roiOverlay.setRoisAndRuler(field) }
 
     /** Show a fixed image of a mapping field rather than the camera feed.
      *
@@ -117,8 +115,6 @@ class MappingFieldOfView(context: Context, attributeSet: AttributeSet?):
     }
 
     fun roiHasBeenSelected(): MutableLiveData<String> { return roiOverlay.selectedRoi }
-
-    fun savedRoisHaveChanged(): MutableLiveData<Boolean> { return roiOverlay.savedRoiChange }
 
     fun allowEditing(allow: Boolean = true) {
         exposureSlider.visibility = if(allow) View.VISIBLE else View.INVISIBLE

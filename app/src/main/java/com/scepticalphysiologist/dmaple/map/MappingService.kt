@@ -39,7 +39,9 @@ import com.scepticalphysiologist.dmaple.etc.strftime
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
+import com.scepticalphysiologist.dmaple.map.field.FieldRuler
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
+import com.scepticalphysiologist.dmaple.ui.camera.RoisAndRuler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -179,6 +181,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     // ---------------
     /** The mapping ROIs in their last view frame. */
     private var rois = mutableListOf<FieldRoi>()
+    /** The measurement ruler in its last view frame. */
+    private var ruler: FieldRuler? = null
     /** Map creators. */
     private var creators = mutableListOf<MapCreator>()
     /** The currently shown map: its [creators] index and map index within that creator. */
@@ -334,14 +338,15 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         return listOf(30)
     }
 
-    /** Set the ROIs. e.g. when ROIs are updated in a view. */
-    fun setRois(viewRois: List<FieldRoi>) {
+    /** Set the field's ROIs and ruler. */
+    fun setRoisAndRuler(field: RoisAndRuler) {
         rois.clear()
-        for(roi in viewRois) rois.add(roi.copy())
+        for(roi in field.rois) rois.add(roi.copy())
+        ruler = field.ruler
     }
 
-    /** Get the ROIs. e.g. for when a view of the ROIs needs to be reconstructed. */
-    fun getRois(): List<FieldRoi> { return rois }
+    /** Get the field's ROIs and ruler. e.g. for when a view of the field needs to be reconstructed. */
+    fun getRoisAndRuler(): RoisAndRuler { return RoisAndRuler(rois, ruler) }
 
     /** Start or stop map creation, depending on the current creation state. */
     fun startStop(): Warnings { return if(creating) stop() else start() }
@@ -378,7 +383,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
      * */
     fun loadRecord(record: MappingRecord): Boolean {
         if(creating) return false
-        setRois(record.creators.map { it.roi })
+        // todo - read ruler from record???
+        setRoisAndRuler(RoisAndRuler(record.creators.map { it.roi }, null))
         clearCreators()
         record.loadMapTiffs(MappingService::getFreeBuffer)
         creators.addAll(record.creators)

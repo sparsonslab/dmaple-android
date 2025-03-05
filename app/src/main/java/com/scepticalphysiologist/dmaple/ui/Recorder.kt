@@ -44,14 +44,8 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         binding.root.post {
             model.setCameraPreview(binding.cameraAndRoi.getCameraPreview())
             binding.cameraAndRoi.setExposureSlider(0.5f)
-            binding.cameraAndRoi.setSavedRois(model.getMappingRois())
+            binding.cameraAndRoi.setRoisAndRuler(model.getRoisAndRuler())
             setUIState()
-        }
-
-        // Whenever the saved ROIs have changed in the view, transfer these to the mapping
-        // service (via the view model) so they are persisted.
-        binding.cameraAndRoi.savedRoisHaveChanged().observe(viewLifecycleOwner) { haveChanged ->
-            if(haveChanged) model.setMappingRois(binding.cameraAndRoi.getSavedRois())
         }
 
         // Exposure control.
@@ -60,8 +54,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         // Start/stop recording.
         binding.recordButton.setOnClickListener {
             println("PRESSED!!!")
-            //
-            model.updateState()
+            model.updateState(binding.cameraAndRoi.getRoisAndRuler())
             setUIState()
         }
 
