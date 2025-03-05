@@ -20,7 +20,7 @@ class FieldRuler(
     var end: Float = 0.1f,
     /** The length of the ruler in the measurement units. */
     var length: Float = 1f,
-    /** The units of the ruler. */
+    /** The unit of the ruler. */
     var unit: String = "cm"
 ) {
 
