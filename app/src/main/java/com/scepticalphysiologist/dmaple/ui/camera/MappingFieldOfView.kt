@@ -106,6 +106,8 @@ class MappingFieldOfView(context: Context, attributeSet: AttributeSet?):
 
     fun setSavedRois(rois: List<FieldRoi>) { roiOverlay.setSavedRois(rois) }
 
+    fun getPixelResolution(): Pair<Float, String> { return roiOverlay.getPixelResolution() }
+
     /** Show a fixed image of a mapping field rather than the camera feed.
      *
      * @param field The field image to show or null to show the camera feed.

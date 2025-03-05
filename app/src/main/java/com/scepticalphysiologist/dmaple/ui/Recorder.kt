@@ -60,6 +60,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         // Start/stop recording.
         binding.recordButton.setOnClickListener {
             println("PRESSED!!!")
+            //
             model.updateState()
             setUIState()
         }

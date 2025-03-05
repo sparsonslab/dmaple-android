@@ -161,6 +161,10 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
         invalidate()
     }
 
+    fun getPixelResolution(): Pair<Float, String> {
+        return ruler?.getResolution() ?: Pair(1f, "")
+    }
+
     /** Change the active ROI or set it to null (no active ROI). */
     private fun changeActiveRoi(roi: FieldRoi?){
         activeRoi = roi

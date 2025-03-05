@@ -36,3 +36,6 @@ class InputRequired(
     override fun clickReturn(): String { return input?.text.toString() }
 
 }
+
+
+

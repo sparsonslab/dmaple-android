@@ -17,11 +17,17 @@ class FieldRuler(
     var p0: Point = Point(),
     /** The end point of the ruler in pixel coordinates. */
     var p1: Point = Point(1f, 1f),
-    /** The length of the ruler in the measurement units. */
-    var length: Float = 1f,
     /** The length of the end-caps of the ruler in pixels. */
     var end: Float = 0.1f
 ) {
+
+    /** The length of the ruler in the measurement units. */
+    private var length: Float = 1f
+
+    private var unit: String = "cm"
+
+    /** Get the resolution (pixels/unit) and unit. */
+    fun getResolution(): Pair<Float, String> { return Pair((p1 - p0).l2() / length, unit) }
 
     fun draw(canvas: Canvas, paint: Paint) {
         canvas.drawLine(p0.x, p0.y, p1.x, p1.y, paint)
