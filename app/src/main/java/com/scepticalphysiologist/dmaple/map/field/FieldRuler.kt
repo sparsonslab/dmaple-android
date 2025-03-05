@@ -3,10 +3,9 @@ package com.scepticalphysiologist.dmaple.map.field
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
-import android.text.InputType
 import com.scepticalphysiologist.dmaple.etc.Frame
 import com.scepticalphysiologist.dmaple.etc.Point
-import com.scepticalphysiologist.dmaple.etc.msg.InputRequired
+import com.scepticalphysiologist.dmaple.etc.msg.QuantityDialog
 import kotlin.math.PI
 
 /** A ruler shown on a view used for calibration between pixel units and some measurement unit. */
@@ -50,19 +49,20 @@ class FieldRuler(
     }
 
     fun editLength(context: Context) {
-        val dialog = InputRequired(
-            title = "Ruler Length",
-            message = "Set the length of the ruler in real units (cm, mm, etc.).",
-            initialValue = length.toString(),
-            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+        val dialog = QuantityDialog(
+            title = "Ruler length",
+            message = "",
+            initial = Pair(length, unit),
+            unitSelection = listOf("mm", "cm", "inch")
         )
         dialog.positive = Pair("Set", this::newLength)
         dialog.negative = Pair("Cancel", null)
         dialog.show(context)
     }
 
-    fun newLength(input: String) {
-        length = input.toFloat()
+    fun newLength(input: Pair<Float, String>) {
+        length = input.first
+        unit = input.second
     }
 
 }
