@@ -246,6 +246,7 @@ fun setResolution(
 ) {
     // todo - these are being written to tiff file, but are not picked up by ImageJ
     //    to set it's pixel width/height fields. How is ImageJ using saving this info?
+    //    Also there is no tiff field for "pixel depth" i.e. short to diameter.
     tiff.setStringEntryValue(FieldTagType.ResolutionUnit, xr.second)
     tiff.setStringEntryValue(FieldTagType.XResolution, xr.first.toString())
     tiff.setStringEntryValue(FieldTagType.YResolution, yr.first.toString())
