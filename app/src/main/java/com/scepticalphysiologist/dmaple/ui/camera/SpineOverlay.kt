@@ -89,7 +89,7 @@ class SpineOverlay(context: Context, attributeSet: AttributeSet?): View(context,
 
     /** Update the spine shown. */
     private fun update() {
-        creator?.analyser?.let { analyser ->
+        creator?.segmentor?.let { analyser ->
             // Plot every 10th point along the spine.
             spinePoints = Point.toFloatArray(analyser.spine.indices.filter{it % 10 == 0}.map{ k ->
                 val i = analyser.longIdx[k].toFloat()

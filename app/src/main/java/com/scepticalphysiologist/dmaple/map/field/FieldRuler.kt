@@ -18,13 +18,12 @@ class FieldRuler(
     /** The end point of the ruler in pixel coordinates. */
     var p1: Point = Point(1f, 1f),
     /** The length of the end-caps of the ruler in pixels. */
-    var end: Float = 0.1f
-) {
-
+    var end: Float = 0.1f,
     /** The length of the ruler in the measurement units. */
-    private var length: Float = 1f
-
-    private var unit: String = "cm"
+    var length: Float = 1f,
+    /** The units of the ruler. */
+    var unit: String = "cm"
+) {
 
     /** Get the resolution (pixels/unit) and unit. */
     fun getResolution(): Pair<Float, String> { return Pair((p1 - p0).l2() / length, unit) }

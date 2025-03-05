@@ -383,7 +383,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
      * */
     fun loadRecord(record: MappingRecord): Boolean {
         if(creating) return false
-        // todo - read ruler from record???
         setRoisAndRuler(RoisAndRuler(record.creators.map { it.roi }, null))
         clearCreators()
         record.loadMapTiffs(MappingService::getFreeBuffer)
@@ -442,6 +441,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         }
         for(roi in rois) {
             val creator = MapCreator(roi.inNewFrame(imageFrame))
+            ruler?.let{ creator.setSpatialResolution(it) }
             val buffers = (0 until creator.nMaps).map{getFreeBuffer()}.filterNotNull()
             if(creator.provideBuffers(buffers)) creators.add(creator)
         }

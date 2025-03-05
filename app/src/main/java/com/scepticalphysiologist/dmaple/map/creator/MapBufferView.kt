@@ -36,10 +36,16 @@ abstract class MapBufferView<T : Number>(
      * @param y The yth time pixel up to which to use. Null to use the current position.
      * @return A TIFF slice with the map's data.
      * */
-    fun toTiffDirectory(identifier: String = "", y: Int? = null): FileDirectory {
+    fun toTiffDirectory(
+        identifier: String = "",
+        y: Int? = null,
+    ): FileDirectory {
+
+        // y (row/temporal) position
         val currentTime = floorDiv(buffer.position(), nx)
         val ny = minOf(y ?: currentTime, currentTime)
 
+        // Basic image properties
         val dir = FileDirectory()
         dir.setImageWidth(nx)
         dir.setImageHeight(ny)
@@ -47,12 +53,12 @@ abstract class MapBufferView<T : Number>(
         dir.setBitsPerSample(bitsPerChannel)
         dir.setStringEntryValue(FieldTagType.ImageDescription, identifier)
 
+        // Write in map data.
         val raster = Rasters(nx, ny, bitsPerChannel.size, fieldType)
         dir.compression = TiffConstants.COMPRESSION_NO
         dir.planarConfiguration = TiffConstants.PLANAR_CONFIGURATION_CHUNKY
         dir.setRowsPerStrip(raster.calculateRowsPerStrip(dir.planarConfiguration))
         dir.writeRasters = raster
-
         // todo - set raster from buffer directly using raster.setinterleaved method. Tried this
         //    but not working???
         try {
@@ -69,12 +75,7 @@ abstract class MapBufferView<T : Number>(
      * @param dirs A list of slices/directories that may contain the map's slice.
      * @return The number of time samples in the map or null if the map's slice could not be found.
      * */
-    fun fromTiffDirectory(identifier: String = "", dirs: List<FileDirectory>): Int? {
-        // Find the directory matching the description.
-        val dir = dirs.filter{
-            it.getStringEntryValue(FieldTagType.ImageDescription) == identifier
-        }.firstOrNull() ?: return null
-
+    fun fromTiffDirectory(dir: FileDirectory): Int {
         // Read from the raster into the buffer.
         val raster = dir.readRasters()
         try {

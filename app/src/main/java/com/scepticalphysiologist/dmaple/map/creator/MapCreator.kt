@@ -6,30 +6,25 @@ import android.util.Size
 import com.scepticalphysiologist.dmaple.etc.Edge
 import com.scepticalphysiologist.dmaple.ui.camera.ThresholdBitmap
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
+import com.scepticalphysiologist.dmaple.map.field.FieldRuler
+import mil.nga.tiff.FieldTagType
 import mil.nga.tiff.FileDirectory
 import java.lang.IllegalArgumentException
 import java.lang.IndexOutOfBoundsException
 import java.nio.ByteBuffer
+import kotlin.math.ceil
 
-
+/** The types of maps that be created. */
 enum class MapType (
+    /** The title of the map. */
     val title: String,
+    /** The number of maps created for the type. */
     val nMaps: Int,
 ){
-    DIAMETER(
-        title = "diameter",
-        nMaps = 1,
-    ),
-    RADIUS(
-        title = "radius",
-        nMaps = 2
-    ),
-    SPINE(
-        title = "spine profile",
-        nMaps = 1
-    );
+    DIAMETER(title = "diameter", nMaps = 1,),
+    RADIUS(title = "radius", nMaps = 2),
+    SPINE(title = "spine profile", nMaps = 1);
 }
-
 
 /** Handles the creation of spatio-temporal maps for a single ROI. */
 class MapCreator(val roi: FieldRoi) {
@@ -39,14 +34,21 @@ class MapCreator(val roi: FieldRoi) {
 
     // Map geometry
     // ------------
-    /** Sample size of map - space and time. */
+    /** The number of spatial pixels. */
     private val ns: Int
+    /** The number of temporal samples. */
     private var nt: Int = 0
+    /** The spatial resolution (pixels/unit) and unit. */
+    private var spatialRes = Pair(1f, "")
+    /** The temporal resolution (pixels/unit) and unit. */
+    private var temporalRes = Pair(1f, "")
 
     // Map calculation
     // ---------------
+    /** The segmentor used for calculating the map values. */
+    val segmentor: BitmapGutSegmentor
+    /** The range of pixels along the seeding edge, used to detect the gut. */
     private val seedRange: Pair<Int, Int>
-    val analyser: BitmapGutSegmentor
 
     // Buffering
     // ---------
@@ -76,7 +78,6 @@ class MapCreator(val roi: FieldRoi) {
     // ---------------------------------------------------------------------------------------------
 
     init {
-
         // Make sure the ROI fits in the image frame.
         roi.cropToFrame()
 
@@ -90,13 +91,13 @@ class MapCreator(val roi: FieldRoi) {
         val (longAxis, transAxis) = axesLongAndTrans
 
         // Gut segmentor.
-        analyser = BitmapGutSegmentor()
-        analyser.threshold = roi.threshold.toFloat()
-        analyser.gutIsHorizontal = roi.seedingEdge.isVertical()
-        analyser.gutIsAboveThreshold = !ThresholdBitmap.highlightAbove
-        analyser.setLongSection(longAxis.first.toInt(), longAxis.second.toInt())
+        segmentor = BitmapGutSegmentor()
+        segmentor.threshold = roi.threshold.toFloat()
+        segmentor.gutIsHorizontal = roi.seedingEdge.isVertical()
+        segmentor.gutIsAboveThreshold = !ThresholdBitmap.highlightAbove
+        segmentor.setLongSection(longAxis.first.toInt(), longAxis.second.toInt())
         seedRange = Pair(transAxis.first.toInt(), transAxis.second.toInt())
-        ns = analyser.longIdx.size
+        ns = segmentor.longIdx.size
     }
 
     fun provideBuffers(buffers: List<ByteBuffer>): Boolean {
@@ -120,6 +121,8 @@ class MapCreator(val roi: FieldRoi) {
         return true
     }
 
+    fun setSpatialResolution(ruler: FieldRuler) { spatialRes = ruler.getResolution() }
+
     /** The current sample width (space) and height (time) of the map. */
     fun spaceTimeSampleSize(): Size { return Size(ns, nt) }
 
@@ -132,20 +135,20 @@ class MapCreator(val roi: FieldRoi) {
         if(reachedEnd) return
         try {
             // Analyse the bitmap.
-            analyser.setFieldImage(bitmap)
-            if(nt == 0) analyser.detectGutAndSeedSpine(seedRange)
-            else analyser.updateBoundaries()
+            segmentor.setFieldImage(bitmap)
+            if(nt == 0) segmentor.detectGutAndSeedSpine(seedRange)
+            else segmentor.updateBoundaries()
 
             // Update the map values.
             var j = 0
             var p = 0
             for(i in 0 until ns) {
-                diameterMap?.add(analyser.getDiameter(i).toShort())
-                radiusMapLeft?.add(analyser.getLowerRadius(i).toShort())
-                radiusMapRight?.add(analyser.getUpperRadius(i).toShort())
+                diameterMap?.add(segmentor.getDiameter(i).toShort())
+                radiusMapLeft?.add(segmentor.getLowerRadius(i).toShort())
+                radiusMapRight?.add(segmentor.getUpperRadius(i).toShort())
                 spineMap?.let { map ->
-                    j = analyser.getSpine(i)
-                    p = if(analyser.gutIsHorizontal) bitmap.getPixel(i, j) else bitmap.getPixel(j, i)
+                    j = segmentor.getSpine(i)
+                    p = if(segmentor.gutIsHorizontal) bitmap.getPixel(i, j) else bitmap.getPixel(j, i)
                     map.add(p)
                 }
             }
@@ -203,15 +206,55 @@ class MapCreator(val roi: FieldRoi) {
     /** Save the maps to TIFF slices/directories. */
     fun toTiff(): List<FileDirectory> {
         return mapBuffers.map{ (description, buffer) ->
-            buffer?.toTiffDirectory(description, nt)
+            buffer?.toTiffDirectory(description, nt)?.also { tiff ->
+                setResolution(tiff, spatialRes, temporalRes)
+            }
         }.filterNotNull()
     }
 
     /** Load the maps from TIFF slices/directories. */
-    fun fromTiff(tiff: List<FileDirectory>) {
+    fun fromTiff(tiffs: List<FileDirectory>) {
         mapBuffers.map { (description, buffer) ->
-            buffer?.fromTiffDirectory(description, tiff)?.let { nt = it }
+            buffer?.let { buff ->
+                findTiff(tiffs, description)?.let { tiff ->
+                    nt = buff.fromTiffDirectory(tiff)
+                    val (xr, yr) = getResolution(tiff)
+                    spatialRes = xr
+                    temporalRes = yr
+                }
+            }
         }
     }
 
 }
+
+/** Find a tiff directory with a matching identifier (description filed). */
+fun findTiff(tiffs: List<FileDirectory>, identifier: String): FileDirectory? {
+    return tiffs.filter{it.getStringEntryValue(FieldTagType.ImageDescription) == identifier}.firstOrNull()
+}
+
+/** Set the x and y resolutions of a tiff directory. */
+fun setResolution(
+    tiff: FileDirectory,
+    xr: Pair<Float, String>,
+    yr: Pair<Float, String>
+) {
+    // todo - these are being written to tiff file, but are not picked up by ImageJ
+    //    to set it's pixel width/height fields. How is ImageJ using saving this info?
+    tiff.setStringEntryValue(FieldTagType.ResolutionUnit, xr.second)
+    tiff.setStringEntryValue(FieldTagType.XResolution, xr.first.toString())
+    tiff.setStringEntryValue(FieldTagType.YResolution, yr.first.toString())
+}
+
+/** Get the x and y resolutions of a tiff directory. */
+fun getResolution(tiff: FileDirectory): Pair<Pair<Float, String>, Pair<Float, String>> {
+    val runit = tiff.getStringEntryValue(FieldTagType.ResolutionUnit)
+    val xr = tiff.getStringEntryValue(FieldTagType.XResolution).toFloatOrNull() ?: 1f
+    val yr = tiff.getStringEntryValue(FieldTagType.YResolution).toFloatOrNull() ?: 1f
+    return Pair(Pair(xr, runit), Pair(yr, runit))
+}
+
+fun rangeSize(range: Int, step: Int): Int {
+    return ceil(range.toFloat() / step.toFloat()).toInt()
+}
+
