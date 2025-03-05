@@ -24,6 +24,7 @@ class ThresholdBitmap(val input: Bitmap, val drawRoi: Rect) {
         fun fromImage(image: Bitmap, roi: RectF): ThresholdBitmap? {
             try {
                 val r = validRect(roi)
+                r.intersect(Rect(0, 0, image.width, image.height))
                 return ThresholdBitmap(
                     input = Bitmap.createBitmap(image, r.left, r.top, r.width(), r.height()),
                     drawRoi = r
