@@ -41,7 +41,7 @@ class MapCreator(val roi: FieldRoi) {
     /** The spatial resolution (pixels/unit) and unit. */
     private var spatialRes = Pair(1f, "")
     /** The temporal resolution (pixels/unit) and unit. */
-    private var temporalRes = Pair(1f, "")
+    private var temporalRes = Pair(1f, "s")
 
     // Map calculation
     // ---------------
@@ -156,6 +156,11 @@ class MapCreator(val roi: FieldRoi) {
         } catch (_: java.lang.IndexOutOfBoundsException) { reachedEnd = true }
     }
 
+    /** Set the temporal resolution given a recording duration. */
+    fun setTemporalResolution(durationSec: Float) {
+        temporalRes = Pair(ns.toFloat() / durationSec, "s")
+    }
+
     // ---------------------------------------------------------------------------------------------
     // Display
     // ---------------------------------------------------------------------------------------------
@@ -244,6 +249,7 @@ fun setResolution(
     tiff.setStringEntryValue(FieldTagType.ResolutionUnit, xr.second)
     tiff.setStringEntryValue(FieldTagType.XResolution, xr.first.toString())
     tiff.setStringEntryValue(FieldTagType.YResolution, yr.first.toString())
+    println("set res to $xr, $yr")
 }
 
 /** Get the x and y resolutions of a tiff directory. */

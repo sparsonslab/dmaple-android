@@ -459,8 +459,18 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         // State
         creating = false
         autosOn = true
+        setCreatorTemporalRes()
         setPreview()
         return Warnings("Stop Recording")
+    }
+
+    /** Set the temporal resolution of the creators based upon
+     * the time from the start of the recording to now. */
+    private fun setCreatorTemporalRes() {
+        // todo - this is not very accurate for short recordings because the frame interval
+        //     often jitters to very long values at the start of the recording.
+        val dur = 0.001f * Duration.between(startTime, Instant.now()).toMillis().toFloat()
+        for(creator in creators) creator.setTemporalResolution(dur)
     }
 
     /** Clear all creators, freeing up their buffers and resetting the current map. */
@@ -497,8 +507,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         } ?: return null
     }
 
-    var t0: Instant = Instant.now()
-
     /** Analyse each image from the camera feed. Called continuously during the life of the service. */
     override fun analyze(image: ImageProxy) {
         // Uses the pattern given in
@@ -506,10 +514,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         // to keep the frame-rate fairly constant.
         val elapsed = measureTimeMillis {
             if(creating) {
-                val t1 = Instant.now()
-                //println(Duration.between(t0, t1).toMillis())
-                t0 = t1
-
                 // Pass the image to each map creator to analyse.
                 lastCapture = image.toBitmap()
                 // todo - would be faster to have creators access image pixels directly rather
@@ -519,8 +523,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             }
         }
         image.use {
-            if(elapsed < frameIntervalMs)
-                Thread.sleep(frameIntervalMs - elapsed)
+            if(elapsed < frameIntervalMs) Thread.sleep(frameIntervalMs - elapsed)
         }
     }
 
