@@ -156,7 +156,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         // Set the live update status of maps and spines.
         // THIS HAS TO BE DONE AFTER THE ABOVE
         // otherwise the UI state can get out-of-sync.
-        if(recording) start() else stop()
+        if(recording) startLiveDisplay() else stopLiveDisplay()
     }
 
     /** Set the creator and map being shown in the map and camera field views. */
@@ -166,7 +166,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
     }
 
     /** Start recording. */
-    private fun start() {
+    private fun startLiveDisplay() {
         if(recording) return
         // Prepare state of child views.
         binding.cameraAndRoi.spineOverlay.setLiveUpdateState(updating = true)
@@ -183,7 +183,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
     }
 
     /** Stop recording. */
-    private fun stop() {
+    private fun stopLiveDisplay() {
         recording = false
         binding.cameraAndRoi.spineOverlay.setLiveUpdateState(updating = false)
         binding.maps.setLiveUpdateState(updating = false)
