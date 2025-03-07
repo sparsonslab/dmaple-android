@@ -17,6 +17,15 @@ import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 /** A view for o showing a mapping spine and boundaries over the camera field. */
 class SpineOverlay(context: Context, attributeSet: AttributeSet?): View(context, attributeSet) {
 
+    companion object {
+        /** The paint used for drawing the spine. */
+        val spinePaint = Paint().also {
+            it.color = Color.GREEN
+            it.style = Paint.Style.FILL
+            it.strokeWidth = 5f
+        }
+    }
+
     // Map and creator
     // ---------------
     /** The creator of the map spines being shown by this view. */
@@ -31,14 +40,6 @@ class SpineOverlay(context: Context, attributeSet: AttributeSet?): View(context,
     /** The geometric transform matrix applied to the canvas so that points drawn onto to it
      * have the same frame as the map's spine (i.e. the camerax analysis frame) */
     private var canvasTransform: Matrix? = null
-    /** The paint used for drawing the spine. */
-    private val spinePaint = Paint()
-
-    init {
-        spinePaint.color = Color.GREEN
-        spinePaint.style = Paint.Style.FILL
-        spinePaint.strokeWidth = 5f
-    }
 
     // ---------------------------------------------------------------------------------------------
     // Spine update

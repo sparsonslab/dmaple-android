@@ -2,6 +2,7 @@ package com.scepticalphysiologist.dmaple.ui
 
 import android.app.Activity
 import android.content.pm.ActivityInfo
+import android.graphics.Color
 import android.os.Bundle
 import androidx.preference.DropDownPreference
 import androidx.preference.PreferenceFragmentCompat
@@ -10,6 +11,7 @@ import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.ui.camera.ThresholdBitmap
 import com.scepticalphysiologist.dmaple.map.creator.GutSegmentor
+import com.scepticalphysiologist.dmaple.ui.camera.SpineOverlay
 
 class Settings: PreferenceFragmentCompat() {
 
@@ -47,7 +49,9 @@ class Settings: PreferenceFragmentCompat() {
         }
 
         private fun setThresholdInverted(entry: Any?) {
-            ThresholdBitmap.highlightAbove = if(entry is Boolean) entry else entry.toString().toBoolean()
+            val inverted = if(entry is Boolean) entry else entry.toString().toBoolean()
+            ThresholdBitmap.highlightAbove = inverted
+            SpineOverlay.spinePaint.color = if(inverted) Color.WHITE else Color.BLACK
         }
 
         private fun setSeedMinWidth(entry: Any?) {
