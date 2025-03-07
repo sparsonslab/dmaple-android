@@ -238,18 +238,12 @@ fun findTiff(tiffs: List<FileDirectory>, identifier: String): FileDirectory? {
     return tiffs.filter{it.getStringEntryValue(FieldTagType.ImageUniqueID) == identifier}.firstOrNull()
 }
 
-/** Set the x and y resolutions of a tiff directory. */
-fun setResolution(
-    tiff: FileDirectory,
-    xr: Pair<Float, String>,
-    yr: Pair<Float, String>
-) {
+/** Set the x and y resolutions of a tiff directory according to the ImageJ format. */
+fun setResolution(tiff: FileDirectory, xr: Pair<Float, String>, yr: Pair<Float, String>) {
     tiff.setRationalEntryValue(FieldTagType.XResolution, floatToRational(xr.first))
     tiff.setRationalEntryValue(FieldTagType.YResolution, floatToRational(yr.first))
-    tiff.setStringEntryValue(
-        FieldTagType.ImageDescription,
-        "ImageJ=53k\nunit=${xr.second}\nyunit=${yr.second}\nzunit=${xr.second}"
-    )
+    val imagejDescription = "ImageJ=53k\nunit=${xr.second}\nyunit=${yr.second}\nzunit=${xr.second}"
+    tiff.setStringEntryValue(FieldTagType.ImageDescription, imagejDescription)
     // todo - set ImageJ pixel depth scale factor.
 }
 
