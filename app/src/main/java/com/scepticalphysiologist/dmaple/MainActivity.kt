@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.os.IBinder
 import androidx.camera.core.Preview.SurfaceProvider
 import androidx.camera.view.PreviewView
+import androidx.preference.PreferenceManager
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import com.scepticalphysiologist.dmaple.ui.Settings
@@ -44,10 +45,13 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
 
         /** Set the rate at which camera frames will be grabbed for mapping. */
         fun setMappingServiceFrameRate(fps: Int) { mapService?.setFps(fps) }
+
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        Settings.setFromPreferences(this)
         setContentView(R.layout.activity_main)
 
         // Storage
@@ -61,6 +65,12 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         MappingRecord.loadRecords()
 
         // Set static attributes from preferences
+        Settings.setFromPreferences(this)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // If we are resuming after going into settings, set the preferences.
         Settings.setFromPreferences(this)
     }
 

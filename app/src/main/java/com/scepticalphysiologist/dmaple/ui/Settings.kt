@@ -40,8 +40,9 @@ class Settings: PreferenceFragmentCompat() {
             setSpineMaxGap(prefs.getInt("SPINE_MAX_GAP", 2))
         }
 
-        private fun setScreenRotation(entry: Any?, activity: Activity) {
-            activity.requestedOrientation = ORIENTATION_MAP[entry.toString()] ?: ActivityInfo.SCREEN_ORIENTATION_SENSOR
+        fun setScreenRotation(entry: Any?, activity: Activity) {
+            val or = ORIENTATION_MAP[entry.toString()] ?: ActivityInfo.SCREEN_ORIENTATION_SENSOR
+            activity.requestedOrientation = or
         }
 
         private fun setFrameRate(entry: Any?) {
@@ -75,6 +76,10 @@ class Settings: PreferenceFragmentCompat() {
             val entries = ORIENTATION_MAP.keys.toTypedArray()
             pref.entries = entries
             pref.entryValues = entries
+            pref.setOnPreferenceChangeListener { _, newValue ->
+                setScreenRotation(newValue, requireActivity())
+                true
+            }
         }
         findPreference<DropDownPreference>("FRAME_RATE_FPS")?.let { pref ->
             val fps = MainActivity.mapService?.getAvailableFps() ?: listOf(30)
@@ -82,11 +87,7 @@ class Settings: PreferenceFragmentCompat() {
             pref.entries = entries
             pref.entryValues = entries
         }
-    }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        setFromPreferences(requireActivity())
     }
 
 }
