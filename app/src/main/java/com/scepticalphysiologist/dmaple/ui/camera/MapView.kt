@@ -96,14 +96,6 @@ class MapView(context: Context, attributeSet: AttributeSet):
     /** The offset of the end of shown map from the end of the view (x = space, y = time). */
     private val offset = Point(0f, 0f)
 
-
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-        // Update this image view's bitmap through a live object.
-        // This avoids doing from within the coroutine during live recording.
-        findViewTreeLifecycleOwner()?.let{ newBitmap.observe(it) { bm-> setImageBitmap(bm) } }
-    }
-
     // ---------------------------------------------------------------------------------------------
     // Map layout, scaling and zoom.
     // ---------------------------------------------------------------------------------------------
@@ -188,7 +180,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
     }
 
     // ---------------------------------------------------------------------------------------------
-    // Public interface
+    // Map update
     // ---------------------------------------------------------------------------------------------
 
     /** Update the map being shown. */
@@ -198,12 +190,14 @@ class MapView(context: Context, attributeSet: AttributeSet):
         if(!updating) update()
     }
 
-    /** Reset the map view. */
-    fun reset() { updateZoom(Point(1f, 1f)) }
+    /** Set parameters related to whether the map is being updated live.  */
+    fun setLiveUpdateState(updating: Boolean) { this.updating = updating }
 
-    fun setUpdatingState(updating: Boolean) { this.updating = updating }
-
-    /** Update the map shown. */
+    /** Update the map shown.
+     *
+     * This is intended to be run within a coroutine. Therefore the bitmap of the section of map
+     * to be shown is posted as live data so that it can be displayed in the main UI thread.
+     * */
     fun update() {
         creator?.let { mapCreator ->
             // Update size.
@@ -224,6 +218,14 @@ class MapView(context: Context, attributeSet: AttributeSet):
             )}
         }
     }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        findViewTreeLifecycleOwner()?.let{ newBitmap.observe(it) { bm-> setImageBitmap(bm) } }
+    }
+
+    /** Reset the map view. */
+    fun reset() { updateZoom(Point(1f, 1f)) }
 
     // ---------------------------------------------------------------------------------------------
     // Gesture reaction.

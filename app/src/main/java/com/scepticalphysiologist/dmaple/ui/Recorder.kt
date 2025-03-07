@@ -17,16 +17,9 @@ import com.scepticalphysiologist.dmaple.etc.PermissionSets
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 
 
 class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
@@ -34,8 +27,9 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
     private lateinit var model: RecorderModel
 
     /** The approximate update interval (ms) for live display. */
-    private val updateInterval: Long = 50L
-
+    private val updateInterval: Long = 100L
+    /** Whether we are recording or not. */
+    private var recording: Boolean = false
 
     @SuppressLint("ClickableViewAccessibility")
     override fun createUI() {
@@ -173,30 +167,29 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         binding.cameraAndRoi.updateCreator(creatorAndMapIdx)
     }
 
-    private var recording: Boolean = false
-
+    /** Start recording. */
     private fun start() {
         if(recording) return
-        binding.cameraAndRoi.spineOverlay.setUpdatingState(updating = true)
-        binding.maps.setUpdatingState(updating = true)
-
+        // Prepare state of child views.
+        binding.cameraAndRoi.spineOverlay.setLiveUpdateState(updating = true)
+        binding.maps.setLiveUpdateState(updating = true)
+        // Start recording.
         recording = true
         lifecycleScope.launch(Dispatchers.Default) {
             while(recording) {
                 binding.maps.update()
                 delay(updateInterval)
-                //binding.cameraAndRoi.spineOverlay.update()
-                delay(updateInterval)
+                binding.cameraAndRoi.spineOverlay.update()
             }
         }
     }
 
-    fun stop() {
+    /** Stop recording. */
+    private fun stop() {
         recording = false
-        binding.cameraAndRoi.spineOverlay.setUpdatingState(updating = false)
-        binding.maps.setUpdatingState(updating = false)
+        binding.cameraAndRoi.spineOverlay.setLiveUpdateState(updating = false)
+        binding.maps.setLiveUpdateState(updating = false)
     }
-
 
     /** If the fragment showing maps? */
     private fun stateShowsMap(): Boolean{

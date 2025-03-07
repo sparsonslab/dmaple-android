@@ -8,6 +8,8 @@ import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.View
 import android.view.WindowManager
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.findViewTreeLifecycleOwner
 import com.scepticalphysiologist.dmaple.etc.Frame
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
@@ -20,7 +22,7 @@ class SpineOverlay(context: Context, attributeSet: AttributeSet?): View(context,
     /** The creator of the map spines being shown by this view. */
     private var creator: MapCreator? = null
     /** The spine points to be plotted. */
-    private var spinePoints: FloatArray? = null
+    private var spinePoints =  MutableLiveData<FloatArray?>(null)
 
     // Drawing
     // -------
@@ -39,7 +41,7 @@ class SpineOverlay(context: Context, attributeSet: AttributeSet?): View(context,
     }
 
     // ---------------------------------------------------------------------------------------------
-    // Public interface
+    // Spine update
     // ---------------------------------------------------------------------------------------------
 
     /** Update the map being shown. */
@@ -47,26 +49,31 @@ class SpineOverlay(context: Context, attributeSet: AttributeSet?): View(context,
         creator = creatorAndMapIdx.first
     }
 
-    fun setUpdatingState(updating: Boolean) {
-        if(updating) {
-            updateCanvasTransform()
-        } else {
-            spinePoints = null
-            invalidate()
-        }
+    /** Set parameters related to whether the spine is being updated live. */
+    fun setLiveUpdateState(updating: Boolean) {
+        if(updating) updateCanvasTransform() else spinePoints.postValue(null)
     }
 
-    /** Update the spine shown. */
+    /** Update the spine.
+     *
+     * This is intended to be run within a coroutine. Therefore the coordinates of the spine
+     * to be shown are posted as live data so that it can be drawn in the main UI thread.
+     * */
     fun update() {
         creator?.segmentor?.let { analyser ->
+            // Update the spine and post to the main thread for UI display.
             // Plot every 10th point along the spine.
-            spinePoints = Point.toFloatArray(analyser.spine.indices.filter{it % 10 == 0}.map{ k ->
+            spinePoints.postValue(Point.toFloatArray(analyser.spine.indices.filter{it % 10 == 0}.map{ k ->
                 val i = analyser.longIdx[k].toFloat()
                 val j = analyser.spine[k].toFloat()
                 if(analyser.gutIsHorizontal) Point(i, j) else Point(j, i)
-            })
-            invalidate()
+            }))
         }
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        findViewTreeLifecycleOwner()?.let { spinePoints.observe(it) { invalidate() } }
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -75,7 +82,7 @@ class SpineOverlay(context: Context, attributeSet: AttributeSet?): View(context,
 
     override fun onDraw(canvas: Canvas) {
         canvas.setMatrix(canvasTransform)
-        spinePoints?.let{canvas.drawPoints(it, spinePaint)}
+        spinePoints.value?.let{canvas.drawPoints(it, spinePaint)}
     }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
