@@ -233,9 +233,9 @@ class MapCreator(val roi: FieldRoi) {
 
 }
 
-/** Find a tiff directory with a matching identifier (description filed). */
+/** Find a tiff directory with a matching identifier. */
 fun findTiff(tiffs: List<FileDirectory>, identifier: String): FileDirectory? {
-    return tiffs.filter{it.getStringEntryValue(FieldTagType.ImageDescription) == identifier}.firstOrNull()
+    return tiffs.filter{it.getStringEntryValue(FieldTagType.ImageUniqueID) == identifier}.firstOrNull()
 }
 
 /** Set the x and y resolutions of a tiff directory. */
@@ -244,23 +244,47 @@ fun setResolution(
     xr: Pair<Float, String>,
     yr: Pair<Float, String>
 ) {
-    // todo - these are being written to tiff file, but are not picked up by ImageJ
-    //    to set it's pixel width/height fields. How is ImageJ using saving this info?
-    //    Also there is no tiff field for "pixel depth" i.e. short to diameter.
-    tiff.setStringEntryValue(FieldTagType.ResolutionUnit, xr.second)
-    tiff.setStringEntryValue(FieldTagType.XResolution, xr.first.toString())
-    tiff.setStringEntryValue(FieldTagType.YResolution, yr.first.toString())
+    tiff.setRationalEntryValue(FieldTagType.XResolution, floatToRational(xr.first))
+    tiff.setRationalEntryValue(FieldTagType.YResolution, floatToRational(yr.first))
+    tiff.setStringEntryValue(
+        FieldTagType.ImageDescription,
+        "ImageJ=53k\nunit=${xr.second}\nyunit=${yr.second}\nzunit=${xr.second}"
+    )
+    // todo - set ImageJ pixel depth scale factor.
 }
 
 /** Get the x and y resolutions of a tiff directory. */
 fun getResolution(tiff: FileDirectory): Pair<Pair<Float, String>, Pair<Float, String>> {
-    val runit = tiff.getStringEntryValue(FieldTagType.ResolutionUnit)
-    val xr = tiff.getStringEntryValue(FieldTagType.XResolution).toFloatOrNull() ?: 1f
-    val yr = tiff.getStringEntryValue(FieldTagType.YResolution).toFloatOrNull() ?: 1f
-    return Pair(Pair(xr, runit), Pair(yr, runit))
+    try {
+        val xr = rationalToFloat(tiff.getLongListEntryValue(FieldTagType.XResolution))
+        val yr = rationalToFloat(tiff.getLongListEntryValue(FieldTagType.YResolution))
+        var xu = ""
+        var yu = ""
+        val description = tiff.getStringEntryValue(FieldTagType.ImageDescription)
+        for(line in description.split("\n")){
+            val entry = line.split("=")
+            if(entry.size != 2) continue
+            when(entry[0]) {
+                "unit" -> xu = entry[1]
+                "yunit" -> yu = entry[1]
+            }
+        }
+        return Pair(Pair(xr, xu), Pair(yr, yu))
+    } catch(_: java.lang.ClassCastException) {}
+    return Pair(Pair(1f, ""), Pair(1f, ""))
 }
 
 fun rangeSize(range: Int, step: Int): Int {
     return ceil(range.toFloat() / step.toFloat()).toInt()
+}
+
+fun floatToRational(value: Float, denom: Long = 100_000): List<Long> {
+    val num = (value * denom).toLong()
+    return listOf(num, denom)
+}
+
+fun rationalToFloat(ratio: List<Long>): Float {
+    if(ratio.size < 2) return 1f
+    return ratio[0].toFloat() / ratio[1].toFloat()
 }
 

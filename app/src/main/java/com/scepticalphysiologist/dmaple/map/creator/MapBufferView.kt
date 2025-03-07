@@ -51,7 +51,7 @@ abstract class MapBufferView<T : Number>(
         dir.setImageHeight(ny)
         dir.samplesPerPixel = bitsPerChannel.size
         dir.setBitsPerSample(bitsPerChannel)
-        dir.setStringEntryValue(FieldTagType.ImageDescription, identifier)
+        dir.setStringEntryValue(FieldTagType.ImageUniqueID, identifier)
 
         // Write in map data.
         val raster = Rasters(nx, ny, bitsPerChannel.size, fieldType)
@@ -71,8 +71,7 @@ abstract class MapBufferView<T : Number>(
 
     /** Load the map from a TIFF image slice/directory.
      *
-     * @param identifier The map's identifier within its slice/directory.
-     * @param dirs A list of slices/directories that may contain the map's slice.
+     * @param dir The slice/directory with the map
      * @return The number of time samples in the map or null if the map's slice could not be found.
      * */
     fun fromTiffDirectory(dir: FileDirectory): Int {

@@ -98,7 +98,7 @@ class MappingRecord(
             // directories with different pixel types (e.g. a mix of short and RBG).
             for(tiff in creator.toTiff()) {
                 val img = TIFFImage().also{it.add(tiff)}
-                val des = tiff.getStringEntryValue(FieldTagType.ImageDescription)
+                val des = tiff.getStringEntryValue(FieldTagType.ImageUniqueID)
                 TiffWriter.writeTiff(File(location, "${creator.roi.uid}_$des.tiff"), img)
             }
         }
