@@ -15,6 +15,7 @@ import com.scepticalphysiologist.dmaple.databinding.RecorderBinding
 import com.scepticalphysiologist.dmaple.etc.PermissionSets
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
+import com.scepticalphysiologist.dmaple.map.field.FieldImage
 
 
 class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
@@ -104,46 +105,50 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         when(model.getState()) {
             RecState.PRE_RECORD -> {
                 binding.recordButton.setImageResource(R.drawable.play_arrow)
-                binding.maps.stop()
-                binding.cameraAndRoi.startSpine(false)
-                binding.cameraAndRoi.freezeField(null)
-                binding.toRecordsButton.visibility = View.VISIBLE
+                setMappingUI(show = false, recording = false)
                 binding.maps.reset()
-                binding.cameraAndRoi.allowEditing(true)
-                binding.cameraAndRoi.fullSize()
-                binding.cameraTimer.text = ""
             }
             RecState.RECORDING -> {
                 binding.recordButton.setImageResource(R.drawable.stop_5f6368)
-                binding.maps.start()
-                binding.cameraAndRoi.startSpine(true)
-                binding.cameraAndRoi.freezeField(null)
-                setMapView()
+                setMappingUI(show = true, recording = true)
             }
             RecState.POST_RECORD -> {
                 binding.recordButton.setImageResource(R.drawable.eject_arrow)
-                binding.maps.stop()
-                binding.cameraAndRoi.startSpine(false)
-                binding.cameraAndRoi.freezeField(model.getLastFieldImage())
-                setMapView()
+                setMappingUI(show = true, recording = false, field = model.getLastFieldImage())
             }
             RecState.OLD_RECORD -> {
                 binding.recordButton.setImageResource(R.drawable.eject_arrow)
-                binding.maps.stop()
-                binding.cameraAndRoi.startSpine(false)
-                binding.cameraAndRoi.freezeField(model.getLastFieldImage())
-                setMapView()
+                setMappingUI(show = true, recording = false, field = model.getLastFieldImage())
             }
         }
     }
 
-    /** Set the UI so that is shows the maps. */
-    private fun setMapView() {
-        binding.toRecordsButton.visibility = View.INVISIBLE
-        binding.cameraAndRoi.allowEditing(false)
-        val extent = Point.ofViewExtent(binding.root) * 0.5f
-        binding.cameraAndRoi.resize(extent.x.toInt(), extent.y.toInt())
-        showMapAndCreator(model.getCurrentlyShownMap())
+    /** Set the state of the mapping UI.
+     * @param show The maps should be shown.
+     * @param recording The maps are being recorded.
+     * @param field The field image to show in the camera view or null (to show the camera feed).
+     * */
+    private fun setMappingUI(show: Boolean, recording: Boolean, field: FieldImage? = null) {
+        // Set the camera and map views.
+        binding.cameraAndRoi.freezeField(field)
+        if(show) {
+            binding.toRecordsButton.visibility = View.INVISIBLE
+            binding.cameraAndRoi.allowEditing(false)
+            val extent = Point.ofViewExtent(binding.root) * 0.5f
+            binding.cameraAndRoi.resize(extent.x.toInt(), extent.y.toInt())
+            showMapAndCreator(model.getCurrentlyShownMap())
+        } else {
+            binding.toRecordsButton.visibility = View.VISIBLE
+            binding.cameraAndRoi.allowEditing(true)
+            binding.cameraAndRoi.fullSize()
+            binding.cameraTimer.text = ""
+        }
+
+        // Set the live update status of maps and spines.
+        // THIS HAS TO BE DONE AFTER THE ABOVE
+        // otherwise the UI state can get out-of-sync.
+       // binding.cameraAndRoi.startSpine(recording)
+        if(recording) binding.maps.start() else binding.maps.stop()
     }
 
     /** Set the creator and map being shown in the map and camera field views. */
