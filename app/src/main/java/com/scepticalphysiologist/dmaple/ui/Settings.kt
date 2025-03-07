@@ -76,6 +76,7 @@ class Settings: PreferenceFragmentCompat() {
             val entries = ORIENTATION_MAP.keys.toTypedArray()
             pref.entries = entries
             pref.entryValues = entries
+            // ... so the settings page itself rotates immediately when the setting is changed.
             pref.setOnPreferenceChangeListener { _, newValue ->
                 setScreenRotation(newValue, requireActivity())
                 true
