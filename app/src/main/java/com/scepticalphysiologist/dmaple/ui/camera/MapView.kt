@@ -16,12 +16,6 @@ import androidx.lifecycle.findViewTreeLifecycleOwner
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.etc.transformBitmap
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlin.math.floor
 
 /** A view for live display of a spatio-temporal map.
@@ -65,13 +59,9 @@ class MapView(context: Context, attributeSet: AttributeSet):
     private var creator: MapCreator? = null
     /** The ith map of the creator being shown by this view (for where a creator makes more than one map). */
     private var mapIdx: Int = 0
-    /** The coroutine scope used for the live (during mapping) extracting of the viewed bitmap
-     * from the map creator. */
-    private var scope: CoroutineScope? = null
-    /** Used for passing the map's bitmap out of the coroutine into the view's main scope. */
+    /** Used for passing the map's bitmap out of the coroutine into the main UI thread. */
     private var newBitmap = MutableLiveData<Bitmap?>(null)
-    /** The approximate update interval (ms) for live display. */
-    private val updateInterval: Long = 100L
+    private var updating: Boolean = false
 
     // Display
     // -------
@@ -132,7 +122,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
         super.onLayout(changed, left, top, right, bottom)
         if(changed) {
             updateViewSize()
-            if(scope == null) update()
+            if(!updating) update()
         }
     }
 
@@ -205,39 +195,16 @@ class MapView(context: Context, attributeSet: AttributeSet):
     fun updateCreator(creatorAndMapIdx: Pair<MapCreator?, Int>) {
         creator = creatorAndMapIdx.first
         mapIdx = creatorAndMapIdx.second
-        if(scope == null) update()
-    }
-
-    /** Start live view of the map being created. */
-    fun start() {
-        if(scope != null) return
-        scope = MainScope()
-        updateLive()
-    }
-
-    /** Stop live view of the map being created. */
-    fun stop() {
-        scope?.cancel()
-        scope = null
+        if(!updating) update()
     }
 
     /** Reset the map view. */
     fun reset() { updateZoom(Point(1f, 1f)) }
 
-    // ---------------------------------------------------------------------------------------------
-    // Map update.
-    // ---------------------------------------------------------------------------------------------
-
-    /** Coroutine loop for updating the map live. */
-    private fun updateLive() = scope?.launch(Dispatchers.Default){
-        while(true) {
-            update()
-            delay(updateInterval)
-        }
-    }
+    fun setUpdatingState(updating: Boolean) { this.updating = updating }
 
     /** Update the map shown. */
-    private fun update() {
+    fun update() {
         creator?.let { mapCreator ->
             // Update size.
             updateBitmapSize(mapCreator.spaceTimeSampleSize())
@@ -277,7 +244,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
         if(dFinger.x > dFinger.y) zFactor.y = 1f else zFactor.x = 1f
         // Zoom.
         updateZoom(zFactor * zoom)
-        if(scope == null) update()
+        if(!updating) update()
     }
 
     /** Scroll the map from a scrolling finger movement.
@@ -290,7 +257,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
         val shift = offset + bitmapShift
         if(shift.x > 0) offset.x = shift.x
         if(shift.y > 0) offset.y = shift.y
-        if(scope == null) update()
+        if(!updating) update()
     }
 
     // ---------------------------------------------------------------------------------------------

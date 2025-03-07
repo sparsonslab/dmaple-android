@@ -37,7 +37,7 @@ class MappingFieldOfView(context: Context, attributeSet: AttributeSet?):
     /** An overlay over the camera feed unto which mappings ROIs can eb drawn. */
     private val roiOverlay = MappingRoiOverlay(context, attributeSet)
     /** An overlay over the camera feed unto which mapping processes *such as spines) can be drawn. */
-    private val spineOverlay = SpineOverlay(context, attributeSet)
+    val spineOverlay = SpineOverlay(context, attributeSet)
 
     // Controls
     // --------
@@ -129,10 +129,6 @@ class MappingFieldOfView(context: Context, attributeSet: AttributeSet?):
 
     fun updateCreator(creatorAndMapIdx: Pair<MapCreator?, Int>) {
         spineOverlay.updateCreator(creatorAndMapIdx)
-    }
-
-    fun startSpine(start: Boolean = true){
-        if(start) spineOverlay.start() else spineOverlay.stop()
     }
 
     // ---------------------------------------------------------------------------------------------

@@ -8,6 +8,7 @@ import android.view.MotionEvent
 import android.view.View
 import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.SettingsActivity
@@ -16,11 +17,25 @@ import com.scepticalphysiologist.dmaple.etc.PermissionSets
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 
 class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
 
     private lateinit var model: RecorderModel
+
+    /** The approximate update interval (ms) for live display. */
+    private val updateInterval: Long = 50L
+
 
     @SuppressLint("ClickableViewAccessibility")
     override fun createUI() {
@@ -149,8 +164,7 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         // Set the live update status of maps and spines.
         // THIS HAS TO BE DONE AFTER THE ABOVE
         // otherwise the UI state can get out-of-sync.
-       // binding.cameraAndRoi.startSpine(recording)
-        if(recording) binding.maps.start() else binding.maps.stop()
+        if(recording) start() else stop()
     }
 
     /** Set the creator and map being shown in the map and camera field views. */
@@ -158,6 +172,31 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         binding.maps.updateCreator(creatorAndMapIdx)
         binding.cameraAndRoi.updateCreator(creatorAndMapIdx)
     }
+
+    private var recording: Boolean = false
+
+    private fun start() {
+        if(recording) return
+        binding.cameraAndRoi.spineOverlay.setUpdatingState(updating = true)
+        binding.maps.setUpdatingState(updating = true)
+
+        recording = true
+        lifecycleScope.launch(Dispatchers.Default) {
+            while(recording) {
+                binding.maps.update()
+                delay(updateInterval)
+                //binding.cameraAndRoi.spineOverlay.update()
+                delay(updateInterval)
+            }
+        }
+    }
+
+    fun stop() {
+        recording = false
+        binding.cameraAndRoi.spineOverlay.setUpdatingState(updating = false)
+        binding.maps.setUpdatingState(updating = false)
+    }
+
 
     /** If the fragment showing maps? */
     private fun stateShowsMap(): Boolean{
