@@ -54,7 +54,7 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
 
     /** Update the model [state] when (e.g.) a button is pressed.
      *
-     * @param obj The current ROIs and ruler.
+     * @param field The field ROIS and ruler (required for when starting a recording).
      * */
     fun updateState(field: RoisAndRuler){
         if(mapper == null) return
