@@ -39,7 +39,6 @@ abstract class GutSegmentor {
     /** The gut is above threshold (light against a dark background). */
     var gutIsAboveThreshold: Boolean = true
 
-
     // Boundaries
     // ----------
     /** The pixel indices along the longitudinal axis of the gut. */

@@ -9,7 +9,6 @@ class GutSegmentorTest {
 
     @Test
     fun `correct bounds are calculated`() {
-
         // Given: A horizontal gut of constant width.
         val iw = 200
         val extent = Pair(40, 180)
@@ -60,7 +59,7 @@ class GutSegmentorTest {
     }
 
     @Test
-    fun `correct diameter calculated`() {
+    fun `correct diameters are calculated`() {
         // Given: A horizontal gut of incrementing widths.
         val gutExtent = Pair(20, 200)
         val gutWidth = Pair(5, 60)
