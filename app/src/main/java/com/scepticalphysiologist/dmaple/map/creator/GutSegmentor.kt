@@ -205,7 +205,7 @@ abstract class GutSegmentor {
                 i += d
             }
         }
-        return i - d * g
+        return i - d * (g + 1)
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -213,10 +213,10 @@ abstract class GutSegmentor {
     // ---------------------------------------------------------------------------------------------
 
     /** Get the diameter at the ith longitudinal index. */
-    fun getDiameter(i: Int): Int { return upper[i] - lower[i] }
+    fun getDiameter(i: Int): Int { return 1 + upper[i] - lower[i] }
 
     /** Get the upper radius at the ith longitudinal index. */
-    fun getUpperRadius(i: Int): Int { return upper[i] - spine[i] }
+    fun getUpperRadius(i: Int): Int { return 1 + upper[i] - spine[i] }
 
     /** Get the lower radius at the ith longitudinal index. */
     fun getLowerRadius(i: Int): Int { return spine[i] - lower[i] }

@@ -70,7 +70,6 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         super.onResume()
         // If we are resuming after going into settings, set the preferences.
         Settings.setFromPreferences(this)
-        println("on resume: setting prefs")
     }
 
     // ---------------------------------------------------------------------------------------------
