@@ -60,7 +60,7 @@ class Settings: PreferenceFragmentCompat() {
         }
 
         private fun setSpineSmooth(entry: Any?) {
-            entry.toString().toIntOrNull()?.let { GutSegmentor.spineSmooth = it }
+            entry.toString().toIntOrNull()?.let { GutSegmentor.smoothWinSize = it }
         }
 
         private fun setSpineMaxGap(entry: Any?) {

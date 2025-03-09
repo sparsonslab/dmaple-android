@@ -20,8 +20,7 @@ abstract class GutSegmentor {
         /** The maximum pixel gap (below threshold region) for thresholding. */
         var maxGap: Int = 2
         /** The size of the smoothing window applied to the spine (required for radius mapping). */
-        var spineSmooth: Int = 1
-        // todo - implement spine smoothing.
+        var smoothWinSize: Int = 1
     }
 
     // The gut and its field
@@ -47,6 +46,8 @@ abstract class GutSegmentor {
     var longIdx: IntArray = IntArray(0)
     /** The transverse-axis indices of the spine along the centre of the gut. */
     var spine: IntArray = IntArray(0)
+    /** The transverse-axis indices of the smoothed spine along the centre of the gut.*/
+    var spineSmoothed: IntArray = IntArray(0)
     /** The transverse-axis indices of the upper boundary of the gut. */
     var upper: IntArray = IntArray(0)
     /** The transverse-axis indices of the lower boundary of the gut. */
@@ -65,6 +66,7 @@ abstract class GutSegmentor {
         longIdx = if(l0 < l1) (l0..l1).toList().toIntArray() else (l1..l0).toList().toIntArray()
         val nl = longIdx.size
         spine = IntArray(nl)
+        spineSmoothed = IntArray(nl)
         upper = IntArray(nl)
         lower = IntArray(nl)
     }
@@ -112,7 +114,7 @@ abstract class GutSegmentor {
         var w = 0
         var g = 0
         for((i, v) in section.withIndex()) {
-            if(v || ((w > 0) && (g < maxGap))) {
+            if(v || ((w > 0) && (g <= maxGap))) {
                 w += 1
                 if(!v) g += 1 else g = 0
             }
@@ -156,6 +158,16 @@ abstract class GutSegmentor {
             lower[i] = findEdge(longIdx[i], transIdx, goUp = false, ofGut = true)
             transIdx = lower[i] + (upper[i] - lower[i]) / 2
             spine[i] = transIdx
+            spineSmoothed[i] = transIdx
+        }
+        if(smoothWinSize > 1) {
+            val w = smoothWinSize / 2
+            for(i in 0 until longIdx.size - smoothWinSize) {
+                spineSmoothed[i + w] = 0
+                for (j in 0 until smoothWinSize)
+                    spineSmoothed[i + w] += spine[i + j]
+                spineSmoothed[i + w] = spineSmoothed[i + w] / smoothWinSize
+            }
         }
     }
 
@@ -174,21 +186,21 @@ abstract class GutSegmentor {
         var i = iTrans
         var g = 0
         if(gutIsHorizontal){
-            if(findAbove) while((i >= 0) && (i < fieldHeight) && (g < maxGap)) {
+            if(findAbove) while((i >= 0) && (i < fieldHeight) && (g <= maxGap)) {
                 if(getPixel(iLong, i) > threshold) g = 0 else g += 1
                 i += d
             }
-            else while((i >= 0) && (i < fieldHeight) && (g < maxGap)){
+            else while((i >= 0) && (i < fieldHeight) && (g <= maxGap)){
                 if(getPixel(iLong, i) < threshold) g = 0 else g += 1
                 i += d
             }
         }
         else {
-            if(findAbove) while((i >= 0) && (i < fieldHeight) && (g < maxGap)) {
+            if(findAbove) while((i >= 0) && (i < fieldHeight) && (g <= maxGap)) {
                 if(getPixel(i, iLong) > threshold) g = 0 else g += 1
                 i += d
             }
-            else while((i >= 0) && (i < fieldHeight) && (g < maxGap)){
+            else while((i >= 0) && (i < fieldHeight) && (g <= maxGap)){
                 if(getPixel(i, iLong) < threshold) g = 0 else g += 1
                 i += d
             }
@@ -210,7 +222,8 @@ abstract class GutSegmentor {
     fun getLowerRadius(i: Int): Int { return spine[i] - lower[i] }
 
     /** Get the spine index at the ith longitudinal index. */
-    fun getSpine(i: Int): Int { return spine[i] }
+    fun getSpine(i: Int): Int { return spineSmoothed[i] }
+
 }
 
 /** The gut segmentor used by the app. Uses a bitmap as the field image. */

@@ -50,8 +50,6 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        Settings.setFromPreferences(this)
         setContentView(R.layout.activity_main)
 
         // Storage
@@ -72,6 +70,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         super.onResume()
         // If we are resuming after going into settings, set the preferences.
         Settings.setFromPreferences(this)
+        println("on resume: setting prefs")
     }
 
     // ---------------------------------------------------------------------------------------------
