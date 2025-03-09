@@ -8,6 +8,58 @@ import kotlin.math.abs
 class GutSegmentorTest {
 
     @Test
+    fun `correct bounds are calculated`() {
+
+        // Given: A horizontal gut of constant width.
+        val iw = 200
+        val extent = Pair(40, 180)
+        val ih = 100
+        val bounds = Pair(35, 80)
+        var image = createImage(iw, ih, 0f)
+        for(i in extent.first..extent.second)
+            for(j in bounds.first..bounds.second)
+                image[j][i] = 1f
+
+        // When: The gut is segmented.
+        val segmentor = ArrayGutSegmentor()
+        segmentor.setLongSection(extent.first, extent.second)
+        segmentor.gutIsHorizontal = true
+        segmentor.threshold = 0.5f
+        segmentor.gutIsAboveThreshold = true
+        GutSegmentor.minWidth = 5
+        segmentor.setFieldImage(image)
+        segmentor.detectGutAndSeedSpine(Pair(1, ih - 1))
+
+        // Then: The lower and upper bounds are where expected.
+        assertEquals(bounds.first, segmentor.lower[20])
+        assertEquals(bounds.second, segmentor.upper[20])
+
+        // Given: The same gut, rotated.
+        image = rotateImage(image)
+        segmentor.gutIsHorizontal = false
+
+        // When: The gut is segmented.
+        segmentor.setFieldImage(image)
+        segmentor.detectGutAndSeedSpine(Pair(1, ih - 1))
+
+        // Then: The lower and upper bounds are where expected.
+        assertEquals(bounds.first, segmentor.lower[20])
+        assertEquals(bounds.second, segmentor.upper[20])
+
+        // Given The field values are inverted.
+        applyImage(image, {v -> abs(v - 1f)})
+        segmentor.gutIsAboveThreshold = false
+
+        // When: The gut is segmented.
+        segmentor.setFieldImage(image)
+        segmentor.detectGutAndSeedSpine(Pair(1, ih - 1))
+
+        // Then: The lower and upper bounds are where expected.
+        assertEquals(bounds.first, segmentor.lower[20])
+        assertEquals(bounds.second, segmentor.upper[20])
+    }
+
+    @Test
     fun `correct diameter calculated`() {
         // Given: A horizontal gut of incrementing widths.
         val gutExtent = Pair(20, 200)
@@ -47,7 +99,7 @@ class GutSegmentorTest {
         actualWidths = expectedWidths.indices.map{segmentor.getDiameter(it)}.toList()
         assertEquals(expectedWidths, actualWidths)
 
-        // When: The field values are inverted.
+        // Given: The field values are inverted.
         applyImage(image, {v -> abs(v - 1f)})
         segmentor.gutIsAboveThreshold = false
 
