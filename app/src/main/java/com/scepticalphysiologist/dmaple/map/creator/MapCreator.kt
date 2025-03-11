@@ -48,7 +48,7 @@ class MapCreator(val roi: FieldRoi) {
     // Map calculation
     // ---------------
     /** The segmentor used for calculating the map values. */
-    val segmentor: BitmapGutSegmentor
+    val segmentor: GutSegmentor
     /** The range of pixels along the seeding edge, used to detect the gut. */
     private val seedRange: Pair<Int, Int>
 
@@ -93,7 +93,7 @@ class MapCreator(val roi: FieldRoi) {
         val (longAxis, transAxis) = axesLongAndTrans
 
         // Gut segmentor.
-        segmentor = BitmapGutSegmentor()
+        segmentor = GutSegmentor()
         segmentor.threshold = roi.threshold.toFloat()
         segmentor.gutIsHorizontal = roi.seedingEdge.isVertical()
         segmentor.gutIsAboveThreshold = !ThresholdBitmap.highlightAbove
@@ -140,9 +140,9 @@ class MapCreator(val roi: FieldRoi) {
             else segmentor.updateBoundaries()
 
             // Update the map values.
-            var j = 0
-            var k = 0
-            var p = 0
+            var j: Int
+            var k: Int
+            var p: Int
             for(i in 0 until ns) {
                 diameterMap?.add(segmentor.getDiameter(i).toShort())
                 radiusMapLeft?.add(segmentor.getLowerRadius(i).toShort())
@@ -155,7 +155,7 @@ class MapCreator(val roi: FieldRoi) {
                 }
             }
             nt += 1
-        } catch (_: java.lang.IndexOutOfBoundsException) { reachedEnd = true }
+        } catch (_: java.nio.BufferOverflowException) { reachedEnd = true }
     }
 
     /** Set the temporal resolution given a recording duration. */
@@ -165,6 +165,8 @@ class MapCreator(val roi: FieldRoi) {
 
     /** Set the spatial resolution from a ruler. */
     fun setSpatialResolution(ruler: FieldRuler) { spatialRes = ruler.getResolution() }
+
+    fun hasReachedBufferLimit(): Boolean { return reachedEnd }
 
     // ---------------------------------------------------------------------------------------------
     // Display

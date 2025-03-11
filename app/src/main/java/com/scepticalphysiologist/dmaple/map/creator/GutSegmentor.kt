@@ -7,12 +7,8 @@ import com.scepticalphysiologist.dmaple.etc.ntscGrey
  *
  * Uses sim[ple threshold detection to identify the lower and upper bounds of the gut which can
  * then be used to calculate diameter, radius, etc.
- *
- * This abstract class contains all the processing algorithms and functions. Two concrete subclasses
- * are used for running on Android ([BitmapGutSegmentor]) and unit testing ([ArrayGutSegmentor]) as
- * the former uses android.graphics.Bitmap images which cannot be mocked easily in unit tests.
  */
-abstract class GutSegmentor {
+class GutSegmentor {
 
     companion object {
         /** The minimum pixel width of the gut at its seeding edge. */
@@ -25,12 +21,10 @@ abstract class GutSegmentor {
 
     // The gut and its field
     // ----------------------
+    /** The field */
+    private lateinit var bitmap: Bitmap
     /** The gut is horizontal within the field of view. */
     var gutIsHorizontal: Boolean = true
-    /** The pixel width of the field of view. */
-    var fieldWidth: Int = 1
-    /** The pixel height of the field of view. */
-    var fieldHeight: Int = 1
 
     // Variables
     // ---------
@@ -70,13 +64,19 @@ abstract class GutSegmentor {
         lower = IntArray(nl)
     }
 
+
+
     /** Set the current field frame/image to be analysed. */
-    abstract fun setFieldImage(image: Any)
+    fun setFieldImage(image: Bitmap) { bitmap = image }
 
-    abstract fun getFieldSize(): Pair<Int, Int>
+    fun getFieldSize(): Pair<Int, Int> {
+        return Pair(bitmap.width, bitmap.height)
+    }
 
-    /** Get a pixel value from the current field image.*/
-    abstract fun getPixel(i: Int, j: Int): Float
+    /** Get the NTSC grey-scale value of the (i, j) bitmap pixel. */
+    fun getPixel(i: Int, j: Int): Float {
+        return ntscGrey(bitmap.getPixel(i, j))
+    }
 
     /** Seed the gut an initiate (seed) its spine.
      *
@@ -202,21 +202,21 @@ abstract class GutSegmentor {
         var i = iTrans
         var g = 0
         if(gutIsHorizontal){
-            if(findAbove) while((i >= 0) && (i < fieldHeight) && (g <= maxGap)) {
+            if(findAbove) while((i >= 0) && (i < bitmap.height) && (g <= maxGap)) {
                 if(getPixel(iLong, i) > threshold) g = 0 else g += 1
                 i += d
             }
-            else while((i >= 0) && (i < fieldHeight) && (g <= maxGap)){
+            else while((i >= 0) && (i < bitmap.height) && (g <= maxGap)){
                 if(getPixel(iLong, i) < threshold) g = 0 else g += 1
                 i += d
             }
         }
         else {
-            if(findAbove) while((i >= 0) && (i < fieldHeight) && (g <= maxGap)) {
+            if(findAbove) while((i >= 0) && (i < bitmap.width) && (g <= maxGap)) {
                 if(getPixel(i, iLong) > threshold) g = 0 else g += 1
                 i += d
             }
-            else while((i >= 0) && (i < fieldHeight) && (g <= maxGap)){
+            else while((i >= 0) && (i < bitmap.width) && (g <= maxGap)){
                 if(getPixel(i, iLong) < threshold) g = 0 else g += 1
                 i += d
             }
@@ -240,43 +240,4 @@ abstract class GutSegmentor {
     /** Get the spine index at the ith longitudinal index. */
     fun getSpine(i: Int): Int { return spineSmoothed[i] }
 
-}
-
-/** The gut segmentor used by the app. Uses a bitmap as the field image. */
-class BitmapGutSegmentor: GutSegmentor() {
-
-    private lateinit var bitmap: Bitmap
-
-    override fun setFieldImage(image: Any) {
-        bitmap = image as Bitmap
-        fieldWidth = bitmap.width
-        fieldHeight = bitmap.height
-    }
-
-    override fun getFieldSize(): Pair<Int, Int> {
-        return Pair(bitmap.width, bitmap.height)
-    }
-
-    /** Get the NTSC grey-scale value of the (i, j) bitmap pixel. */
-    override fun getPixel(i: Int, j: Int): Float { return ntscGrey(bitmap.getPixel(i, j)) }
-}
-
-/** The gut segmentor used for unit testing. Uses an array-of-arrays as the field image.
- * (i.e. a data-type that can be created on non-android JVM (unlike a bitmap).
- * */
-class ArrayGutSegmentor: GutSegmentor() {
-
-    private lateinit var array: Array<FloatArray>
-
-    override fun setFieldImage(image: Any) {
-        array = image as Array<FloatArray>
-        fieldHeight = array.size
-        fieldWidth = array[0].size
-    }
-
-    override fun getFieldSize(): Pair<Int, Int> {
-        return Pair(array[0].size, array.size)
-    }
-
-    override fun getPixel(i: Int, j: Int): Float { return array[j][i] }
 }

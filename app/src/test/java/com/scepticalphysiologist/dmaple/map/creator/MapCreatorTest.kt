@@ -25,36 +25,16 @@ import java.nio.ByteBuffer
 @Config(shadows = [ShadowBitmap::class])
 class MapCreatorTest {
 
-    @Config(shadows = [ShadowBitmap::class])
-    @Test
-    fun `mock x`() {
-
-
-
-        val bm = Bitmap.createBitmap(200, 100, Bitmap.Config.ARGB_8888)
-        bm.setPixel(100, 50, 8)
-
-        dosomething(bm)
-
-    }
-
-
-    fun dosomething(bm: Bitmap) {
-        println("pixel = ${bm.getPixel(100, 50)}")
-    }
-
-
 
     @Test
     fun `reach end condition reached`() {
 
         val frames = horizontalGutSeries(
-            diameters = listOf(45, 50, 55, 50, 50, 45),
+            diameters = listOf(50, 55, 60, 65, 60, 55, 50),
             fieldWidth = 100
         )
-        val (iw, ih) = imageSize(frames[0])
 
-
+        val (iw, ih) = Pair(frames[0].width, frames[0].height)
         val roi = FieldRoi(
             frame = Frame(size = Point(iw.toFloat(),  ih.toFloat()), orientation = 0),
             threshold = 50,
@@ -68,15 +48,15 @@ class MapCreatorTest {
         roi.bottom = ih.toFloat() - 10f
 
 
-
-
         val creator = MapCreator(roi)
-        val bytesRequired = frames.size * roi.width().toInt() * roi.maps.sumOf { it.bytesPerSample }
-        val buffers = (0..2).map{ ByteBuffer.allocate(bytesRequired - 10) }
+        val bytesRequired = 6 * roi.width().toInt() * roi.maps.sumOf { it.bytesPerSample }
+        val buffers = (0..2).map{ ByteBuffer.allocate(bytesRequired) }
         creator.provideBuffers(buffers)
 
+        for(frame in frames) creator.updateWithCameraBitmap(frame)
 
-
+        println("size = ${creator.spaceTimeSampleSize()}")
+        println("reached? ${creator.hasReachedBufferLimit()}")
 
 
     }
@@ -84,17 +64,3 @@ class MapCreatorTest {
 
 }
 
-fun horizontalGutSeries(
-    diameters: List<Int>,
-    fieldWidth: Int,
-): List<Array<FloatArray>> {
-    val fieldHeight = diameters.max() + 50
-    val cent = fieldHeight / 2
-    return diameters.map{ diam ->
-        createImage(fieldWidth, fieldHeight, 0f).also { image ->
-            for(i in 0 until fieldWidth) paintSlice(
-                image, i, cent, diam,100f, true
-            )
-        }
-    }
-}

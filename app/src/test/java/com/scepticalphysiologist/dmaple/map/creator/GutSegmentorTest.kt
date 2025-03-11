@@ -1,9 +1,18 @@
 package com.scepticalphysiologist.dmaple.map.creator
 
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Assertions.*
-import kotlin.math.abs
+import android.graphics.Color
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowBitmap
 
+
+
+@RunWith(RobolectricTestRunner::class)
+@Config(shadows = [ShadowBitmap::class])
 class GutSegmentorTest {
 
     @Test
@@ -13,16 +22,16 @@ class GutSegmentorTest {
         val extent = Pair(40, 180)
         val ih = 100
         val bounds = Pair(35, 80)
-        var image = createImage(iw, ih, 0f)
+        var image = createImage(iw, ih, Color.BLACK)
         for(i in extent.first..extent.second)
             for(j in bounds.first..bounds.second)
-                image[j][i] = 1f
+                image.setPixel(i, j, Color.WHITE)
 
         // When: The gut is segmented.
-        val segmentor = ArrayGutSegmentor()
+        val segmentor = GutSegmentor()
         segmentor.setLongSection(extent.first, extent.second)
         segmentor.gutIsHorizontal = true
-        segmentor.threshold = 0.5f
+        segmentor.threshold = 100f
         segmentor.gutIsAboveThreshold = true
         GutSegmentor.minWidth = 5
         segmentor.setFieldImage(image)
@@ -45,7 +54,7 @@ class GutSegmentorTest {
         assertEquals(bounds.second, segmentor.upper[20])
 
         // Given The field values are inverted.
-        applyImage(image, {v -> abs(v - 1f)})
+        invertImage(image)
         segmentor.gutIsAboveThreshold = false
 
         // When: The gut is segmented.
@@ -67,15 +76,15 @@ class GutSegmentorTest {
         val expectedWidths = (gutExtent.first..gutExtent.second).map{(it * wS + w0).toInt()}.toList()
         val iw = maxOf(gutExtent.first, gutExtent.second) + 20
         val ih = expectedWidths.max() + 50
-        var image = createImage(iw, ih, 0f)
+        var image = createImage(iw, ih, Color.BLACK)
         for((i, w) in expectedWidths.withIndex())
-            paintSlice(image, i + gutExtent.first, ih / 2, w, 1f, false)
+            paintSlice(image, i + gutExtent.first, ih / 2, w, Color.WHITE, false)
 
         // When: The gut is segmented.
-        val segmentor = ArrayGutSegmentor()
+        val segmentor = GutSegmentor()
         segmentor.setLongSection(gutExtent.first, gutExtent.second)
         segmentor.gutIsHorizontal = true
-        segmentor.threshold = 0.5f
+        segmentor.threshold = 100f
         segmentor.gutIsAboveThreshold = true
         GutSegmentor.minWidth = 5
         segmentor.setFieldImage(image)
@@ -98,7 +107,7 @@ class GutSegmentorTest {
         assertEquals(expectedWidths, actualWidths)
 
         // Given: The field values are inverted.
-        applyImage(image, {v -> abs(v - 1f)})
+        invertImage(image)
         segmentor.gutIsAboveThreshold = false
 
         // When: The gut is segmented.
@@ -118,21 +127,21 @@ class GutSegmentorTest {
         val expectedWidths = (gutExtent.first..gutExtent.second).map{gutWidth}.toList()
         val iw = maxOf(gutExtent.first, gutExtent.second) + 20
         val ih = 90
-        val image = createImage(iw, ih, 0f)
+        val image = createImage(iw, ih, Color.BLACK)
         for((i, w) in expectedWidths.withIndex())
-            paintSlice(image, i + gutExtent.first, ih / 2, w, 1f, false)
+            paintSlice(image, i + gutExtent.first, ih / 2, w, Color.WHITE, false)
         // ... with a series of gaps.
         val gap = 4
         val hg = 1 + gap / 2
         val j = (ih - gutWidth) / 2
         for(i in hg until gutWidth - hg)
-            paintSlice(image, i + gutExtent.first + 10, j + i, gap,0f, false)
+            paintSlice(image, i + gutExtent.first + 10, j + i, gap, Color.BLACK, false)
 
         // When: The gut is segmented with a maxGap attribute the same as the gap width.
-        val segmentor = ArrayGutSegmentor()
+        val segmentor = GutSegmentor()
         segmentor.setLongSection(gutExtent.first, gutExtent.second)
         segmentor.gutIsHorizontal = true
-        segmentor.threshold = 0.5f
+        segmentor.threshold = 100f
         segmentor.gutIsAboveThreshold = true
         GutSegmentor.maxGap = gap
         GutSegmentor.minWidth = 5
