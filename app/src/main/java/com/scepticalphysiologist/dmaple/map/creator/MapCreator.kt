@@ -20,10 +20,12 @@ enum class MapType (
     val title: String,
     /** The number of maps created for the type. */
     val nMaps: Int,
+    /** The number of bytes required per space-time sample/pixel. */
+    val bytesPerSample: Int
 ){
-    DIAMETER(title = "diameter", nMaps = 1,),
-    RADIUS(title = "radius", nMaps = 2),
-    SPINE(title = "spine profile", nMaps = 1);
+    DIAMETER(title = "diameter", nMaps = 1, bytesPerSample = 2),
+    RADIUS(title = "radius", nMaps = 2, bytesPerSample = 4),
+    SPINE(title = "spine profile", nMaps = 1, bytesPerSample = 3);
 }
 
 /** Handles the creation of spatio-temporal maps for a single ROI. */
@@ -121,8 +123,6 @@ class MapCreator(val roi: FieldRoi) {
         return true
     }
 
-    fun setSpatialResolution(ruler: FieldRuler) { spatialRes = ruler.getResolution() }
-
     /** The current sample width (space) and height (time) of the map. */
     fun spaceTimeSampleSize(): Size { return Size(ns, nt) }
 
@@ -162,6 +162,9 @@ class MapCreator(val roi: FieldRoi) {
     fun setTemporalResolution(durationSec: Float) {
         temporalRes = Pair(ns.toFloat() / durationSec, "s")
     }
+
+    /** Set the spatial resolution from a ruler. */
+    fun setSpatialResolution(ruler: FieldRuler) { spatialRes = ruler.getResolution() }
 
     // ---------------------------------------------------------------------------------------------
     // Display
@@ -234,6 +237,10 @@ class MapCreator(val roi: FieldRoi) {
     }
 
 }
+
+// -------------------------------------------------------------------------------------------------
+// I/O
+// -------------------------------------------------------------------------------------------------
 
 /** Find a tiff directory with a matching identifier. */
 fun findTiff(tiffs: List<FileDirectory>, identifier: String): FileDirectory? {
