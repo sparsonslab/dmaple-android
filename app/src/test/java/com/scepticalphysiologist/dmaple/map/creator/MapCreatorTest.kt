@@ -33,10 +33,7 @@ class MapCreatorTest {
 
         // a series of camera frames of a gut positioned horizontally across the whole frame.
         diameters = listOf(50, 55, 60, 65, 60, 55, 50)
-        frames = horizontalGutSeries(
-            diameters = diameters,
-            fieldWidth = 100
-        )
+        frames = horizontalGutSeries(diameters = diameters, fieldWidth = 100)
 
         // An ROI over that gut.
         val (iw, ih) = Pair(frames[0].width, frames[0].height)
@@ -54,7 +51,7 @@ class MapCreatorTest {
     }
 
     @Test
-    fun `reach end condition reached`() {
+    fun `reach end of buffer condition reached`() {
         // Given: A map creator for the ROI.
         var creator = MapCreator(roi)
 
@@ -64,7 +61,7 @@ class MapCreatorTest {
         creator.provideBuffers(buffers)
         for(frame in frames) creator.updateWithCameraBitmap(frame)
 
-        // Then: The buffer limits are not reached.
+        // Then: The buffer limits are not reached and all frames are in the map.
         assert(!creator.hasReachedBufferLimit())
         assertEquals(frames.size, creator.timeSamples())
 
@@ -74,13 +71,13 @@ class MapCreatorTest {
         creator.provideBuffers(buffers)
         for(frame in frames) creator.updateWithCameraBitmap(frame)
 
-        // Then: The buffer limits are reached.
+        // Then: The buffer limits have been recorded as reached and the last frame is missing from the map.
         assert(creator.hasReachedBufferLimit())
         assertEquals(frames.size - 1, creator.timeSamples())
     }
 
     @Test
-    fun `correct diameter`() {
+    fun `correct diameter in maps`() {
         // Given: A map creator for the ROI.
         val creator = MapCreator(roi)
 

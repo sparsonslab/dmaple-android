@@ -102,6 +102,7 @@ class MapCreator(val roi: FieldRoi) {
         ns = segmentor.longIdx.size
     }
 
+    /** Provide buffers for holding map data. */
     fun provideBuffers(buffers: List<ByteBuffer>): Boolean {
         if(buffers.size < nMaps) return false
         var i = 0
@@ -126,8 +127,10 @@ class MapCreator(val roi: FieldRoi) {
     /** The current sample width (space) and height (time) of the map. */
     fun spaceTimeSampleSize(): Size { return Size(ns, nt) }
 
+    /** The number of spatial samples in the maps. */
     fun spaceSamples(): Int { return ns }
 
+    /** The current number of temporal samples in the maps. */
     fun timeSamples(): Int { return nt }
 
     // ---------------------------------------------------------------------------------------------
@@ -158,7 +161,6 @@ class MapCreator(val roi: FieldRoi) {
                     map.add(p)
                 }
             }
-
             nt += 1
         } catch (_: java.nio.BufferOverflowException) { reachedEnd = true }
     }
@@ -171,6 +173,8 @@ class MapCreator(val roi: FieldRoi) {
     /** Set the spatial resolution from a ruler. */
     fun setSpatialResolution(ruler: FieldRuler) { spatialRes = ruler.getResolution() }
 
+    /** At least one buffer has reached capacity and no more samples will be added to the maps,
+     * irrespective of calls to [updateWithCameraBitmap]. */
     fun hasReachedBufferLimit(): Boolean { return reachedEnd }
 
     // ---------------------------------------------------------------------------------------------
@@ -258,7 +262,7 @@ fun findTiff(tiffs: List<FileDirectory>, identifier: String): FileDirectory? {
 fun setResolution(tiff: FileDirectory, xr: Pair<Float, String>, yr: Pair<Float, String>) {
     tiff.setRationalEntryValue(FieldTagType.XResolution, floatToRational(xr.first))
     tiff.setRationalEntryValue(FieldTagType.YResolution, floatToRational(yr.first))
-    val imagejDescription = "ImageJ=53k\nunit=${xr.second}\nyunit=${yr.second}\nzunit=${xr.second}"
+    val imagejDescription = "ImageJ=1.53k\nunit=${xr.second}\nyunit=${yr.second}\nzunit=${xr.second}"
     tiff.setStringEntryValue(FieldTagType.ImageDescription, imagejDescription)
     // todo - set ImageJ pixel depth scale factor.
 }
@@ -288,13 +292,14 @@ fun rangeSize(range: Int, step: Int): Int {
     return ceil(range.toFloat() / step.toFloat()).toInt()
 }
 
+/** Convert a float to a pair of numerator and denominator long integers. */
 fun floatToRational(value: Float, denom: Long = 100_000): List<Long> {
     val num = (value * denom).toLong()
     return listOf(num, denom)
 }
 
+/** Convert a pair of numerator and denominator long integers to a float. */
 fun rationalToFloat(ratio: List<Long>): Float {
     if(ratio.size < 2) return 1f
     return ratio[0].toFloat() / ratio[1].toFloat()
 }
-

@@ -64,19 +64,11 @@ class GutSegmentor {
         lower = IntArray(nl)
     }
 
-
-
     /** Set the current field frame/image to be analysed. */
     fun setFieldImage(image: Bitmap) { bitmap = image }
 
-    fun getFieldSize(): Pair<Int, Int> {
-        return Pair(bitmap.width, bitmap.height)
-    }
-
     /** Get the NTSC grey-scale value of the (i, j) bitmap pixel. */
-    fun getPixel(i: Int, j: Int): Float {
-        return ntscGrey(bitmap.getPixel(i, j))
-    }
+    private fun getPixel(i: Int, j: Int): Float { return ntscGrey(bitmap.getPixel(i, j)) }
 
     /** Seed the gut an initiate (seed) its spine.
      *
@@ -137,16 +129,11 @@ class GutSegmentor {
      * @return The pixel values along the section.
      * */
     private fun transverseSection(iLong: Int, rTrans: Pair<Int, Int>): BooleanArray {
-        if(gutIsHorizontal) {
-            return (rTrans.first..rTrans.second).map{
-                (getPixel(iLong, it) > threshold) xor !gutIsAboveThreshold
-            }.toBooleanArray()
-        }
-        else {
-            return (rTrans.first..rTrans.second).map{
-                (getPixel(it, iLong) > threshold) xor !gutIsAboveThreshold
-            }.toBooleanArray()
-        }
+        val range = (rTrans.first..rTrans.second)
+        return (if(gutIsHorizontal)
+                 range.map{ (getPixel(iLong, it) > threshold) xor !gutIsAboveThreshold }
+            else range.map{ (getPixel(it, iLong) > threshold) xor !gutIsAboveThreshold }
+        ).toBooleanArray()
     }
 
     /** Conform a transverse-index range to the actual transverse size of the  field. */
@@ -156,7 +143,7 @@ class GutSegmentor {
             t0 = rTrans.second
             t1 = rTrans.first
         }
-        val tmax = if(gutIsHorizontal) getFieldSize().second else getFieldSize().first
+        val tmax = if(gutIsHorizontal) bitmap.height else bitmap.width
         if(t0 !in 0 until tmax) t0 = 0
         if(t1 !in 0 until tmax) t1 = tmax - 1
         return Pair(t0, t1)
