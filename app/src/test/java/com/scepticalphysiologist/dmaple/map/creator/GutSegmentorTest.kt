@@ -1,6 +1,7 @@
 package com.scepticalphysiologist.dmaple.map.creator
 
 import android.graphics.Color
+import com.scepticalphysiologist.dmaple.etc.rotateBitmap
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
@@ -22,7 +23,7 @@ class GutSegmentorTest {
         val extent = Pair(40, 180)
         val ih = 100
         val bounds = Pair(35, 80)
-        var image = createImage(iw, ih, Color.BLACK)
+        var image = createBitmap(iw, ih, Color.BLACK)
         for(i in extent.first..extent.second)
             for(j in bounds.first..bounds.second)
                 image.setPixel(i, j, Color.WHITE)
@@ -42,7 +43,7 @@ class GutSegmentorTest {
         assertEquals(bounds.second, segmentor.upper[20])
 
         // Given: The same gut, rotated.
-        image = rotateImage(image)
+        image = rotateBitmap(image, 90)
         segmentor.gutIsHorizontal = false
 
         // When: The gut is segmented.
@@ -54,7 +55,7 @@ class GutSegmentorTest {
         assertEquals(bounds.second, segmentor.upper[20])
 
         // Given The field values are inverted.
-        invertImage(image)
+        invertBitmap(image)
         segmentor.gutIsAboveThreshold = false
 
         // When: The gut is segmented.
@@ -76,7 +77,7 @@ class GutSegmentorTest {
         val expectedWidths = (gutExtent.first..gutExtent.second).map{(it * wS + w0).toInt()}.toList()
         val iw = maxOf(gutExtent.first, gutExtent.second) + 20
         val ih = expectedWidths.max() + 50
-        var image = createImage(iw, ih, Color.BLACK)
+        var image = createBitmap(iw, ih, Color.BLACK)
         for((i, w) in expectedWidths.withIndex())
             paintSlice(image, i + gutExtent.first, ih / 2, w, Color.WHITE, false)
 
@@ -95,7 +96,7 @@ class GutSegmentorTest {
         assertEquals(expectedWidths, actualWidths)
 
         // Given: The same gut, rotated.
-        image = rotateImage(image)
+        image = rotateBitmap(image, 90)
         segmentor.gutIsHorizontal = false
 
         // When: The gut is segmented.
@@ -107,7 +108,7 @@ class GutSegmentorTest {
         assertEquals(expectedWidths, actualWidths)
 
         // Given: The field values are inverted.
-        invertImage(image)
+        invertBitmap(image)
         segmentor.gutIsAboveThreshold = false
 
         // When: The gut is segmented.
@@ -127,7 +128,7 @@ class GutSegmentorTest {
         val expectedWidths = (gutExtent.first..gutExtent.second).map{gutWidth}.toList()
         val iw = maxOf(gutExtent.first, gutExtent.second) + 20
         val ih = 90
-        val image = createImage(iw, ih, Color.BLACK)
+        val image = createBitmap(iw, ih, Color.BLACK)
         for((i, w) in expectedWidths.withIndex())
             paintSlice(image, i + gutExtent.first, ih / 2, w, Color.WHITE, false)
         // ... with a series of gaps.
