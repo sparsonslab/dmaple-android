@@ -20,11 +20,11 @@ enum class MapType (
     val title: String,
     /** The number of maps created for the type. */
     val nMaps: Int,
-    /** The number of bytes required per space-time sample/pixel. */
+    /** The number of bytes required per space-time sample/pixel per map. */
     val bytesPerSample: Int
 ){
     DIAMETER(title = "diameter", nMaps = 1, bytesPerSample = 2),
-    RADIUS(title = "radius", nMaps = 2, bytesPerSample = 4),
+    RADIUS(title = "radius", nMaps = 2, bytesPerSample = 2),
     SPINE(title = "spine profile", nMaps = 1, bytesPerSample = 3);
 }
 
@@ -125,6 +125,10 @@ class MapCreator(val roi: FieldRoi) {
 
     /** The current sample width (space) and height (time) of the map. */
     fun spaceTimeSampleSize(): Size { return Size(ns, nt) }
+
+    fun spaceSamples(): Int { return ns }
+
+    fun timeSamples(): Int { return nt }
 
     // ---------------------------------------------------------------------------------------------
     // Calculation
