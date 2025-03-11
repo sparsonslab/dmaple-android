@@ -151,9 +151,9 @@ class MapCreator(val roi: FieldRoi) {
             var k: Int
             var p: Int
             for(i in 0 until ns) {
-                diameterMap?.add(segmentor.getDiameter(i).toShort())
-                radiusMapLeft?.add(segmentor.getLowerRadius(i).toShort())
-                radiusMapRight?.add(segmentor.getUpperRadius(i).toShort())
+                diameterMap?.addDistance(segmentor.getDiameter(i))
+                radiusMapLeft?.addDistance(segmentor.getLowerRadius(i))
+                radiusMapRight?.addDistance(segmentor.getUpperRadius(i))
                 spineMap?.let { map ->
                     j = segmentor.getSpine(i)
                     k = segmentor.longIdx[i]
@@ -258,13 +258,21 @@ fun findTiff(tiffs: List<FileDirectory>, identifier: String): FileDirectory? {
     return tiffs.filter{it.getStringEntryValue(FieldTagType.ImageUniqueID) == identifier}.firstOrNull()
 }
 
-/** Set the x and y resolutions of a tiff directory according to the ImageJ format. */
+/** Set the x and y resolutions of a tiff directory according to the ImageJ format.
+ *
+ * @param tiff The TIFF directory.
+ * @param xr The x resolution (pixels/unit).
+ * @param yr The y resolution (pixels/unit).
+ * */
 fun setResolution(tiff: FileDirectory, xr: Pair<Float, String>, yr: Pair<Float, String>) {
     tiff.setRationalEntryValue(FieldTagType.XResolution, floatToRational(xr.first))
     tiff.setRationalEntryValue(FieldTagType.YResolution, floatToRational(yr.first))
-    val imagejDescription = "ImageJ=1.53k\nunit=${xr.second}\nyunit=${yr.second}\nzunit=${xr.second}"
+    val imagejDescription = listOf(
+        "ImageJ=1.53k",
+        "unit=${xr.second}", "yunit=${yr.second}", "zunit=-",
+        "vunit=${xr.second}", "cf=0", "c0=0", "c1=${1f / xr.first}"
+    ).joinToString("\n")
     tiff.setStringEntryValue(FieldTagType.ImageDescription, imagejDescription)
-    // todo - set ImageJ pixel depth scale factor.
 }
 
 /** Get the x and y resolutions of a tiff directory. */

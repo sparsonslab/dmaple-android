@@ -188,13 +188,15 @@ class ShortMap(buffer: ByteBuffer, nx: Int): MapBufferView<Short>(buffer, nx) {
 
     override fun get(i: Int, j: Int): Short { return buffer.getShort(bufferPosition(i, j)) }
 
+    fun addDistance(value: Int) { add((value + Short.MIN_VALUE.toInt()).toShort()) }
+
     override fun add(value: Short) {
         buffer.putShort(value)
         if(value > maxv) maxv = value
     }
 
     override fun getColorInt(i: Int, j: Int): Int {
-         val v = (get(i, j) * 255 / maxv).toInt()
+         val v = 255 * get(i, j) / maxv
          return (255 shl 24) or
                 (v and 0xff shl 16) or
                 (v and 0xff shl 8) or

@@ -1,11 +1,8 @@
 package com.scepticalphysiologist.dmaple
 
-import android.graphics.Color
-import com.scepticalphysiologist.dmaple.map.creator.RGBMap
 import com.scepticalphysiologist.dmaple.map.creator.ShortMap
 import com.scepticalphysiologist.dmaple.map.creator.setResolution
 import mil.nga.tiff.FieldTagType
-import mil.nga.tiff.FileDirectory
 import mil.nga.tiff.TIFFImage
 import mil.nga.tiff.TiffReader
 import mil.nga.tiff.TiffWriter
@@ -19,10 +16,10 @@ fun main() {
     val map = ShortMap(ByteBuffer.allocate(500_000), nx)
     for(i in 0..50)
         for(j in 0..nx)
-            map.add(120)
+            map.addDistance(120)
 
     val dir = map.toTiffDirectory("xxxxx")
-    setResolution(dir, Pair(45f, "cm"), Pair(30f, "s"))
+    setResolution(dir, Pair(40f, "cm"), Pair(30f, "s"))
     dir.setStringEntryValue(FieldTagType.ImageUniqueID, "abababs")
 
     var image = TIFFImage()
