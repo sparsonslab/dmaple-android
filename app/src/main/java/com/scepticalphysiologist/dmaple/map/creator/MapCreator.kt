@@ -158,6 +158,7 @@ class MapCreator(val roi: FieldRoi) {
                     map.add(p)
                 }
             }
+
             nt += 1
         } catch (_: java.nio.BufferOverflowException) { reachedEnd = true }
     }

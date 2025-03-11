@@ -42,7 +42,7 @@ fun horizontalGutSeries(
     return diameters.map{ diam ->
         createImage(fieldWidth, fieldHeight, Color.BLACK).also { image ->
             for(i in 0 until fieldWidth) paintSlice(
-                image, i, cent, diam,Color.WHITE, true
+                image, i, cent, diam, Color.WHITE, false
             )
         }
     }
