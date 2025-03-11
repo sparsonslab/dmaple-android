@@ -73,6 +73,8 @@ abstract class GutSegmentor {
     /** Set the current field frame/image to be analysed. */
     abstract fun setFieldImage(image: Any)
 
+    abstract fun getFieldSize(): Pair<Int, Int>
+
     /** Get a pixel value from the current field image.*/
     abstract fun getPixel(i: Int, j: Int): Float
 
@@ -108,17 +110,19 @@ abstract class GutSegmentor {
      * @return The transverse-axis indices at the lower and upper boundary of each gut found.
      * */
     fun findGuts(iLong: Int, rTrans: Pair<Int, Int>): List<Pair<Int, Int>> {
-        val section = transverseSection(iLong, rTrans)
+        val rTransChecked = conformTransRange(rTrans)
+        val section = transverseSection(iLong, rTransChecked)
         val guts = mutableListOf<Pair<Int, Int>>()
         var w = 0
         var g = 0
+        val t0 = rTransChecked.first
         for((i, v) in section.withIndex()) {
             if(v || ((w > 0) && (g <= maxGap))) {
                 w += 1
                 if(!v) g += 1 else g = 0
             }
             else {
-                if(w >= minWidth) guts.add(Pair(rTrans.first + i - w, rTrans.first + i - g - 1))
+                if(w >= minWidth) guts.add(Pair(t0 + i - w, t0 + i - g - 1))
                 g = 0
                 w = 0
             }
@@ -132,7 +136,7 @@ abstract class GutSegmentor {
      * @param rTrans The transverse-axis index range, over which to get pixel values.
      * @return The pixel values along the section.
      * */
-    fun transverseSection(iLong: Int, rTrans: Pair<Int, Int>): BooleanArray {
+    private fun transverseSection(iLong: Int, rTrans: Pair<Int, Int>): BooleanArray {
         if(gutIsHorizontal) {
             return (rTrans.first..rTrans.second).map{
                 (getPixel(iLong, it) > threshold) xor !gutIsAboveThreshold
@@ -143,6 +147,19 @@ abstract class GutSegmentor {
                 (getPixel(it, iLong) > threshold) xor !gutIsAboveThreshold
             }.toBooleanArray()
         }
+    }
+
+    /** Conform a transverse-index range to the actual transverse size of the  field. */
+    private fun conformTransRange(rTrans: Pair<Int, Int>): Pair<Int, Int> {
+        var (t0, t1) = rTrans
+        if(t0 > t1) {
+            t0 = rTrans.second
+            t1 = rTrans.first
+        }
+        val tmax = if(gutIsHorizontal) getFieldSize().second else getFieldSize().first
+        if(t0 !in 0 until tmax) t0 = 0
+        if(t1 !in 0 until tmax) t1 = tmax - 1
+        return Pair(t0, t1)
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -236,6 +253,10 @@ class BitmapGutSegmentor: GutSegmentor() {
         fieldHeight = bitmap.height
     }
 
+    override fun getFieldSize(): Pair<Int, Int> {
+        return Pair(bitmap.width, bitmap.height)
+    }
+
     /** Get the NTSC grey-scale value of the (i, j) bitmap pixel. */
     override fun getPixel(i: Int, j: Int): Float { return ntscGrey(bitmap.getPixel(i, j)) }
 }
@@ -251,6 +272,10 @@ class ArrayGutSegmentor: GutSegmentor() {
         array = image as Array<FloatArray>
         fieldHeight = array.size
         fieldWidth = array[0].size
+    }
+
+    override fun getFieldSize(): Pair<Int, Int> {
+        return Pair(array[0].size, array.size)
     }
 
     override fun getPixel(i: Int, j: Int): Float { return array[j][i] }

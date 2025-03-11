@@ -75,14 +75,6 @@ enum class Edge {
     }
 }
 
-fun printRect(r: Rect, name: String = "") {
-    println("$name = ${r.left} - ${r.right}, ${r.top} - ${r.bottom}")
-}
-
-fun printRectF(r: RectF, name: String = "") {
-    println("$name = ${r.left} - ${r.right}, ${r.top} - ${r.bottom}")
-}
-
 // -------------------------------------------------------------------------------------------------
 // Geometric classes
 // -------------------------------------------------------------------------------------------------

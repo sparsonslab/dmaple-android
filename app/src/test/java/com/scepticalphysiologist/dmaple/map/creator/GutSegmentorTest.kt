@@ -1,8 +1,7 @@
 package com.scepticalphysiologist.dmaple.map.creator
 
 import org.junit.jupiter.api.Test
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotEquals
+import org.junit.jupiter.api.Assertions.*
 import kotlin.math.abs
 
 class GutSegmentorTest {
