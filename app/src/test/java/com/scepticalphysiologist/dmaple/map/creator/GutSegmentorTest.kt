@@ -121,6 +121,35 @@ class GutSegmentorTest {
     }
 
     @Test
+    fun `behaviour at gut termination`() {
+        // Given: A horizontal gut of constant width.
+        val gutExtent = Pair(20, 100)
+        val gutWidth = 40
+        val expectedWidths = (gutExtent.first..gutExtent.second).map{gutWidth}.toList()
+        val iw = maxOf(gutExtent.first, gutExtent.second) + 100
+        val ih = 90
+        val image = createBitmap(iw, ih, Color.BLACK)
+        for((i, w) in expectedWidths.withIndex())
+            paintSlice(image, i + gutExtent.first, ih / 2, w, Color.WHITE, false)
+
+        // When: The gut is segmented 20 pixels past the gut's end.
+        val segmentor = GutSegmentor()
+        segmentor.setLongSection(gutExtent.first, gutExtent.second + 20)
+        segmentor.gutIsHorizontal = true
+        segmentor.threshold = 100f
+        segmentor.gutIsAboveThreshold = true
+        GutSegmentor.maxGap = 5
+        GutSegmentor.minWidth = 5
+        GutSegmentor.smoothWinSize = 10
+        segmentor.setFieldImage(image)
+        segmentor.detectGutAndSeedSpine(Pair(1, ih - 1))
+
+        // Then: The measured diameter past the end of the gut is 1.
+        val diam = segmentor.getDiameter(segmentor.longIdx.size - 1)
+        assertEquals(1, diam)
+    }
+
+    @Test
     fun `gaps are handled`() {
         // Given: A horizontal gut of constant width.
         val gutExtent = Pair(20, 200)

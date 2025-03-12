@@ -199,16 +199,17 @@ class GutSegmentor {
             }
         }
         else {
-            if(findAbove) while((i >= 0) && (i < bitmap.width) && (g <= maxGap)) {
-                if(getPixel(i, iLong) > threshold) g = 0 else g += 1
+            if (findAbove) while ((i >= 0) && (i < bitmap.width) && (g <= maxGap)) {
+                if (getPixel(i, iLong) > threshold) g = 0 else g += 1
                 i += d
             }
-            else while((i >= 0) && (i < bitmap.width) && (g <= maxGap)){
-                if(getPixel(i, iLong) < threshold) g = 0 else g += 1
+            else while ((i >= 0) && (i < bitmap.width) && (g <= maxGap)) {
+                if (getPixel(i, iLong) < threshold) g = 0 else g += 1
                 i += d
             }
         }
-        return i - d * (g + 1)
+        val k = i - d * (g + 1)
+        return if(goUp xor (k > iTrans)) iTrans else k
     }
 
     // ---------------------------------------------------------------------------------------------
