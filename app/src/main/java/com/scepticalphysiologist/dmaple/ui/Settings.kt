@@ -33,6 +33,7 @@ class Settings: PreferenceFragmentCompat() {
         fun setFromPreferences(activity: Activity){
             val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
             setScreenRotation(prefs.getString("SCREEN_ORIENTATION", "auto"), activity)
+            setKeepScreenOn(prefs.getBoolean("KEEP_SCREEN_ON", false))
             setFrameRate(prefs.getString("FRAME_RATE_FPS", "30"))
             setThresholdInverted(prefs.getBoolean("THRESHOLD_INVERTED", false))
             setSeedMinWidth(prefs.getInt("SEED_MIN_WIDTH", 10))
@@ -43,6 +44,10 @@ class Settings: PreferenceFragmentCompat() {
         fun setScreenRotation(entry: Any?, activity: Activity) {
             val or = ORIENTATION_MAP[entry.toString()] ?: ActivityInfo.SCREEN_ORIENTATION_SENSOR
             activity.requestedOrientation = or
+        }
+
+        private fun setKeepScreenOn(entry: Any?) {
+            MainActivity.keepScreenOn = if(entry is Boolean) entry else entry.toString().toBoolean()
         }
 
         private fun setFrameRate(entry: Any?) {

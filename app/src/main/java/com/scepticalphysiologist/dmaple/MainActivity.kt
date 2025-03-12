@@ -7,6 +7,7 @@ import android.content.ServiceConnection
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.IBinder
+import android.view.WindowManager
 import androidx.camera.core.Preview.SurfaceProvider
 import androidx.camera.view.PreviewView
 import androidx.preference.PreferenceManager
@@ -37,6 +38,9 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
          * */
         private var surface: SurfaceProvider? = null
 
+        /** Keep the screen on, irrespective of the device's sleep settings. */
+        var keepScreenOn: Boolean = false
+
         /** Set the view surface onto which the camera feed will be shown. */
         fun setMappingServiceCameraPreview(preview: PreviewView) {
             surface = preview.surfaceProvider
@@ -62,14 +66,21 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         // Load records
         MappingRecord.loadRecords()
 
-        // Set static attributes from preferences
-        Settings.setFromPreferences(this)
+        // Set static attributes from preferences.
+        setPreferences()
     }
 
     override fun onResume() {
         super.onResume()
         // If we are resuming after going into settings, set the preferences.
+        setPreferences()
+    }
+
+    /** Set system-wide variables from preferences. */
+    private fun setPreferences() {
         Settings.setFromPreferences(this)
+        if(keepScreenOn) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
     // ---------------------------------------------------------------------------------------------

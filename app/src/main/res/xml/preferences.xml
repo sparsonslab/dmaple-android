@@ -7,6 +7,12 @@
         android:title="Screen Orientation"
         app:useSimpleSummaryProvider="true"/>
 
+    <SwitchPreference
+        android:key="KEEP_SCREEN_ON"
+        android:title="Keep screen on"
+        android:summary="Do not allow the screen to sleep while the app is open."
+        android:defaultValue="false"/>
+
     <DropDownPreference
         android:key="FRAME_RATE_FPS"
         android:title="Frame Rate"

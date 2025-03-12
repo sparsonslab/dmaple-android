@@ -47,9 +47,6 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
         // Load the record.
         arguments?.getInt("recordIdx")?.let { model.loadRecord(it) }
 
-        // Keep the screen on, so that the camera stays on.
-        //binding.root.keepScreenOn = true
-
         // Once the view is inflated, set the mapping service's camera surface.
         binding.root.post {
             model.setCameraPreview(binding.cameraAndRoi.getCameraPreview())
