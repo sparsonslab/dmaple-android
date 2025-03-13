@@ -1,6 +1,6 @@
 package com.scepticalphysiologist.dmaple
 
-import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.runner.AndroidJUnit4
 import com.scepticalphysiologist.dmaple.etc.Frame
 import com.scepticalphysiologist.dmaple.etc.Point
 
