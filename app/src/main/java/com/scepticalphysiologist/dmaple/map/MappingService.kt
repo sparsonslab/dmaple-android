@@ -289,9 +289,14 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         }.build()
 
         // Start this service the foreground.
-        ServiceCompat.startForeground(
+        try { ServiceCompat.startForeground(
             this, startId, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
-        )
+        ) }
+        // These exceptions are thrown if camera permissions have not been given.
+        catch(_: java.lang.SecurityException) {}
+        catch(_: java.lang.RuntimeException) {}
+        catch(_: android.os.RemoteException) {}
+
         return super.onStartCommand(intent, flags, startId)
     }
 

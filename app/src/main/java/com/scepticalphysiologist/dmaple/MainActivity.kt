@@ -4,15 +4,20 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.IBinder
 import android.view.WindowManager
 import androidx.camera.core.Preview.SurfaceProvider
 import androidx.camera.view.PreviewView
-import androidx.preference.PreferenceManager
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.MutableLiveData
+import com.scepticalphysiologist.dmaple.etc.PermissionSets
+import com.scepticalphysiologist.dmaple.etc.msg.Warnings
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
+import com.scepticalphysiologist.dmaple.ui.Recorder
 import com.scepticalphysiologist.dmaple.ui.Settings
 import java.io.File
 
@@ -41,6 +46,9 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         /** Keep the screen on, irrespective of the device's sleep settings. */
         var keepScreenOn: Boolean = false
 
+        /** Any messages that need to be broadcast (e.g. for warnings dialog display). */
+        val message = MutableLiveData<Warnings?>(null)
+
         /** Set the view surface onto which the camera feed will be shown. */
         fun setMappingServiceCameraPreview(preview: PreviewView) {
             surface = preview.surfaceProvider
@@ -59,15 +67,15 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         // Storage
         storageDirectory = applicationContext.getExternalFilesDir(null)
 
-        // Connect the mapping service and initiate its buffers.
-        MappingService.initialiseBuffers()
-        connectMappingService(applicationContext)
-
         // Load records
         MappingRecord.loadRecords()
 
         // Set static attributes from preferences.
         setPreferences()
+
+        // Ask for permissions.
+        requestPermissions(applicationContext)
+
     }
 
     override fun onResume() {
@@ -81,6 +89,32 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         Settings.setFromPreferences(this)
         if(keepScreenOn) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Permissions
+    // ---------------------------------------------------------------------------------------------
+
+    private fun requestPermissions(context: Context) {
+        val permissionsToAsk = PermissionSets.allPermissions().filter {
+            (ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_DENIED)
+        }.toSet()
+        requestPermissions(permissionsToAsk.toTypedArray(), 6543)
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        // If all permissions have been given,
+        if(grantResults.all{it == PackageManager.PERMISSION_GRANTED}) {
+            MappingService.initialiseBuffers()
+            connectMappingService(applicationContext)
+        } else {
+            val warning = Warnings("The App Cannot Run")
+            warning.add("You have not given the permissions required for the app to run.\nPlease either:", true)
+            warning.add("1. Close and reopen the app and give all the requested permissions.", true)
+            warning.add("2. Open the device settings and give the app the Camera permission.", true)
+            message.postValue(warning)
+        }
     }
 
     // ---------------------------------------------------------------------------------------------

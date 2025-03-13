@@ -2,18 +2,16 @@ package com.scepticalphysiologist.dmaple.ui
 
 import android.annotation.SuppressLint
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.text.format.DateUtils
 import android.view.MotionEvent
 import android.view.View
-import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.SettingsActivity
 import com.scepticalphysiologist.dmaple.databinding.RecorderBinding
-import com.scepticalphysiologist.dmaple.etc.PermissionSets
 import com.scepticalphysiologist.dmaple.etc.Point
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
@@ -34,12 +32,6 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
     @SuppressLint("ClickableViewAccessibility")
     override fun createUI() {
 
-        // Permissions
-        val permissionsToAsk = PermissionSets.allPermissions().filter {
-            (checkSelfPermission(binding.root.context, it)  == PackageManager.PERMISSION_DENIED)
-        }.toSet()
-        requestPermissions(permissionsToAsk.toTypedArray(), 6543)
-
         // Get the view model.
         model = ViewModelProvider(this.requireActivity()).get(RecorderModel::class.java)
 
@@ -53,6 +45,11 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
             binding.cameraAndRoi.setExposureSlider(0.5f)
             binding.cameraAndRoi.setRoisAndRuler(model.getRoisAndRuler())
             setUIState()
+        }
+
+        // Show any warnings from the manin activity.
+        MainActivity.message.observe(viewLifecycleOwner) { msg ->
+            msg?.show(binding.root.context)
         }
 
         // Exposure control.
@@ -202,6 +199,10 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
             }
         }
         return false
+    }
+
+    fun showMessage(){
+        println("BLABLA!")
     }
 
 }
