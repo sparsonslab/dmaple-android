@@ -15,6 +15,8 @@ import java.nio.ByteBuffer
 
 /** A wrapper ("view") around a byte buffer that holds a map's data.
  *
+ * The map is arranged spatial-axis-major order in the buffer.
+ *
  * @param T The type of the map's pixels.
  * @property buffer The byte buffer that holds the map's data.
  * @property nx The number of spatial pixels in the map.
@@ -171,10 +173,10 @@ class ShortMap(buffer: ByteBuffer, nx: Int): MapBufferView<Short>(buffer, nx) {
     val s1 = Short.MAX_VALUE.toFloat()
     val sr = s1 - s0
     val rt = sr / 255f
-    var maxv: Short = 1
+    var maxv: Short = Short.MIN_VALUE
 
     override fun toRaster(i: Int, j: Int, raster: Rasters) {
-        raster.setPixelSample(0, i, j, get(i, j) - s0)
+        raster.setPixelSample(0, i, j, get(i, j).toInt() - s0.toInt())
     }
 
     override fun fromRaster(i: Int, j: Int, raster: Rasters) {
@@ -196,7 +198,8 @@ class ShortMap(buffer: ByteBuffer, nx: Int): MapBufferView<Short>(buffer, nx) {
     }
 
     override fun getColorInt(i: Int, j: Int): Int {
-         val v = 255 * get(i, j) / maxv
+        val denom = maxv.toFloat() - s0
+         val v = (255f * (get(i, j).toFloat() - s0) / denom).toInt()
          return (255 shl 24) or
                 (v and 0xff shl 16) or
                 (v and 0xff shl 8) or

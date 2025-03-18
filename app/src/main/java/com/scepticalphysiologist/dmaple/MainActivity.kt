@@ -74,8 +74,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         setPreferences()
 
         // Ask for permissions.
-        requestPermissions(applicationContext)
-
+        requestPermissions()
     }
 
     override fun onResume() {
@@ -95,11 +94,9 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
     // Permissions
     // ---------------------------------------------------------------------------------------------
 
-    private fun requestPermissions(context: Context) {
-        val permissionsToAsk = PermissionSets.allPermissions().filter {
-            (ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_DENIED)
-        }.toSet()
-        requestPermissions(permissionsToAsk.toTypedArray(), 6543)
+    private fun requestPermissions() {
+        val permissionsToAsk = PermissionSets.allPermissions().toTypedArray()
+        if(permissionsToAsk.isNotEmpty())requestPermissions(permissionsToAsk, 6543)
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
