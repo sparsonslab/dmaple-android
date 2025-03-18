@@ -76,7 +76,7 @@ abstract class MapBufferView<T : Number>(
      * @param dir The slice/directory with the map
      * @return The number of time samples in the map or null if the map's slice could not be found.
      * */
-    fun fromTiffDirectory(dir: FileDirectory): Int {
+    open fun fromTiffDirectory(dir: FileDirectory): Int {
         // Read from the raster into the buffer.
         buffer.position(0)
         val raster = dir.readRasters()
@@ -180,6 +180,11 @@ class ShortMap(buffer: ByteBuffer, nx: Int): MapBufferView<Short>(buffer, nx) {
     override fun fromRaster(i: Int, j: Int, raster: Rasters) {
         val v = (raster.getPixelSample(0, i, j).toInt() + s0.toInt()).toShort()
         set(i, j, v)
+    }
+
+    override fun fromTiffDirectory(dir: FileDirectory): Int {
+        maxv = Short.MIN_VALUE
+        return super.fromTiffDirectory(dir)
     }
 
     override fun bufferPosition(i: Int, j: Int): Int { return 2 * (j * nx + i) }
