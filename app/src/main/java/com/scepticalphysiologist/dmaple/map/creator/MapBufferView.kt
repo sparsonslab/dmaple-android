@@ -171,9 +171,6 @@ class ShortMap(buffer: ByteBuffer, nx: Int): MapBufferView<Short>(buffer, nx) {
     override val fieldType = FieldType.SHORT
 
     val s0 = Short.MIN_VALUE.toFloat()
-    val s1 = Short.MAX_VALUE.toFloat()
-    val sr = s1 - s0
-    val rt = sr / 255f
     var maxv: Short = Short.MIN_VALUE
 
     override fun toRaster(i: Int, j: Int, raster: Rasters) {
@@ -205,13 +202,6 @@ class ShortMap(buffer: ByteBuffer, nx: Int): MapBufferView<Short>(buffer, nx) {
                 (v and 0xff shl 16) or
                 (v and 0xff shl 8) or
                 (v and 0xff shl 0)
-    }
-
-    fun addNTSCGrey(value: Int) {
-        val v = (0.299f * value.red  +
-                 0.587f * value.green +
-                 0.114f * value.blue) * rt + s0
-        add(v.toInt().toShort())
     }
 
 }
