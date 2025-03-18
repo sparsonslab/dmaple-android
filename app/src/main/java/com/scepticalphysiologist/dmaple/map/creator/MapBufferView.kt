@@ -78,6 +78,7 @@ abstract class MapBufferView<T : Number>(
      * */
     fun fromTiffDirectory(dir: FileDirectory): Int {
         // Read from the raster into the buffer.
+        buffer.position(0)
         val raster = dir.readRasters()
         try {
             for(j in 0 until raster.height)
