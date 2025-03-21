@@ -11,7 +11,6 @@ import android.os.IBinder
 import android.view.WindowManager
 import androidx.camera.core.Preview.SurfaceProvider
 import androidx.camera.view.PreviewView
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.MutableLiveData
 import com.scepticalphysiologist.dmaple.etc.PermissionSets
 import com.scepticalphysiologist.dmaple.etc.msg.Warnings
