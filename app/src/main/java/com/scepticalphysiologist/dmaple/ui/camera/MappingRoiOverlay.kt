@@ -18,6 +18,7 @@ import com.scepticalphysiologist.dmaple.geom.Edge
 import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.etc.msg.MultipleChoice
+import com.scepticalphysiologist.dmaple.geom.Rectangle
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.creator.MapType
@@ -179,7 +180,7 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     fun startThresholding(cameraShot: Bitmap) {
         activeRoi?.let { roi ->
             setBackgroundFromField(FieldImage(Frame.fromView(this, display), cameraShot))
-            thresholdBitmap = ThresholdBitmap.fromImage(cameraShot, roi)
+            thresholdBitmap = ThresholdBitmap.fromImage(cameraShot, roi.toRectF())
             invalidate()
         }
     }
@@ -234,7 +235,7 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
         // Active Roi ... (has to come after the above).
         activeRoi?.let {
             // Touch point relative to current ROI.
-            val rp = tp.relativeDistance(it)
+            val rp = it.relativeDistance(tp)
             val ap = rp.abs()
             // ... near centre
             if((ap.x < ft) && (ap.y < ft)) {
@@ -307,7 +308,7 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
 
     private fun clickedOnSavedRoi(touchPoint: Point): Boolean {
         for(i in savedRois.indices) {
-            val ap = touchPoint.relativeDistance(savedRois[i]).abs()
+            val ap = savedRois[i].relativeDistance(touchPoint).abs()
             if ((ap.x < ft) && (ap.y < ft)) {
                 // notify selection
                 selectedRoi.postValue(savedRois[i].uid)
@@ -327,12 +328,7 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     private fun translate(event: MotionEvent) {
         activeRoi?.let { roi ->
             if(event.action == MotionEvent.ACTION_MOVE){
-                val dx = event.x - drag.x
-                val dy = event.y - drag.y
-                roi.left += dx
-                roi.right += dx
-                roi.bottom += dy
-                roi.top += dy
+                roi.translate(Point(event.x - drag.x, event.y - drag.y))
                 invalidate()
             }
             drag.x = event.x
@@ -372,10 +368,10 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
         if(event.action != MotionEvent.ACTION_DOWN) return
         changeActiveRoi(FieldRoi(Frame.fromView(this, display), maps=listOf(MapType.DIAMETER)))
         activeRoi?.let { roi ->
-            roi.left = event.x - 50f
-            roi.right = event.x + 50f
-            roi.top = event.y  - 50f
-            roi.bottom = event.y + 50f
+            roi.set(Rectangle(
+                Point(event.x - 50f, event.y - 50f),
+                Point(event.x + 50f, event.y + 50f)
+            ))
             drag = Point(event.x, event.y)
             invalidate()
         }

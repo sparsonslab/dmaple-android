@@ -40,8 +40,7 @@ class Point(var x: Float = 0f, var y: Float = 0f) {
 
     fun swap(): Point { return Point(y, x) }
 
-    fun min(): Float { return kotlin.math.min(x, y)
-    }
+    fun min(): Float { return kotlin.math.min(x, y) }
 
     /** The distance from the origin.*/
     fun l2(): Float { return (x.pow(2) + y.pow(2)).pow(0.5f) }
@@ -72,6 +71,10 @@ class Point(var x: Float = 0f, var y: Float = 0f) {
     }
 
     fun toRect(): RectF { return RectF(0f, 0f, x, y) }
+
+    fun toRectangle(): Rectangle { return Rectangle(c0 = Point(0f, 0f), c1 = this.copy()) }
+
+    fun copy(): Point { return Point(x, y) }
 
     /** Functions that operate on collections of points. */
     companion object {

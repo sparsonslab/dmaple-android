@@ -14,32 +14,12 @@ import androidx.camera.core.ImageProxy
  */
 class Frame(val size: Point, val orientation: Int = 0) {
 
-    companion object {
-
-        /**  Get a view's frame. */
-        fun fromView(view: View, display: Display): Frame {
-            return Frame(
-                Point(view.width.toFloat(), view.height.toFloat()),
-                orientation = surfaceRotationDegrees(display.rotation)
-            )
-        }
-
-        /** Get an image's frame. */
-        fun fromImage(image: ImageProxy): Frame {
-            return Frame(
-                Point(image.width.toFloat(), image.height.toFloat()),
-                orientation = image.imageInfo.rotationDegrees
-            )
-        }
-
-    }
+    /** The centre of the frame */
+    val centre: Point get() = this.size * 0.5f
 
     override fun toString(): String {
         return "x = ${size.x}, y = ${size.y}, o =  $orientation"
     }
-
-    /** The centre of the frame */
-    val centre: Point get() = this.size * 0.5f
 
     /** The difference in orientation with another frame in degrees and radians. */
     private fun deltaOrientation(other: Frame): Pair<Float, Float> {
@@ -98,6 +78,31 @@ class Frame(val size: Point, val orientation: Int = 0) {
      */
     fun transformRect(r: RectF, newFrame: Frame, resize: Boolean = true): RectF {
         return Point.toRect(transformPoints(Point.fromRect(r), newFrame, resize))!!
+    }
+
+    fun transformRectangle(r: Rectangle, newFrame: Frame, resize: Boolean = true): Rectangle {
+        val points = transformPoints(listOf(r.c0, r.c1), newFrame, resize)
+        return Rectangle(c0 = points[0], c1 = points[1])
+    }
+
+    companion object {
+
+        /**  Get a view's frame. */
+        fun fromView(view: View, display: Display): Frame {
+            return Frame(
+                Point(view.width.toFloat(), view.height.toFloat()),
+                orientation = surfaceRotationDegrees(display.rotation)
+            )
+        }
+
+        /** Get an image's frame. */
+        fun fromImage(image: ImageProxy): Frame {
+            return Frame(
+                Point(image.width.toFloat(), image.height.toFloat()),
+                orientation = image.imageInfo.rotationDegrees
+            )
+        }
+
     }
 
 }
