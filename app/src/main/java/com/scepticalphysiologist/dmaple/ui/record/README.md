@@ -8,10 +8,10 @@ layers of a single frame layout, from top to bottom:
   - [`ROIOverlay`](RoiOverlay.kt). Rectangular regions-of-interest (ROIs) drawn by the user to indicate which
   guts are to be mapped and where.
   - `Preview` (`androidx.camera.view.PreviewView`). The camera feed.
-* `MapView`. The spatio-temporal map.
+* [`MapView`](MapView.kt). A spatio-temporal map, selected by tapping one of the ROIs.
 
 ![image](mapfield.jpg)
 
 When recording or viewing an old recording, the `FieldView` takes up the top-left of the fragment,
-over the top of the`MapView`, and can be resized by dragging its lower-right. Otherwise, when not
+over the top of the`MapView`, and can be resized by dragging its lower-right corner. Otherwise, when not
 recording, the `FieldView` takes up the whole fragment and the `MapView` is hidden.
