@@ -1,8 +1,8 @@
 package com.scepticalphysiologist.dmaple
 
 import androidx.test.runner.AndroidJUnit4
-import com.scepticalphysiologist.dmaple.etc.Frame
-import com.scepticalphysiologist.dmaple.etc.Point
+import com.scepticalphysiologist.dmaple.geom.Frame
+import com.scepticalphysiologist.dmaple.geom.Point
 
 import org.junit.Test
 import org.junit.runner.RunWith

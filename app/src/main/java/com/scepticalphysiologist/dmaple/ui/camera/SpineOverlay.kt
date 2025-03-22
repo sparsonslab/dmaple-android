@@ -10,8 +10,8 @@ import android.view.View
 import android.view.WindowManager
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.findViewTreeLifecycleOwner
-import com.scepticalphysiologist.dmaple.etc.Frame
-import com.scepticalphysiologist.dmaple.etc.Point
+import com.scepticalphysiologist.dmaple.geom.Frame
+import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 
 /** A view for o showing a mapping spine and boundaries over the camera field. */

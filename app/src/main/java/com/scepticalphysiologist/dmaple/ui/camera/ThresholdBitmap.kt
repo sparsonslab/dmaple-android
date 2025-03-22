@@ -8,7 +8,7 @@ import android.graphics.RectF
 import androidx.core.graphics.get
 import androidx.core.graphics.set
 import com.scepticalphysiologist.dmaple.etc.ntscGrey
-import com.scepticalphysiologist.dmaple.etc.validRect
+import com.scepticalphysiologist.dmaple.geom.validRect
 
 class ThresholdBitmap(val input: Bitmap, val drawRoi: Rect) {
 

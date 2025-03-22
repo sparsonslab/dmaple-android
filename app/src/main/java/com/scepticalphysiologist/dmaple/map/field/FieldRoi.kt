@@ -3,9 +3,9 @@ package com.scepticalphysiologist.dmaple.map.field
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
-import com.scepticalphysiologist.dmaple.etc.Edge
-import com.scepticalphysiologist.dmaple.etc.Frame
-import com.scepticalphysiologist.dmaple.etc.Point
+import com.scepticalphysiologist.dmaple.geom.Edge
+import com.scepticalphysiologist.dmaple.geom.Frame
+import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.etc.randomAlphaString
 import com.scepticalphysiologist.dmaple.map.creator.MapType
 

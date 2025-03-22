@@ -1,9 +1,9 @@
 package com.scepticalphysiologist.dmaple.map.creator
 
 import android.graphics.Bitmap
-import com.scepticalphysiologist.dmaple.etc.Edge
-import com.scepticalphysiologist.dmaple.etc.Frame
-import com.scepticalphysiologist.dmaple.etc.Point
+import com.scepticalphysiologist.dmaple.geom.Edge
+import com.scepticalphysiologist.dmaple.geom.Frame
+import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.ui.camera.ThresholdBitmap
 import org.junit.Assert.assertEquals
