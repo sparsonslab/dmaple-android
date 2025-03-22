@@ -41,7 +41,7 @@ import com.scepticalphysiologist.dmaple.map.field.FieldImage
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.field.FieldRuler
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
-import com.scepticalphysiologist.dmaple.ui.camera.RoisAndRuler
+import com.scepticalphysiologist.dmaple.map.field.RoisAndRuler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope

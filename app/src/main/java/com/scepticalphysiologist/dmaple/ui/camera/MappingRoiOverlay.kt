@@ -17,15 +17,13 @@ import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.geom.Edge
 import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
+import com.scepticalphysiologist.dmaple.map.field.RoisAndRuler
 import com.scepticalphysiologist.dmaple.etc.msg.MultipleChoice
-import com.scepticalphysiologist.dmaple.geom.Rectangle
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.creator.MapType
 import com.scepticalphysiologist.dmaple.map.field.FieldRuler
 
-/** A camera field's set of mapping ROIs and measurement ruler. */
-data class RoisAndRuler(val rois: List<FieldRoi>, val ruler: FieldRuler?)
 
 /** Gesture states for [MappingRoiOverlay]. */
 enum class GestureState {
