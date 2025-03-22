@@ -14,11 +14,10 @@ import androidx.core.view.updateLayoutParams
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import com.scepticalphysiologist.dmaple.R
-import com.scepticalphysiologist.dmaple.etc.Point
+import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.etc.SwitchableSlider
-import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.MappingService
-import com.scepticalphysiologist.dmaple.etc.aspectRatioRatio
+import com.scepticalphysiologist.dmaple.geom.aspectRatioRatio
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
 
