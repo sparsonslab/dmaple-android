@@ -18,9 +18,10 @@ open class Rectangle (
     var c1: Point = Point()
 ){
 
+    // ---------------------------------------------------------------------------------------------
     // android.graphics.RectF equivalent attributes
-    // --------------------------------------------
-    /** The minimum x coordinate. */
+    // ---------------------------------------------------------------------------------------------
+
     var left: Float
         get() = minOf(c0.x, c1.x)
         set(value) { if(c0.x < c1.x) c0.x = value else c1.x = value }
@@ -43,6 +44,10 @@ open class Rectangle (
     val height: Float
         get() = abs(c1.y - c0.y)
 
+    // ---------------------------------------------------------------------------------------------
+    // Conversion and copy.
+    // ---------------------------------------------------------------------------------------------
+
     /** Convert to an [android.graphics.RectF]. */
     fun toRectF(): RectF { return RectF(left, top, right, bottom) }
 
@@ -53,6 +58,10 @@ open class Rectangle (
 
     /** Set from another rectangle. */
     fun set(other: Rectangle) { c0 = other.c0.copy(); c1 = other.c1.copy() }
+
+    // ---------------------------------------------------------------------------------------------
+    // Geometry
+    // ---------------------------------------------------------------------------------------------
 
     /** Intersect with another rectangle.
      * @return The intersection or null if there is no intersection/overlap.
