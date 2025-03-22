@@ -77,18 +77,18 @@ open class Rectangle (
     /** The corner points at one edge of the rectangle. */
     fun edgePoints(edge: Edge): Pair<Point, Point> {
         return when(edge){
-            Edge.LEFT -> Pair(Point(left, top), Point(left, bottom))
-            Edge.RIGHT -> Pair(Point(right, top), Point(right, bottom))
-            Edge.TOP -> Pair(Point(left, top), Point(right, top))
+            Edge.LEFT ->   Pair(Point(left, top),    Point(left, bottom))
+            Edge.RIGHT ->  Pair(Point(right, top),   Point(right, bottom))
+            Edge.TOP ->    Pair(Point(left, top),    Point(right, top))
             Edge.BOTTOM -> Pair(Point(left, bottom), Point(right, bottom))
         }
     }
 
-    /** The distance a point from the centre of the rectangle, relative to its size.
+    /** The distance of a point from the centre of the rectangle, relative to the rectangle's size.
      *
      * @param p The point.
-     * @return Distance of (x, y) from the centre of the rectangle as a fraction of its width/height.
-     * 0 = centre, -1/1 = edge of rectangle (left/right or top/bottom).
+     * @return (x, y) distance of the point from the centre of the rectangle as a fraction of the
+     * rectangle's width/height. 0 = centre, -1/1 = edge of rectangle (left/right or top/bottom).
      */
     fun relativeDistance(p: Point): Point {
         return Point(
@@ -97,9 +97,7 @@ open class Rectangle (
         )
     }
 
-    fun translate(dxy: Point) {
-        c0 += dxy
-        c1 += dxy
-    }
+    /** Translate the rectangle. */
+    fun translate(dxy: Point) { c0 += dxy; c1 += dxy }
 
 }
