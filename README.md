@@ -29,5 +29,11 @@ maps could be created live with a single, cheap piece of tech - an android table
 Hennig et al. (1999). Quantitative analysis of peristalsis in the guinea-pig small intestine using 
 spatio-temporal maps. *J Physiol.* 517, 575–590. [PubMed](https://pmc.ncbi.nlm.nih.gov/articles/PMC2269346/)
 
-
 https://www.scepticalphysiologist.com/code/DMapLE/DMapLE.pdf
+
+### Architecture
+
+Each source code package includes a read-me that summarises the classes and their interconnection,
+starting at the root, [here](app/src/main/java/com/scepticalphysiologist/dmaple).
+
+
