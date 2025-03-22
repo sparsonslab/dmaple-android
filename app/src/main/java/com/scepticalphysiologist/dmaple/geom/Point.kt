@@ -57,21 +57,6 @@ class Point(var x: Float = 0f, var y: Float = 0f) {
         return Point(x * cos(theta) + y * sin(theta), -x * sin(theta) + y * cos(theta))
     }
 
-    /** The distance of the point from the centre of a rectangle, relative to its size.
-     *
-     * @param r The rectangle.
-     * @return Distance of (x, y) from the centre of the rectangle as a fraction of its width/height.
-     * 0 = centre, -1/1 = edge of rectangle (left/right or top/bottom).
-     */
-    fun relativeDistance(r: RectF): Point {
-        return Point(
-            (2f * x - r.right - r.left) / (r.right - r.left),
-            (2f * y - r.bottom - r.top) / (r.bottom - r.top)
-        )
-    }
-
-    fun toRect(): RectF { return RectF(0f, 0f, x, y) }
-
     fun toRectangle(): Rectangle { return Rectangle(c0 = Point(0f, 0f), c1 = this.copy()) }
 
     fun copy(): Point { return Point(x, y) }
@@ -107,16 +92,6 @@ class Point(var x: Float = 0f, var y: Float = 0f) {
                 maxOf(ps[i].x, ps[i + 1].x),
                 maxOf(ps[i].y, ps[i + 1].y)
             )
-        }
-
-        /** The points at the edge of a rectangle. */
-        fun ofRectEdge(r: RectF, edge: Edge): Pair<Point, Point> {
-            return when(edge){
-                Edge.LEFT -> Pair(Point(r.left, r.top), Point(r.left, r.bottom))
-                Edge.RIGHT -> Pair(Point(r.right, r.top), Point(r.right, r.bottom))
-                Edge.TOP -> Pair(Point(r.left, r.top), Point(r.right, r.top))
-                Edge.BOTTOM -> Pair(Point(r.left, r.bottom), Point(r.right, r.bottom))
-            }
         }
 
         fun ofViewExtent(view: View): Point {

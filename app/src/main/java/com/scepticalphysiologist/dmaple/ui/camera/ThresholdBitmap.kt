@@ -4,11 +4,9 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Rect
-import android.graphics.RectF
 import androidx.core.graphics.get
 import androidx.core.graphics.set
 import com.scepticalphysiologist.dmaple.etc.ntscGrey
-import com.scepticalphysiologist.dmaple.geom.validRect
 
 class ThresholdBitmap(val input: Bitmap, val drawRoi: Rect) {
 
@@ -21,9 +19,8 @@ class ThresholdBitmap(val input: Bitmap, val drawRoi: Rect) {
         /** Whether to highlight above threshold or below. */
         var highlightAbove: Boolean = true
 
-        fun fromImage(image: Bitmap, roi: RectF): ThresholdBitmap? {
+        fun fromImage(image: Bitmap, r: Rect): ThresholdBitmap? {
             try {
-                val r = validRect(roi)
                 if(!r.intersect(Rect(0, 0, image.width, image.height))) return null
                 return ThresholdBitmap(
                     input = Bitmap.createBitmap(image, r.left, r.top, r.width(), r.height()),

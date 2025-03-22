@@ -180,7 +180,7 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     fun startThresholding(cameraShot: Bitmap) {
         activeRoi?.let { roi ->
             setBackgroundFromField(FieldImage(Frame.fromView(this, display), cameraShot))
-            thresholdBitmap = ThresholdBitmap.fromImage(cameraShot, roi.toRectF())
+            thresholdBitmap = ThresholdBitmap.fromImage(cameraShot, roi.toRect())
             invalidate()
         }
     }
