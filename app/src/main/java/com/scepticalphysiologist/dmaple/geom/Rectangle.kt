@@ -6,10 +6,7 @@ import kotlin.math.abs
 
 /** A rectangle.
  *
- * Unlike [android.graphics.RectF] this can be unit tested!
- *
- * @property c0
- * @property c1
+ * [android.graphics.RectF] is stubbed in unit tests and has no shadow in Robolectric.
  */
 open class Rectangle (
     /** The corner of the rectangle opposite to [c1]. */
