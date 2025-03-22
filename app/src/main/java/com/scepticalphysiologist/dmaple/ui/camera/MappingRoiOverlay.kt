@@ -366,12 +366,13 @@ class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
     /** Initiate an active ROI de novo. */
     private fun initiate(event: MotionEvent) {
         if(event.action != MotionEvent.ACTION_DOWN) return
-        changeActiveRoi(FieldRoi(Frame.fromView(this, display), maps=listOf(MapType.DIAMETER)))
-        activeRoi?.let { roi ->
-            roi.set(Rectangle(
-                Point(event.x - 50f, event.y - 50f),
-                Point(event.x + 50f, event.y + 50f)
-            ))
+        changeActiveRoi(FieldRoi(
+            frame=Frame.fromView(this, display),
+            c0 = Point(event.x - 50f, event.y - 50f),
+            c1 = Point(event.x + 50f, event.y + 50f),
+            maps=listOf(MapType.DIAMETER)
+        ))
+        activeRoi?.let {
             drag = Point(event.x, event.y)
             invalidate()
         }
