@@ -1,7 +1,6 @@
 package com.scepticalphysiologist.dmaple.geom
 
 import android.graphics.Matrix
-import android.graphics.RectF
 import android.view.Display
 import android.view.View
 import androidx.camera.core.ImageProxy
@@ -67,17 +66,6 @@ class Frame(val size: Point, val orientation: Int = 0) {
         matrix.preConcat(Matrix().also{ it.setRotate(-rotation) })
         matrix.preConcat(Matrix().also{ it.setTranslate(-this.centre.x, -this.centre.y) })
         return matrix
-    }
-
-    /** Translate a rectangle from this frame to another.
-     *
-     * @param r The rectangle to be transformed.
-     * @param newFrame The transformed rectangle's frame.
-     * @param resize The frame transform includes re-sizing.
-     * @return The transformed rectangle.
-     */
-    fun transformRect(r: RectF, newFrame: Frame, resize: Boolean = true): RectF {
-        return Point.toRect(transformPoints(Point.fromRect(r), newFrame, resize))!!
     }
 
     fun transformRectangle(r: Rectangle, newFrame: Frame, resize: Boolean = true): Rectangle {
