@@ -9,9 +9,9 @@ import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.R
-import com.scepticalphysiologist.dmaple.ui.camera.ThresholdBitmap
+import com.scepticalphysiologist.dmaple.ui.record.ThresholdBitmap
 import com.scepticalphysiologist.dmaple.map.creator.GutSegmentor
-import com.scepticalphysiologist.dmaple.ui.camera.SpineOverlay
+import com.scepticalphysiologist.dmaple.ui.record.SpineOverlay
 
 class Settings: PreferenceFragmentCompat() {
 

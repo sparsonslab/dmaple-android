@@ -6,7 +6,7 @@ import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.geom.Rectangle
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
-import com.scepticalphysiologist.dmaple.ui.camera.ThresholdBitmap
+import com.scepticalphysiologist.dmaple.ui.record.ThresholdBitmap
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test

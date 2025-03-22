@@ -1,4 +1,4 @@
-package com.scepticalphysiologist.dmaple.ui.camera
+package com.scepticalphysiologist.dmaple.ui.record
 
 import android.content.Context
 import android.graphics.Color
@@ -20,12 +20,14 @@ import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.geom.aspectRatioRatio
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
+import com.scepticalphysiologist.dmaple.map.field.RoisAndRuler
+
 
 /** The mapping field of view. The camera feed and overlays for:
  * - drawing mapping ROIs and thresholding them.
  * - showing the mapping process.
  */
-class MappingFieldOfView(context: Context, attributeSet: AttributeSet?):
+class FieldView(context: Context, attributeSet: AttributeSet?):
     FrameLayout(context, attributeSet),
     View.OnLayoutChangeListener
 {
@@ -34,7 +36,7 @@ class MappingFieldOfView(context: Context, attributeSet: AttributeSet?):
     /** The camera feed. The camera is actually run by the [MappingService]. */
     private val cameraFeed = PreviewView(context, attributeSet)
     /** An overlay over the camera feed unto which mappings ROIs can eb drawn. */
-    private val roiOverlay = MappingRoiOverlay(context, attributeSet)
+    private val roiOverlay = RoiOverlay(context, attributeSet)
     /** An overlay over the camera feed unto which mapping processes *such as spines) can be drawn. */
     val spineOverlay = SpineOverlay(context, attributeSet)
 

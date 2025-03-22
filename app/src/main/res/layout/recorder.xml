@@ -7,13 +7,13 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context="com.scepticalphysiologist.dmaple.ui.Recorder">
 
-    <com.scepticalphysiologist.dmaple.ui.camera.MapView
+    <com.scepticalphysiologist.dmaple.ui.record.MapView
         android:id="@+id/maps"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="fitCenter"
         android:background="@color/teal_200">
-    </com.scepticalphysiologist.dmaple.ui.camera.MapView>
+    </com.scepticalphysiologist.dmaple.ui.record.MapView>
 
     <TextView
         android:id="@+id/camera_timer"
@@ -26,11 +26,11 @@
         android:textSize="22sp">
     </TextView>
 
-    <com.scepticalphysiologist.dmaple.ui.camera.MappingFieldOfView
+    <com.scepticalphysiologist.dmaple.ui.record.FieldView
         android:id="@+id/camera_and_roi"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-    </com.scepticalphysiologist.dmaple.ui.camera.MappingFieldOfView>
+    </com.scepticalphysiologist.dmaple.ui.record.FieldView>
 
 
 

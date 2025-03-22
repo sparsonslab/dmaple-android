@@ -1,4 +1,4 @@
-package com.scepticalphysiologist.dmaple.ui.camera
+package com.scepticalphysiologist.dmaple.ui.record
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -25,7 +25,7 @@ import com.scepticalphysiologist.dmaple.map.creator.MapType
 import com.scepticalphysiologist.dmaple.map.field.FieldRuler
 
 
-/** Gesture states for [MappingRoiOverlay]. */
+/** Gesture states for [RoiOverlay]. */
 enum class GestureState {
     DOUBLE_TAP,
     LONG_PRESS,
@@ -49,7 +49,7 @@ enum class GestureState {
  * The active ROI is drawn with a solid boundary. Saved ROIs are drawn with dashed boundaries. The
  * map seeding edge is drawn thicker than the others.
  */
-class MappingRoiOverlay(context: Context?, attributeSet: AttributeSet?):
+class RoiOverlay(context: Context?, attributeSet: AttributeSet?):
     View(context, attributeSet),
     GestureDetector.OnDoubleTapListener,
     GestureDetector.OnGestureListener

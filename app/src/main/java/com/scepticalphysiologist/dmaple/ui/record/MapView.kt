@@ -1,4 +1,4 @@
-package com.scepticalphysiologist.dmaple.ui.camera
+package com.scepticalphysiologist.dmaple.ui.record
 
 import android.content.Context
 import android.graphics.Bitmap
