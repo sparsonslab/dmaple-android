@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import com.scepticalphysiologist.dmaple.geom.Edge
 import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
+import com.scepticalphysiologist.dmaple.geom.Rectangle
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.ui.camera.ThresholdBitmap
 import org.junit.Assert.assertEquals
@@ -44,10 +45,7 @@ class MapCreatorTest {
             maps = listOf(MapType.DIAMETER),
             uid = "abcdefgh0123456789"
         )
-        roi.left = 10f
-        roi.right = iw.toFloat() - 10f
-        roi.top = 10f
-        roi.bottom = ih.toFloat() - 10f
+        roi.set(Rectangle(Point(10f, 10f), Point(iw.toFloat() - 10f,ih.toFloat() - 10f)))
     }
 
     @Test
@@ -91,7 +89,7 @@ class MapCreatorTest {
 
         // Then: The map raster values have the expected diameter.
         val measuredDiameters = (0 until dmap.height).map{
-            dmap.getPixelSample(0, 0, it).toShort() - Short.MIN_VALUE
+            dmap.getPixelSample(0, 0, it).toInt()
         }.toList()
         assertEquals(diameters, measuredDiameters)
     }
