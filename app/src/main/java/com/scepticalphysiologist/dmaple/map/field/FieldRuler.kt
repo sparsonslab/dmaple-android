@@ -3,8 +3,8 @@ package com.scepticalphysiologist.dmaple.map.field
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
-import com.scepticalphysiologist.dmaple.etc.Frame
-import com.scepticalphysiologist.dmaple.etc.Point
+import com.scepticalphysiologist.dmaple.geom.Frame
+import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.etc.msg.QuantityDialog
 import kotlin.math.PI
 

@@ -3,7 +3,7 @@ package com.scepticalphysiologist.dmaple.map.creator
 import android.graphics.Bitmap
 import android.graphics.Rect
 import android.util.Size
-import com.scepticalphysiologist.dmaple.etc.Edge
+import com.scepticalphysiologist.dmaple.geom.Edge
 import com.scepticalphysiologist.dmaple.ui.camera.ThresholdBitmap
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.field.FieldRuler

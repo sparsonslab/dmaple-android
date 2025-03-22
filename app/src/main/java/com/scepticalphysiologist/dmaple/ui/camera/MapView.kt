@@ -13,7 +13,7 @@ import android.view.Surface
 import android.view.WindowManager
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.findViewTreeLifecycleOwner
-import com.scepticalphysiologist.dmaple.etc.Point
+import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.etc.transformBitmap
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import kotlin.math.floor

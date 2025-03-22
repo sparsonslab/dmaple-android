@@ -1,7 +1,7 @@
 package com.scepticalphysiologist.dmaple.map.field
 
 import android.graphics.Bitmap
-import com.scepticalphysiologist.dmaple.etc.Frame
+import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.etc.rotateBitmap
 
 /** An image of a mapping field.
