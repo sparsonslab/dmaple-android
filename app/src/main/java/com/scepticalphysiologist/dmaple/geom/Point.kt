@@ -11,7 +11,7 @@ import kotlin.math.sin
 /**
  * An point on the Cartesian plain.
  *
- * Nice operator overloading, unlike android.graphics.PointF.
+ * Nice operator overloading, unlike [android.graphics.PointF].
  *
  * @property x The x coordinate.
  * @property y The y coordinate.

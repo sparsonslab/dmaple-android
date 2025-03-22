@@ -3,7 +3,6 @@ package com.scepticalphysiologist.dmaple.geom
 import android.graphics.Matrix
 import android.view.Display
 import android.view.View
-import androidx.camera.core.ImageProxy
 
 
 /** A geometric "frame" within which there may be some points.
@@ -80,14 +79,6 @@ class Frame(val size: Point, val orientation: Int = 0) {
             return Frame(
                 Point(view.width.toFloat(), view.height.toFloat()),
                 orientation = surfaceRotationDegrees(display.rotation)
-            )
-        }
-
-        /** Get an image's frame. */
-        fun fromImage(image: ImageProxy): Frame {
-            return Frame(
-                Point(image.width.toFloat(), image.height.toFloat()),
-                orientation = image.imageInfo.rotationDegrees
             )
         }
 

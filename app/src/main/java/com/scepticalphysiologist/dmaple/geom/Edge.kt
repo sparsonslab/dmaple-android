@@ -1,5 +1,6 @@
 package com.scepticalphysiologist.dmaple.geom
 
+/** An edge of (for example) a [Rectangle]. */
 enum class Edge {
     LEFT,
     BOTTOM,
@@ -17,4 +18,3 @@ enum class Edge {
         return (this == LEFT) || (this == RIGHT)
     }
 }
-
