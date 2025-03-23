@@ -23,14 +23,56 @@ import java.nio.ByteBuffer
  */
 abstract class MapBufferView<T : Number>(
     protected val buffer: ByteBuffer,
-    protected val nx: Int
+    protected var nx: Int
 ) {
-
-    /** The number of bits in each channel. */
-    protected abstract val bitsPerChannel: List<Int>
 
     /** The "field type" for the TIFF image. */
     protected abstract val fieldType: FieldType
+    /** The number of bytes in each channel. */
+    protected abstract val bytesPerChannel: List<Int>
+    /** The number of bits in each channel. */
+    protected val bitsPerChannel: List<Int> get() = bytesPerChannel.map{it * 8}
+    /** The number of bytes per space-time sample. */
+    protected val bytesPerSample: Int get() = bytesPerChannel.sum()
+
+    // ---------------------------------------------------------------------------------------------
+    // Buffer indexing
+    // ---------------------------------------------------------------------------------------------
+
+    /** The buffer position of the (i, j) pixel. */
+    protected fun bufferPosition(i: Int, j: Int): Int { return bytesPerSample * (j * nx + i) }
+
+    /** The current space-time sample. */
+    protected fun currentSample(): Int { return floorDiv(buffer.position(),  bytesPerSample) }
+
+    /** The current time sample. */
+    protected fun currentTimeSample(): Int { return floorDiv(buffer.position(), bytesPerSample * nx) }
+
+    // ---------------------------------------------------------------------------------------------
+    // Buffer access (to be implemented by concrete subclasses)
+    // ---------------------------------------------------------------------------------------------
+
+    /** Set the value of the (i, j) pixel. */
+    abstract fun set(i: Int, j: Int, value: T)
+
+    /** Get the value of the (i, j) pixel. */
+    abstract fun get(i: Int, j: Int): T
+
+    /** Add a value to the map. */
+    abstract fun add(value: T)
+
+    /** Get a color integer to show the (i, j) pixel in a bitmap. */
+    abstract fun getColorInt(i: Int, j: Int): Int
+
+    // ---------------------------------------------------------------------------------------------
+    // TIFF I/O
+    // ---------------------------------------------------------------------------------------------
+
+    /** Set the (i, j) pixel of an image raster. */
+    abstract fun toRaster(i: Int, j: Int, raster: Rasters)
+
+    /** Get the (i, j) pixel of an image raster. */
+    abstract fun fromRaster(i: Int, j: Int, raster: Rasters)
 
     /** Convert the map into a TIFF slice/directory.
      *
@@ -44,7 +86,7 @@ abstract class MapBufferView<T : Number>(
     ): FileDirectory {
 
         // y (row/temporal) position
-        val currentTime = floorDiv(buffer.position(), nx)
+        val currentTime = currentTimeSample()
         val ny = minOf(y ?: currentTime, currentTime)
 
         // Basic image properties
@@ -80,6 +122,7 @@ abstract class MapBufferView<T : Number>(
         // Read from the raster into the buffer.
         buffer.position(0)
         val raster = dir.readRasters()
+        nx = raster.width
         try {
             for(j in 0 until raster.height)
                 for(i in 0 until raster.width)
@@ -90,53 +133,14 @@ abstract class MapBufferView<T : Number>(
         buffer.position(bufferPosition(raster.width - 1, raster.height - 1))
         return raster.height
     }
-
-    /** Set the (i, j) pixel of an image raster. */
-    abstract fun toRaster(i: Int, j: Int, raster: Rasters)
-
-    /** Get the (i, j) pixel of an image raster. */
-    abstract fun fromRaster(i: Int, j: Int, raster: Rasters)
-
-    /** The buffer position of the (i, j) pixel. */
-    abstract fun bufferPosition(i: Int, j: Int): Int
-
-    /** Set the value of the (i, j) pixel. */
-    abstract fun set(i: Int, j: Int, value: T)
-
-    /** Get the value of the (i, j) pixel. */
-    abstract fun get(i: Int, j: Int): T
-
-    /** Add a value to the map. */
-    abstract fun add(value: T)
-
-    /** Get a color integer to show the (i, j) pixel in a bitmap. */
-    abstract fun getColorInt(i: Int, j: Int): Int
 }
 
 /** A map consisting of RGB color values. */
 class RGBMap(buffer: ByteBuffer, nx: Int): MapBufferView<Int>(buffer, nx) {
 
-    override val bitsPerChannel = listOf(8, 8, 8)
-
     override val fieldType = FieldType.BYTE
 
-    override fun toRaster(i: Int, j: Int, raster: Rasters) {
-        val color = getColorInt(i, j)
-        raster.setPixelSample(0, i, j, color.red)
-        raster.setPixelSample(1, i, j, color.green)
-        raster.setPixelSample(2, i, j, color.blue)
-    }
-
-    override fun fromRaster(i: Int, j: Int, raster: Rasters) {
-        set(i, j, Color.argb(
-            255,
-            raster.getPixelSample(0, i, j).toInt(),
-            raster.getPixelSample(1, i, j).toInt(),
-            raster.getPixelSample(2, i, j).toInt()
-        ))
-    }
-
-    override fun bufferPosition(i: Int, j: Int): Int{ return 3 * (j * nx + i) }
+    override var bytesPerChannel = listOf(1, 1, 1)
 
     override fun set(i: Int, j: Int, value: Int) {
         val k = bufferPosition(i, j)
@@ -161,39 +165,44 @@ class RGBMap(buffer: ByteBuffer, nx: Int): MapBufferView<Int>(buffer, nx) {
 
     override fun getColorInt(i: Int, j: Int): Int { return get(i, j) }
 
+    override fun toRaster(i: Int, j: Int, raster: Rasters) {
+        val color = getColorInt(i, j)
+        raster.setPixelSample(0, i, j, color.red)
+        raster.setPixelSample(1, i, j, color.green)
+        raster.setPixelSample(2, i, j, color.blue)
+    }
+
+    override fun fromRaster(i: Int, j: Int, raster: Rasters) {
+        set(i, j, Color.argb(
+            255,
+            raster.getPixelSample(0, i, j).toInt(),
+            raster.getPixelSample(1, i, j).toInt(),
+            raster.getPixelSample(2, i, j).toInt()
+        ))
+    }
+
 }
 
 /** A map consisting of short integers. */
 class ShortMap(buffer: ByteBuffer, nx: Int): MapBufferView<Short>(buffer, nx) {
 
-    override val bitsPerChannel = listOf(16)
-
     override val fieldType = FieldType.SHORT
 
-    val s0 = Short.MIN_VALUE.toFloat()
-    var maxv: Short = Short.MIN_VALUE
+    override val bytesPerChannel = listOf(2)
 
-    override fun toRaster(i: Int, j: Int, raster: Rasters) {
-        raster.setPixelSample(0, i, j, get(i, j).toInt() - s0.toInt())
-    }
+    /** The smallest possible short value.
+     * For converting between signed (buffer) and unsigned (raster/distance) short.
+     */
+    private val s0 = Short.MIN_VALUE.toFloat()
 
-    override fun fromRaster(i: Int, j: Int, raster: Rasters) {
-        val v = (raster.getPixelSample(0, i, j).toInt() + s0.toInt()).toShort()
-        set(i, j, v)
-    }
+    /** The maximum sample value. */
+    private var maxv: Short = Short.MIN_VALUE
 
-    override fun fromTiffDirectory(dir: FileDirectory): Int {
-        maxv = Short.MIN_VALUE
-        return super.fromTiffDirectory(dir)
-    }
-
-    override fun bufferPosition(i: Int, j: Int): Int { return 2 * (j * nx + i) }
+    fun addDistance(value: Int) { add((value + Short.MIN_VALUE.toInt()).toShort()) }
 
     override fun set(i: Int, j: Int, value: Short) { buffer.putShort(bufferPosition(i, j), value) }
 
     override fun get(i: Int, j: Int): Short { return buffer.getShort(bufferPosition(i, j)) }
-
-    fun addDistance(value: Int) { add((value + Short.MIN_VALUE.toInt()).toShort()) }
 
     override fun add(value: Short) {
         buffer.putShort(value)
@@ -209,4 +218,22 @@ class ShortMap(buffer: ByteBuffer, nx: Int): MapBufferView<Short>(buffer, nx) {
                 (v and 0xff shl 0)
     }
 
+    override fun toRaster(i: Int, j: Int, raster: Rasters) {
+        raster.setPixelSample(0, i, j, get(i, j).toInt() - s0.toInt())
+    }
+
+    override fun fromRaster(i: Int, j: Int, raster: Rasters) {
+        val v = (raster.getPixelSample(0, i, j).toInt() + s0.toInt()).toShort()
+        set(i, j, v)
+    }
+
+    override fun fromTiffDirectory(dir: FileDirectory): Int {
+        val nt =  super.fromTiffDirectory(dir)
+        maxv = Short.MIN_VALUE
+        for(i in 0 until currentSample()) {
+            val v = buffer.getShort(i * bytesPerSample)
+            if(v > maxv) maxv = v
+        }
+        return nt
+    }
 }
