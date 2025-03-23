@@ -39,7 +39,7 @@ abstract class MapBufferView<T : Number>(
     // Buffer indexing
     // ---------------------------------------------------------------------------------------------
 
-    /** The buffer position of the (i, j) pixel. */
+    /** The buffer position of the (i, j)th (space, time) sample. */
     protected fun bufferPosition(i: Int, j: Int): Int { return bytesPerSample * (j * nx + i) }
 
     /** The current space-time sample. */
