@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material.Text
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -21,7 +23,6 @@ import androidx.compose.ui.unit.sp
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
-import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 
@@ -48,10 +49,11 @@ class Explorer: Fragment() {
                     val roiDescription = record.creators.joinToString("\n") {
                         it.roi.maps.toString()
                     }
+
                     Column (
                         modifier = Modifier
+                            .clickable(onClick = { openRecord(i) })
                             .background(color= Color.LightGray)
-                            .clickable(onClick = { openRecord(i) }),
                     ) {
                         Text(text = record.name, fontSize = 18.sp)
                         Text(text = roiDescription, fontSize = 12.sp)
@@ -59,7 +61,6 @@ class Explorer: Fragment() {
                             Image(bitmap = it.asImageBitmap(), contentDescription = null)
                         }
                     }
-
                 }
             }
         }
@@ -69,13 +70,8 @@ class Explorer: Fragment() {
 
     private fun openRecord(i: Int) {
         println("click!!!")
-
-        MainActivity.mapService?.let {
-
-
-        }
-
         findNavController().navigate(R.id.recorder, bundleOf("recordIdx" to i))
+        println("done!!!!")
     }
 
 
