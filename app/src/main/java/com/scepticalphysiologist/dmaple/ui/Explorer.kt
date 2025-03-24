@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -18,7 +19,6 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -42,7 +42,7 @@ import kotlinx.coroutines.launch
 
 class Explorer: Fragment() {
 
-    private val isLoaded = MutableLiveData<Boolean>(false)
+    private val recordHasBeenLoaded = MutableLiveData<Boolean>(false)
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -51,7 +51,7 @@ class Explorer: Fragment() {
     ): View {
 
         // Once a record has been loaded, navigate to the recording fragment to show the recording.
-        isLoaded.observe(viewLifecycleOwner) {
+        recordHasBeenLoaded.observe(viewLifecycleOwner) {
             if(it) findNavController().navigate(R.id.recorder, bundleOf("LOADED" to 0))
         }
 
@@ -61,7 +61,8 @@ class Explorer: Fragment() {
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(minSize = 200.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp),
-                horizontalArrangement = Arrangement.spacedBy(20.dp)
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                modifier = Modifier.padding(10.dp)
             ) { items(MappingRecord.records.size) { i -> RecordItem(i) } }
         }
         return view
@@ -88,12 +89,13 @@ class Explorer: Fragment() {
                     onClick = {
                         loading = true
                         scope.launch(Dispatchers.Default) {
-                            isLoaded.postValue(loadRecord(recordIndex))
+                            recordHasBeenLoaded.postValue(loadRecord(recordIndex))
                             loading = false
                         }
                     },
                 )
                 .background(color= Color.LightGray)
+                .padding(5.dp)
         ) {
             // Label and description of the record and an image of the field.
             Column {
@@ -111,6 +113,9 @@ class Explorer: Fragment() {
         }
     }
 
+    /** Load the ith record.
+     * @return If the record was loaded.
+     * */
     private suspend fun loadRecord(i: Int): Boolean{
         return MainActivity.mapService?.loadRecord(MappingRecord.records[i]) ?: false
     }
