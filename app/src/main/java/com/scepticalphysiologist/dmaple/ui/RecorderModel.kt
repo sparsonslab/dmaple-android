@@ -11,7 +11,6 @@ import com.scepticalphysiologist.dmaple.etc.msg.Message
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
-import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import com.scepticalphysiologist.dmaple.map.field.RoisAndRuler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,6 +36,7 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
     /** Model state.*/
     private var state: RecState =
         if(mapper?.isCreatingMaps() == true) RecState.RECORDING else RecState.PRE_RECORD
+
     /** Indicate warning messages that should be shown, e.g. when starting mapping. */
     val messages = MutableLiveData<Message<*>?>(null)
     /** Indicate the elapsed time (seconds) of mapping. */
@@ -83,10 +83,8 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
         }
     }
 
-    /** Try to load a record. */
-    fun loadRecord(idx: Int) {
-        if(mapper?.loadRecord(MappingRecord.records[idx]) == true) state = RecState.OLD_RECORD
-    }
+    /** Set that a record has been loaded. */
+    fun setRecordLoaded() { state = RecState.OLD_RECORD }
 
     // ---------------------------------------------------------------------------------------------
     // Public wrapper to the mapping service.
