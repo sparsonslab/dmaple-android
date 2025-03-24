@@ -80,9 +80,7 @@ class Explorer: Fragment() {
 
         // The record being shown.
         val record = MappingRecord.records[recordIndex]
-        val roiDescription = record.creators.joinToString("\n") {
-            it.roi.maps.toString()
-        }
+        val roiDescription = record.creators.joinToString("\n") { it.roi.maps.toString() }
 
         // UI
         // todo - block clicking on all items one one is clicked.
