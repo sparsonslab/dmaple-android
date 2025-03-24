@@ -39,11 +39,13 @@ import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-
+/** Explore saved records and load them.
+ *
+ */
 class Explorer: Fragment() {
 
     /** When a record has been loaded. */
-    private val recordHasBeenLoaded = MutableLiveData<Boolean>(false)
+    private val recordHasBeenLoaded = MutableLiveData<Boolean?>(null)
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -54,8 +56,8 @@ class Explorer: Fragment() {
         // Once a record has been loaded, navigate to the recording fragment to show the recording.
         // This has to be done in response to a live data object, rather than within the composable's
         // on-click call-back because doing the latter blocks the progress indicator.
-        recordHasBeenLoaded.observe(viewLifecycleOwner) {
-            if(it) findNavController().navigate(R.id.recorder, bundleOf("LOADED" to 0))
+        recordHasBeenLoaded.observe(viewLifecycleOwner) { loaded ->
+            loaded?.let{findNavController().navigate(R.id.recorder, bundleOf("LOADED" to loaded))}
         }
 
         // A lazy grid of recordings.

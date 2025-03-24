@@ -37,7 +37,10 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
 
         // A record index has been provided (by navigation from from explorer fragment).
         // Load the record.
-        arguments?.getInt("LOADED")?.let { model.setRecordLoaded() }
+        arguments?.let { bundle ->
+            if(bundle.getBoolean("LOADED", false)) model.setRecordLoaded()
+            bundle.clear()
+        }
 
         // Once the view is inflated, set the mapping service's camera surface.
         binding.root.post {

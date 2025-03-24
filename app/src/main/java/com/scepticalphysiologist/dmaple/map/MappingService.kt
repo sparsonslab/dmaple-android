@@ -367,7 +367,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** Get current map's creator and map index. */
     fun getCurrentMapCreator(): Pair<MapCreator?, Int> {
         val (currentCreatorIdx, currentMapIdx) = currentMap
-        return Pair(creators[currentCreatorIdx], currentMapIdx)
+        if(currentCreatorIdx < creators.size) return Pair(creators[currentCreatorIdx], currentMapIdx)
+        return Pair(null, 0)
     }
 
     /** Get the last image of the mapping field. */
@@ -393,6 +394,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         record.loadMapTiffs(MappingService::getFreeBuffer)
         creators.addAll(record.creators)
         lastCapture = record.field
+        currentMap = Pair(0, 0)
         return true
     }
 
