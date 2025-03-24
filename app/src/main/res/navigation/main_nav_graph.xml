@@ -18,8 +18,7 @@
 
     <fragment
         android:id="@+id/explorer"
-        android:name="com.scepticalphysiologist.dmaple.ui.Explorer"
-        tools:layout="@layout/explorer">
+        android:name="com.scepticalphysiologist.dmaple.ui.Explorer">
         <action
             android:id="@+id/explorer_to_recorder"
             app:destination="@id/recorder">
