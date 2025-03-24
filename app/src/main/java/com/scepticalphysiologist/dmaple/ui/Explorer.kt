@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -62,6 +63,7 @@ class Explorer: Fragment() {
 
         // A lazy grid of recordings.
         val view = ComposeView(requireActivity())
+        view.setBackgroundColor(Color.DarkGray.toArgb())
         view.setContent {
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(minSize = 200.dp),
