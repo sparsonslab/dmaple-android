@@ -85,6 +85,7 @@ class Explorer: Fragment() {
         }
 
         // UI
+        // todo - block clicking on all items one one is clicked.
         Box (
             modifier = Modifier
                 .clickable(
