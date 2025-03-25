@@ -47,6 +47,9 @@ import kotlinx.coroutines.launch
  */
 class Explorer: Fragment() {
 
+    /** Is a record being loaded? Used to prevent more than one record from being loaded. */
+    private var isLoading = false
+
     /** When a record has been loaded. */
     private val recordHasBeenLoaded = MutableLiveData<Boolean?>(null)
 
@@ -72,6 +75,7 @@ class Explorer: Fragment() {
         val view = ComposeView(requireActivity())
         view.setBackgroundColor(Color.DarkGray.toArgb())
         view.setContent {
+
             LazyVerticalStaggeredGrid (
                 columns = StaggeredGridCells.Adaptive(minSize = 200.dp),
                 verticalItemSpacing = 10.dp,
@@ -139,8 +143,11 @@ class Explorer: Fragment() {
      * @return If the record was loaded.
      * */
     private fun loadRecord(i: Int) {
+        if (isLoading) return // We are already trying to load another recording.
+        isLoading = true
         val model = ViewModelProvider(requireActivity()).get(RecorderModel::class.java)
         recordHasBeenLoaded.postValue(model.loadRecording(MappingRecord.records[i]))
+        isLoading = false
     }
 
 }
