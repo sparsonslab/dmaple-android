@@ -12,6 +12,7 @@ import com.scepticalphysiologist.dmaple.map.field.FieldImage
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.field.RoisAndRuler
+import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -83,9 +84,6 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
         }
     }
 
-    /** Set that a record has been loaded. */
-    fun setRecordLoaded() { state = RecState.OLD_RECORD }
-
     // ---------------------------------------------------------------------------------------------
     // Public wrapper to the mapping service.
     // ---------------------------------------------------------------------------------------------
@@ -109,6 +107,13 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
 
     /** Get the last image of the mapping field. */
     fun getLastFieldImage(): FieldImage? { return mapper?.getLastFieldImage() }
+
+    /** Load a recording. */
+    fun loadRecording(record: MappingRecord): Boolean {
+        val loaded = mapper?.loadRecord(record) ?: false
+        if(loaded) state = RecState.OLD_RECORD
+        return loaded
+    }
 
     // ---------------------------------------------------------------------------------------------
     // Timer

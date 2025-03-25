@@ -19,11 +19,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-
+/** The main fragment of the app, in which the user sets up the ROIs and maps to record,
+ * does the recording and views completed recordings.
+ * */
 class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
 
+    /** The fragment's view model that holds recording state and communicates with the [MappingService]. */
     private lateinit var model: RecorderModel
-
     /** The approximate update interval (ms) for live display. */
     private val updateInterval: Long = 100L
     /** Whether we are recording or not. */
@@ -34,13 +36,6 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
 
         // Get the view model.
         model = ViewModelProvider(this.requireActivity()).get(RecorderModel::class.java)
-
-        // A record index has been provided (by navigation from from explorer fragment).
-        // Load the record.
-        arguments?.let { bundle ->
-            if(bundle.getBoolean("LOADED", false)) model.setRecordLoaded()
-            bundle.clear()
-        }
 
         // Once the view is inflated, set the mapping service's camera surface.
         binding.root.post {
@@ -204,10 +199,6 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
             }
         }
         return false
-    }
-
-    fun showMessage(){
-        println("BLABLA!")
     }
 
 }

@@ -30,11 +30,10 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
-import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import kotlinx.coroutines.Dispatchers
@@ -58,7 +57,7 @@ class Explorer: Fragment() {
         // This has to be done in response to a live data object, rather than within the composable's
         // on-click call-back because doing the latter blocks the progress indicator.
         recordHasBeenLoaded.observe(viewLifecycleOwner) { loaded ->
-            loaded?.let{findNavController().navigate(R.id.recorder, bundleOf("LOADED" to loaded))}
+            if(loaded == true) findNavController().navigate(R.id.recorder)
         }
 
         // A lazy grid of recordings.
@@ -123,7 +122,8 @@ class Explorer: Fragment() {
      * @return If the record was loaded.
      * */
     private suspend fun loadRecord(i: Int): Boolean{
-        return MainActivity.mapService?.loadRecord(MappingRecord.records[i]) ?: false
+        val model = ViewModelProvider(requireActivity()).get(RecorderModel::class.java)
+        return model.loadRecording(MappingRecord.records[i])
     }
 
 }
