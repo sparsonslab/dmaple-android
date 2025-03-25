@@ -6,11 +6,11 @@
   -->
 
 <resources>
-    <dimen name="extra_small_text_size">12dp</dimen>
-    <dimen name="small_text_size">16sp</dimen>
-    <dimen name="normal_text_size">20sp</dimen>
-    <dimen name="large_text_size">24sp</dimen>
-    <dimen name="x_large_text_size">32sp</dimen>
+    <dimen name="extra_small_text_size">8dp</dimen>
+    <dimen name="small_text_size">12sp</dimen>
+    <dimen name="normal_text_size">16sp</dimen>
+    <dimen name="large_text_size">20sp</dimen>
+    <dimen name="x_large_text_size">28sp</dimen>
     <dimen name="layout_margin_tiny">8sp</dimen>
     <dimen name="layout_margin_normal">32sp</dimen>
     <dimen name="layout_margin_large">64sp</dimen>

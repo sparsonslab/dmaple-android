@@ -12,8 +12,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -24,10 +25,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.Fragment
@@ -47,6 +50,11 @@ class Explorer: Fragment() {
     /** When a record has been loaded. */
     private val recordHasBeenLoaded = MutableLiveData<Boolean?>(null)
 
+    /** Corner rounding for the record items shown. */
+    private val itemShape = RoundedCornerShape(
+        topStart = 0.dp, topEnd = 0.dp, bottomStart = 10.dp, bottomEnd = 10.dp
+    )
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -64,10 +72,10 @@ class Explorer: Fragment() {
         val view = ComposeView(requireActivity())
         view.setBackgroundColor(Color.DarkGray.toArgb())
         view.setContent {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 200.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
-                horizontalArrangement = Arrangement.spacedBy(20.dp),
+            LazyVerticalStaggeredGrid (
+                columns = StaggeredGridCells.Adaptive(minSize = 200.dp),
+                verticalItemSpacing = 10.dp,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.padding(10.dp)
             ) { items(MappingRecord.records.size) { i -> RecordItem(i) } }
         }
@@ -99,13 +107,22 @@ class Explorer: Fragment() {
                         }
                     },
                 )
-                .background(color= Color.LightGray)
+                .background(color= Color.LightGray, shape=itemShape)
                 .padding(5.dp)
+                .clip(itemShape)
         ) {
             // Label and description of the record and an image of the field.
             Column {
-                Text(text = record.name, fontSize = 18.sp)
-                Text(text = roiDescription, fontSize = 12.sp)
+                Text(
+                    text = record.name,
+                    fontSize = dimensionResource(R.dimen.small_text_size).value.sp,
+                    modifier = Modifier.padding(bottom = 5.dp)
+                )
+                Text(
+                    text = roiDescription,
+                    fontSize = dimensionResource(R.dimen.extra_small_text_size).value.sp,
+                    modifier = Modifier.padding(bottom = 5.dp)
+                )
                 record.field?.let { Image(bitmap = it.asImageBitmap(), contentDescription = null) }
             }
             // Progress indicator for when the record is being loaded.

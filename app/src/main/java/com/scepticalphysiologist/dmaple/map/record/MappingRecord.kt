@@ -36,6 +36,7 @@ class MappingRecord(
         val records = mutableListOf<MappingRecord>()
 
         fun loadRecords() {
+            if(records.isNotEmpty()) return // Don't load twice during the lifetime of the app.
             val root = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
             root.listFiles()?.let { files -> records.addAll(files.map{read(it)}.filterNotNull()) }
         }
