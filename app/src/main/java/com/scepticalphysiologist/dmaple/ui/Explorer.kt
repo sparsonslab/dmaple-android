@@ -93,8 +93,8 @@ class Explorer: Fragment() {
                     enabled = !loading,
                     onClick = {
                         loading = true
-                        scope.launch(Dispatchers.Default) {
-                            recordHasBeenLoaded.postValue(loadRecord(recordIndex))
+                        scope.launch(Dispatchers.IO) {
+                            loadRecord(recordIndex)
                             loading = false
                         }
                     },
@@ -121,9 +121,9 @@ class Explorer: Fragment() {
     /** Load the ith record.
      * @return If the record was loaded.
      * */
-    private suspend fun loadRecord(i: Int): Boolean{
+    private fun loadRecord(i: Int) {
         val model = ViewModelProvider(requireActivity()).get(RecorderModel::class.java)
-        return model.loadRecording(MappingRecord.records[i])
+        recordHasBeenLoaded.postValue(model.loadRecording(MappingRecord.records[i]))
     }
 
 }
