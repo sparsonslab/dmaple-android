@@ -116,9 +116,9 @@ abstract class MapBufferView<T : Number>(
     /** Load the map from a TIFF image slice/directory.
      *
      * @param dir The slice/directory with the map
-     * @return The number of time samples in the map or null if the map's slice could not be found.
+     * @return The x-y pixel size (space and time sample size of the map).
      * */
-    open fun fromTiffDirectory(dir: FileDirectory): Int {
+    open fun fromTiffDirectory(dir: FileDirectory): Pair<Int, Int> {
         // Read from the raster into the buffer.
         buffer.position(0)
         val raster = dir.readRasters()
@@ -131,7 +131,7 @@ abstract class MapBufferView<T : Number>(
 
         // Set the buffer position to end of the tiff data.
         buffer.position(bufferPosition(raster.width - 1, raster.height - 1))
-        return raster.height
+        return Pair(raster.width, raster.height)
     }
 }
 
@@ -227,13 +227,13 @@ class ShortMap(buffer: ByteBuffer, nx: Int): MapBufferView<Short>(buffer, nx) {
         set(i, j, v)
     }
 
-    override fun fromTiffDirectory(dir: FileDirectory): Int {
-        val nt =  super.fromTiffDirectory(dir)
+    override fun fromTiffDirectory(dir: FileDirectory): Pair<Int, Int> {
+        val rasterDimen =  super.fromTiffDirectory(dir)
         maxv = Short.MIN_VALUE
         for(i in 0 until currentSample()) {
             val v = buffer.getShort(i * bytesPerSample)
             if(v > maxv) maxv = v
         }
-        return nt
+        return rasterDimen
     }
 }

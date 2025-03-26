@@ -2,7 +2,10 @@ package com.scepticalphysiologist.dmaple.ui.record
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Matrix
+import android.graphics.Paint
 import android.graphics.Rect
 import android.util.AttributeSet
 import android.util.Size
@@ -13,6 +16,7 @@ import android.view.Surface
 import android.view.WindowManager
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.findViewTreeLifecycleOwner
+import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.etc.transformBitmap
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
@@ -98,19 +102,46 @@ class MapView(context: Context, attributeSet: AttributeSet):
     /** The offset of the end of shown map from the end of the view (x = space, y = time). */
     private var offset = Point(0f, 0f)
 
+    // Scale bars
+    // ----------
+    /** The text to go with the bars (x and y bars, respectively). */
+    private var barText = Pair("", "")
+    /** The point at the start of the box enclosing the bars. */
+    private var barStart = Point(0f, 0f)
+    /** The point at the end of the box enclosing the bars. */
+    private var barEnd = Point(0f, 0f)
+    /** The paint for drawing the bar text. */
+    private val barTextPaint = Paint().also {
+        it.color = Color.RED
+        it.textSize = resources.getDimensionPixelSize(R.dimen.normal_text_size).toFloat()
+        it.textAlign = Paint.Align.RIGHT
+        it.strokeWidth = 2.5f
+    }
+    /** The paint used for drawing the bars. */
+    private val barPaint = Paint().also {
+        it.color = Color.RED
+        it.strokeWidth = 5f
+    }
+
     // ---------------------------------------------------------------------------------------------
     // Map layout, scaling and zoom.
     // ---------------------------------------------------------------------------------------------
 
-    /** Convert a screen coordinate to a space-time coordinate.
+    /** Convert a screen point to a space-time coordinate.
      * Time is always the larger dimension of the view.
      * */
     private fun spaceTimePoint(screenPoint: Point): Point {
         return if(width > height) screenPoint.swap() else screenPoint
     }
 
-    /** The inverse of [timeSpacePoint]. */
-    private fun screenPoint(timeSpacePoint: Point): Point { return spaceTimePoint(timeSpacePoint) }
+    /** Convert a space-time point to a screen point. */
+    private fun screenPoint(spaceTimePoint: Point): Point {
+        return spaceTimePoint(spaceTimePoint)
+    }
+
+    private fun screenPair(spaceTimePair: Pair<String, String>): Pair<String, String> {
+        return if(width > height) Pair(spaceTimePair.second, spaceTimePair.first) else spaceTimePair
+    }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
@@ -156,12 +187,31 @@ class MapView(context: Context, attributeSet: AttributeSet):
         if(bitmapSize.y < viewSizeInBitmapPixels.y) offset.y = 0f
     }
 
+    /** Update the size of the view in terms of bitmap (st-map) pixels. */
     private fun updateViewSizeInBitmapPixels() {
         viewSizeInBitmapPixels = viewSize * scale / zoom
         // Skip pixels so that the pixels displayed from the bitmap do not exceed the maximum.
         // This keeps bitmap display fast.
         pixelStep = Point.maxOf((viewSizeInBitmapPixels / maxViewPixels).ceil(), Point(1f, 1f))
+        updateBar()
         updateMatrix()
+    }
+
+    /** Update the scale bars. */
+    private fun updateBar() {
+        creator?.let { crt ->
+            val bitmapPixelsPerUnit = Point(crt.spatialRes.first, crt.temporalRes.first)
+            // rounded bar size in units for ~fifth of screen
+            var barUnits = (viewSizeInBitmapPixels * 0.2f / bitmapPixelsPerUnit).ceil()
+            val barPixels = barUnits * bitmapPixelsPerUnit * zoom / scale
+            // Bar points (in screen coordinates) and text.
+            barStart = screenPoint(viewSize - barPixels - 10f)
+            barEnd = screenPoint(viewSize - 10f)
+            barText = screenPair(Pair(
+                "${barUnits.x.toInt()} ${crt.spatialRes.second}",
+                "${barUnits.y.toInt()} ${crt.temporalRes.second}"
+            ))
+        }
     }
 
     /** Update the map's bitmap transformation matrix ([bitmapMatrix]). */
@@ -191,6 +241,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
     fun updateCreator(creatorAndMapIdx: Pair<MapCreator?, Int>) {
         creator = creatorAndMapIdx.first
         mapIdx = creatorAndMapIdx.second
+        updateBar()
         if(!updating) update()
     }
 
@@ -215,7 +266,6 @@ class MapView(context: Context, attributeSet: AttributeSet):
                 crop = Rect(p0.x.toInt(), p0.y.toInt(), p1.x.toInt(), p1.y.toInt()),
                 stepX = pixelStep.x.toInt(), stepY = pixelStep.y.toInt(),
                 backing = bitmapBacking,
-
             )?.let { bm ->
                 // Rotate and scale the bitmap and post to the main thread for display.
                 newBitmap.postValue(transformBitmap(bm, bitmapMatrix)
@@ -226,6 +276,17 @@ class MapView(context: Context, attributeSet: AttributeSet):
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         findViewTreeLifecycleOwner()?.let{ newBitmap.observe(it) { bm-> setImageBitmap(bm) } }
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        // Draw the bars.
+        creator?.let {
+            canvas.drawLine(barEnd.x, barStart.y, barEnd.x, barEnd.y, barPaint)
+            canvas.drawLine(barStart.x, barEnd.y, barEnd.x, barEnd.y, barPaint)
+            canvas.drawText(barText.first, barStart.x, barEnd.y, barTextPaint)
+            canvas.drawText(barText.second, barEnd.x, barStart.y, barTextPaint)
+        }
     }
 
     /** Reset the map view. */

@@ -37,13 +37,13 @@ class MapCreator(val roi: FieldRoi) {
     // Map geometry
     // ------------
     /** The number of spatial pixels. */
-    private val ns: Int
+    private var ns: Int
     /** The number of temporal samples. */
     private var nt: Int = 0
     /** The spatial resolution (pixels/unit) and unit. */
-    private var spatialRes = Pair(1f, "")
+    var spatialRes = Pair(1f, "")
     /** The temporal resolution (pixels/unit) and unit. */
-    private var temporalRes = Pair(1f, "s")
+    var temporalRes = Pair(1f, "s")
 
     // Map calculation
     // ---------------
@@ -165,13 +165,16 @@ class MapCreator(val roi: FieldRoi) {
         } catch (_: java.nio.BufferOverflowException) { reachedEnd = true }
     }
 
-    /** Set the temporal resolution given a recording duration. */
-    fun setTemporalResolution(durationSec: Float) {
-        temporalRes = Pair(ns.toFloat() / durationSec, "s")
+    /** Set the temporal resolution the current recording duration. */
+    fun setTemporalResolutionFromDuration(durationSec: Float) {
+        temporalRes = Pair(nt.toFloat() / durationSec, "s")
     }
 
+    /** Set the temporal resolution based upon an estimated frame rate (frames/sec). */
+    fun setTemporalResolutionFromFPS(fps: Float) { temporalRes = Pair(fps, "s") }
+
     /** Set the spatial resolution from a ruler. */
-    fun setSpatialResolution(ruler: FieldRuler) { spatialRes = ruler.getResolution() }
+    fun setSpatialResolutionFromRuler(ruler: FieldRuler) { spatialRes = ruler.getResolution() }
 
     /** At least one buffer has reached capacity and no more samples will be added to the maps,
      * irrespective of calls to [updateWithCameraBitmap]. */
@@ -238,7 +241,9 @@ class MapCreator(val roi: FieldRoi) {
         mapBuffers.map { (description, buffer) ->
             buffer?.let { buff ->
                 findTiff(tiffs, description)?.let { tiff ->
-                    nt = buff.fromTiffDirectory(tiff)
+                    val (nx, ny) = buff.fromTiffDirectory(tiff)
+                    ns = nx
+                    nt = ny
                     val (xr, yr) = getResolution(tiff)
                     spatialRes = xr
                     temporalRes = yr

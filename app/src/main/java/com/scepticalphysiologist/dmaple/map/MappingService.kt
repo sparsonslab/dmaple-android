@@ -447,7 +447,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         }
         for(roi in rois) {
             val creator = MapCreator(roi.inNewFrame(imageFrame))
-            ruler?.let{ creator.setSpatialResolution(it) }
+            ruler?.let{ creator.setSpatialResolutionFromRuler(it) }
+            creator.setTemporalResolutionFromFPS(frameRateFps.toFloat())
             val buffers = (0 until creator.nMaps).map{getFreeBuffer()}.filterNotNull()
             if(creator.provideBuffers(buffers)) creators.add(creator)
         }
@@ -476,7 +477,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         // todo - this is not very accurate for short recordings because the frame interval
         //     often jitters to very long values at the start of the recording.
         val dur = 0.001f * Duration.between(startTime, Instant.now()).toMillis().toFloat()
-        for(creator in creators) creator.setTemporalResolution(dur)
+        for(creator in creators) creator.setTemporalResolutionFromDuration(dur)
     }
 
     /** Clear all creators, freeing up their buffers and resetting the current map. */
