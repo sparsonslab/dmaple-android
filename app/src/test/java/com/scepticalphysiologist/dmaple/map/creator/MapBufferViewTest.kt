@@ -2,6 +2,7 @@ package com.scepticalphysiologist.dmaple.map.creator
 
 import android.graphics.Color
 import com.scepticalphysiologist.dmaple.assertNumbersEqual
+import com.scepticalphysiologist.dmaple.map.creator.buffer.ShortMap
 import mil.nga.tiff.TIFFImage
 import mil.nga.tiff.TiffReader
 import mil.nga.tiff.TiffWriter

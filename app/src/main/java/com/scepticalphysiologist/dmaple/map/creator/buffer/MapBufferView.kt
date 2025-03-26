@@ -1,9 +1,5 @@
-package com.scepticalphysiologist.dmaple.map.creator
+package com.scepticalphysiologist.dmaple.map.creator.buffer
 
-import android.graphics.Color
-import androidx.core.graphics.blue
-import androidx.core.graphics.green
-import androidx.core.graphics.red
 import mil.nga.tiff.FieldTagType
 import mil.nga.tiff.FieldType
 import mil.nga.tiff.FileDirectory
@@ -84,7 +80,6 @@ abstract class MapBufferView<T : Number>(
         identifier: String = "",
         y: Int? = null,
     ): FileDirectory {
-
         // y (row/temporal) position
         val currentTime = currentTimeSample()
         val ny = minOf(y ?: currentTime, currentTime)
@@ -132,108 +127,5 @@ abstract class MapBufferView<T : Number>(
         // Set the buffer position to end of the tiff data.
         buffer.position(bufferPosition(raster.width - 1, raster.height - 1))
         return Pair(raster.width, raster.height)
-    }
-}
-
-/** A map consisting of RGB color values. */
-class RGBMap(buffer: ByteBuffer, nx: Int): MapBufferView<Int>(buffer, nx) {
-
-    override val fieldType = FieldType.BYTE
-
-    override var bytesPerChannel = listOf(1, 1, 1)
-
-    override fun set(i: Int, j: Int, value: Int) {
-        val k = bufferPosition(i, j)
-        buffer.put(k,     (value shr 16).toByte())
-        buffer.put(k + 1, (value shr 8).toByte())
-        buffer.put(k + 2, (value shr 0).toByte())
-    }
-
-    override fun get(i: Int, j: Int): Int {
-        val k = bufferPosition(i, j)
-        return  (255 shl 24) or
-                (buffer[k].toInt() and 0xff shl 16) or
-                (buffer[k + 1].toInt() and 0xff shl 8) or
-                (buffer[k + 2].toInt() and 0xff shl 0)
-    }
-
-    override fun add(value: Int) {
-        buffer.put((value shr 16).toByte())
-        buffer.put((value shr 8).toByte())
-        buffer.put((value shr 0).toByte())
-    }
-
-    override fun getColorInt(i: Int, j: Int): Int { return get(i, j) }
-
-    override fun toRaster(i: Int, j: Int, raster: Rasters) {
-        val color = getColorInt(i, j)
-        raster.setPixelSample(0, i, j, color.red)
-        raster.setPixelSample(1, i, j, color.green)
-        raster.setPixelSample(2, i, j, color.blue)
-    }
-
-    override fun fromRaster(i: Int, j: Int, raster: Rasters) {
-        set(i, j, Color.argb(
-            255,
-            raster.getPixelSample(0, i, j).toInt(),
-            raster.getPixelSample(1, i, j).toInt(),
-            raster.getPixelSample(2, i, j).toInt()
-        ))
-    }
-
-}
-
-/** A map consisting of short integers. */
-class ShortMap(buffer: ByteBuffer, nx: Int): MapBufferView<Short>(buffer, nx) {
-
-    override val fieldType = FieldType.SHORT
-
-    override val bytesPerChannel = listOf(2)
-
-    /** The smallest possible short value.
-     * For converting between signed (buffer) and unsigned (raster/distance) short.
-     */
-    private val s0 = Short.MIN_VALUE.toFloat()
-
-    /** The maximum sample value. */
-    private var maxv: Short = Short.MIN_VALUE
-
-    fun addDistance(value: Int) { add((value + Short.MIN_VALUE.toInt()).toShort()) }
-
-    override fun set(i: Int, j: Int, value: Short) { buffer.putShort(bufferPosition(i, j), value) }
-
-    override fun get(i: Int, j: Int): Short { return buffer.getShort(bufferPosition(i, j)) }
-
-    override fun add(value: Short) {
-        buffer.putShort(value)
-        if(value > maxv) maxv = value
-    }
-
-    override fun getColorInt(i: Int, j: Int): Int {
-        val denom = maxv.toFloat() - s0
-         val v = (255f * (get(i, j).toFloat() - s0) / denom).toInt()
-         return (255 shl 24) or
-                (v and 0xff shl 16) or
-                (v and 0xff shl 8) or
-                (v and 0xff shl 0)
-    }
-
-    override fun toRaster(i: Int, j: Int, raster: Rasters) {
-        raster.setPixelSample(0, i, j, get(i, j).toInt() - s0.toInt())
-    }
-
-    override fun fromRaster(i: Int, j: Int, raster: Rasters) {
-        val v = (raster.getPixelSample(0, i, j).toInt() + s0.toInt()).toShort()
-        set(i, j, v)
-    }
-
-    override fun fromTiffDirectory(dir: FileDirectory): Pair<Int, Int> {
-        val rasterDimen =  super.fromTiffDirectory(dir)
-        maxv = Short.MIN_VALUE
-        for(i in 0 until currentSample()) {
-            val v = buffer.getShort(i * bytesPerSample)
-            if(v > maxv) maxv = v
-        }
-        return rasterDimen
     }
 }
