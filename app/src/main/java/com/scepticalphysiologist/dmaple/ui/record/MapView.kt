@@ -96,7 +96,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
     /** A matrix used for rotating and scaling the map's bitmap. */
     private var bitmapMatrix: Matrix = Matrix()
     /** The offset of the end of shown map from the end of the view (x = space, y = time). */
-    private val offset = Point(0f, 0f)
+    private var offset = Point(0f, 0f)
 
     // ---------------------------------------------------------------------------------------------
     // Map layout, scaling and zoom.
@@ -260,9 +260,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
     private fun fingerScroll(ds: Point) {
         val bitmapShift = spaceTimePoint(ds) * scale / zoom
         // todo - Direction of shift should depend on orientation
-        val shift = offset + bitmapShift
-        if(shift.x > 0) offset.x = shift.x
-        if(shift.y > 0) offset.y = shift.y
+        offset = Point.maxOf(offset + bitmapShift, Point(0f, 0f))
         if(!updating) update()
     }
 
