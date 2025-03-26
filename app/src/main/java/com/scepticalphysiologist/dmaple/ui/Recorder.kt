@@ -113,11 +113,10 @@ class Recorder: Fragment() {
             findNavController().navigate(R.id.recorder_to_explorer)
         }
 
-        // Go to settings
+        // Go to settings.
         binding.toSettingsButton.setOnClickListener {
             activity?.startActivity(Intent(activity, SettingsActivity::class.java))
         }
-
     }
 
     // ---------------------------------------------------------------------------------------------
