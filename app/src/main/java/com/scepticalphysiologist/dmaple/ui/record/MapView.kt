@@ -16,7 +16,6 @@ import androidx.lifecycle.findViewTreeLifecycleOwner
 import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.etc.transformBitmap
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
-import kotlin.math.floor
 
 /** A view for live display of a spatio-temporal map.
  *
@@ -87,6 +86,9 @@ class MapView(context: Context, attributeSet: AttributeSet):
     private var zoom = Point(1f, 1f)
     /** The ratio of bitmap pixels to view pixels, along the spatial axis at zoom = 1. */
     private var scale  = 1f
+    /** The maximum number of map pixels that should be shown (x = space, y = time).
+     * This is important in maintaining the speed of map display. */
+    private val maxViewPixels = Point(100f, 600f)
     /** Skipping of map pixels to display (x = space, y = time). */
     private var pixelStep = Point(1f, 1f)
     /** The size of the view in terms of bitmap pixels at the current zoom (x = space, y = time). */
@@ -122,7 +124,6 @@ class MapView(context: Context, attributeSet: AttributeSet):
     private fun updateViewSize(){
         viewSize = spaceTimePoint(Point(width.toFloat(), height.toFloat()))
         updateScale()
-        updateMatrix()
     }
 
     /** Update the size of the map's bitmap ([bitmapSize]). */
@@ -146,13 +147,10 @@ class MapView(context: Context, attributeSet: AttributeSet):
         // Restrict zoom ranges.
         // Space (x) cannot be zoomed out to less than the width of the screen (zoom >= 1).
         zoom = Point.maxOf(Point.minOf(z, Point(4f, 5f)), Point(1f, 0.1f))
-        // Skip time (y) pixels at low zoom.
-        //pixelStep.y = if(zoom.y < 0.5) floor(1f / zoom.y) else 1f
-
 
         // Update dependent variables.
         updateViewSizeInBitmapPixels()
-        updateMatrix()
+
         // Restrict time anchor point. Cannot have an time offset if full time span of the bitmap
         // is within the view.
         if(bitmapSize.y < viewSizeInBitmapPixels.y) offset.y = 0f
@@ -160,6 +158,10 @@ class MapView(context: Context, attributeSet: AttributeSet):
 
     private fun updateViewSizeInBitmapPixels() {
         viewSizeInBitmapPixels = viewSize * scale / zoom
+        // Skip pixels so that the pixels displayed from the bitmap do not exceed the maximum.
+        // This keeps bitmap display fast.
+        pixelStep = Point.maxOf((viewSizeInBitmapPixels / maxViewPixels).ceil(), Point(1f, 1f))
+        updateMatrix()
     }
 
     /** Update the map's bitmap transformation matrix ([bitmapMatrix]). */
@@ -172,12 +174,6 @@ class MapView(context: Context, attributeSet: AttributeSet):
 
         // Flip so that time goes from top>bottom or left>right and space matches ROI.
         // todo - Does this actually work on all tablets? Is this general??
-
-        pixelStep = (viewSizeInBitmapPixels / Point(100f, 500f)).ceil()
-        if(pixelStep.x < 1) pixelStep.x = 1f
-        if(pixelStep.y < 1) pixelStep.y = 1f
-
-       // val s = screenPoint(zoom * pixelStep)
         val s = screenPoint(zoom * pixelStep)
         when(display.rotation) {
             Surface.ROTATION_0 -> bitmapMatrix.postScale(-s.x, s.y)
