@@ -2,9 +2,13 @@ package com.scepticalphysiologist.dmaple.ui
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.os.Bundle
 import android.text.format.DateUtils
+import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -22,7 +26,10 @@ import kotlinx.coroutines.launch
 /** The main fragment of the app, in which the user sets up the ROIs and maps to record,
  * does the recording and views completed recordings.
  * */
-class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
+class Recorder: Fragment() {
+
+    private var _binding: RecorderBinding? = null
+    protected val binding get() = _binding!!
 
     /** The fragment's view model that holds recording state and communicates with the [MappingService]. */
     private lateinit var model: RecorderModel
@@ -31,8 +38,19 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
     /** Whether we are recording or not. */
     private var recording: Boolean = false
 
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        _binding = RecorderBinding.inflate(inflater, container, false)
+        createUI()
+        return binding.root
+    }
+
     @SuppressLint("ClickableViewAccessibility")
-    override fun createUI() {
+    fun createUI() {
 
         // Get the view model.
         model = ViewModelProvider(this.requireActivity()).get(RecorderModel::class.java)
@@ -199,6 +217,11 @@ class Recorder : DMapLEPage<RecorderBinding>(RecorderBinding::inflate) {
             }
         }
         return false
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
 }
