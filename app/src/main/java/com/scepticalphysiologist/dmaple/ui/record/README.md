@@ -10,7 +10,9 @@ layers of a single frame layout, from top to bottom:
   - `Preview` (`androidx.camera.view.PreviewView`). The camera feed.
 * [`MapView`](MapView.kt). A spatio-temporal map, selected by tapping one of the ROIs.
 
-![image](../../images/mapfield.jpg)
+|   ![image](../../images/mapfield.jpg)   |
+|:---------------------------------------:|
+| *View layers of the Recorder fragment.* |
 
 
 When recording or viewing an old recording, the `FieldView` takes up the top-left of the fragment,
@@ -23,7 +25,9 @@ recording, the `FieldView` takes up the whole fragment and the `MapView` is hidd
 ### MapView
 
 
-![image](../../images/mapview_calls.jpg)
+| ![image](../../images/mapview_calls.jpg) |
+|:----------------------------------------:|
+|  *Call sequence when updating MapView.*  |
 
 
 
