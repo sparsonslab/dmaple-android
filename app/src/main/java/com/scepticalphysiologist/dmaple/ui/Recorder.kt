@@ -29,7 +29,7 @@ import kotlinx.coroutines.launch
 class Recorder: Fragment() {
 
     private var _binding: RecorderBinding? = null
-    protected val binding get() = _binding!!
+    private val binding get() = _binding!!
 
     /** The fragment's view model that holds recording state and communicates with the [MappingService]. */
     private lateinit var model: RecorderModel
@@ -38,12 +38,15 @@ class Recorder: Fragment() {
     /** Whether we are recording or not. */
     private var recording: Boolean = false
 
+    // ---------------------------------------------------------------------------------------------
+    // Fragment creation
+    // ---------------------------------------------------------------------------------------------
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         _binding = RecorderBinding.inflate(inflater, container, false)
         createUI()
         return binding.root
@@ -116,6 +119,10 @@ class Recorder: Fragment() {
         }
 
     }
+
+    // ---------------------------------------------------------------------------------------------
+    // State
+    // ---------------------------------------------------------------------------------------------
 
     /** Set the UI appearance depending on whether maps are being created. */
     private fun setUIState() {
@@ -219,9 +226,12 @@ class Recorder: Fragment() {
         return false
     }
 
+    // ---------------------------------------------------------------------------------------------
+    // Destruction
+    // ---------------------------------------------------------------------------------------------
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
     }
-
 }
