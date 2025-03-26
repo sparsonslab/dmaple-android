@@ -67,7 +67,7 @@ import kotlin.system.measureTimeMillis
  * This is vital as:
  * - The user may want to record maps for tens-of-minutes or even hours, while putting the app in
  * the background to save battery.
- * - View ROIs will be persisted across configuration changes other then rotation (which [MappingRoiOverlay]
+ * - View ROIs will be persisted across configuration changes other then rotation (which [RoiOverlay]
  * already handles).
  *
  */
@@ -210,10 +210,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         setAnalyser()
     }
 
-    /** Set the preview use case of CameraX.
-     * @param autosOn Auto-focus, -exposure and -white-balance are on
-     * (this also applies to the image analyser).
-     * */
+    /** Set the preview use case of CameraX. */
     private fun setPreview() {
         unBindUse(preview)
         preview = Preview.Builder().also { builder ->
@@ -255,7 +252,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     /** Unbind a CameraX use case. */
     private fun unBindUse(use: UseCase?) { cameraProvider.unbind(use) }
-
 
     // ---------------------------------------------------------------------------------------------
     // Binding access to the service
@@ -399,11 +395,12 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     /** If maps are not being created, save the maps, clear the creators and free-up resources.
      *
-     * @param mapFilePrefix A prefix for all map files or null if maps are not to be saved.
+     * @param folderSuffix A suffix given to the folder containing all maps from a recording. The
+     * folder begins with the date and time.
      * */
-    fun saveAndClear(folderName: String?) = scope.launch(Dispatchers.Default) {
+    fun saveAndClear(folderSuffix: String?) = scope.launch(Dispatchers.Default) {
         if(creating) return@launch
-        folderName?.let {
+        folderSuffix?.let {
             val loc = File(
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
                 strftime(startTime, "YYMMdd_HHmmss_") + it

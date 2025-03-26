@@ -53,7 +53,6 @@ class MapView(context: Context, attributeSet: AttributeSet):
          * https://stackoverflow.com/questions/4959485/bitmap-bitmap-recycle-weakreferences-and-garbage-collection
          * */
         val bitmapBacking = IntArray(1_000_000)
-
     }
 
     // Map creation
@@ -64,6 +63,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
     private var mapIdx: Int = 0
     /** Used for passing the map's bitmap out of the coroutine into the main UI thread. */
     private var newBitmap = MutableLiveData<Bitmap?>(null)
+    /** The map is being updated live. i.e. [update] is being called repeatedly by some outside process.*/
     private var updating: Boolean = false
 
     // Display
@@ -226,7 +226,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
         creator?.let { crt ->
             val bitmapPixelsPerUnit = Point(crt.spatialRes.first, crt.temporalRes.first)
             // rounded bar size in units for ~fifth of screen
-            var barUnits = (viewSizeInBitmapPixels * 0.2f / bitmapPixelsPerUnit).ceil()
+            val barUnits = (viewSizeInBitmapPixels * 0.2f / bitmapPixelsPerUnit).ceil()
             val barPixels = barUnits * bitmapPixelsPerUnit * zoom / scale
             // Bar points (in screen coordinates) and text.
             barStart = screenPoint(viewSize - barPixels - 10f)
