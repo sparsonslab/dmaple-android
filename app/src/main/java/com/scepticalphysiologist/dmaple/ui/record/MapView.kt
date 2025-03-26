@@ -147,10 +147,12 @@ class MapView(context: Context, attributeSet: AttributeSet):
         // Space (x) cannot be zoomed out to less than the width of the screen (zoom >= 1).
         zoom = Point.maxOf(Point.minOf(z, Point(4f, 5f)), Point(1f, 0.1f))
         // Skip time (y) pixels at low zoom.
-        pixelStep.y = if(zoom.y < 0.5) floor(1f / zoom.y) else 1f
+        //pixelStep.y = if(zoom.y < 0.5) floor(1f / zoom.y) else 1f
+
+
         // Update dependent variables.
-        updateMatrix()
         updateViewSizeInBitmapPixels()
+        updateMatrix()
         // Restrict time anchor point. Cannot have an time offset if full time span of the bitmap
         // is within the view.
         if(bitmapSize.y < viewSizeInBitmapPixels.y) offset.y = 0f
@@ -170,6 +172,12 @@ class MapView(context: Context, attributeSet: AttributeSet):
 
         // Flip so that time goes from top>bottom or left>right and space matches ROI.
         // todo - Does this actually work on all tablets? Is this general??
+
+        pixelStep = (viewSizeInBitmapPixels / Point(100f, 500f)).ceil()
+        if(pixelStep.x < 1) pixelStep.x = 1f
+        if(pixelStep.y < 1) pixelStep.y = 1f
+
+       // val s = screenPoint(zoom * pixelStep)
         val s = screenPoint(zoom * pixelStep)
         when(display.rotation) {
             Surface.ROTATION_0 -> bitmapMatrix.postScale(-s.x, s.y)

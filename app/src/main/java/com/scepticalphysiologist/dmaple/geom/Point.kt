@@ -38,6 +38,8 @@ class Point(var x: Float = 0f, var y: Float = 0f) {
 
     fun abs(): Point { return Point(kotlin.math.abs(x), kotlin.math.abs(y)) }
 
+    fun ceil(): Point { return Point(kotlin.math.ceil(x), kotlin.math.ceil(y))}
+
     fun swap(): Point { return Point(y, x) }
 
     fun min(): Float { return kotlin.math.min(x, y) }
