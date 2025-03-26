@@ -124,7 +124,39 @@ class MapView(context: Context, attributeSet: AttributeSet):
     }
 
     // ---------------------------------------------------------------------------------------------
-    // Map layout, scaling and zoom.
+    // View overrides
+    // ---------------------------------------------------------------------------------------------
+
+    /** Update the view when the layout is changed. */
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+        if(changed) {
+            updateViewSize()
+            if(!updating) update()
+        }
+    }
+
+    /** Observe [newBitmap] (when a bitmap of a portion of the map is created in the background),
+     *  so that it can be set to the image view in the main thread. */
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        findViewTreeLifecycleOwner()?.let{ newBitmap.observe(it) { bm-> setImageBitmap(bm) } }
+    }
+
+    /** Draw the scale bars over the map.. */
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        // Draw the bars.
+        creator?.let {
+            canvas.drawLine(barEnd.x, barStart.y, barEnd.x, barEnd.y, barPaint)
+            canvas.drawLine(barStart.x, barEnd.y, barEnd.x, barEnd.y, barPaint)
+            canvas.drawText(barText.first, barStart.x, barEnd.y, barTextPaint)
+            canvas.drawText(barText.second, barEnd.x, barStart.y, barTextPaint)
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Map viewport calculations.
     // ---------------------------------------------------------------------------------------------
 
     /** Convert a screen point to a space-time coordinate.
@@ -141,14 +173,6 @@ class MapView(context: Context, attributeSet: AttributeSet):
 
     private fun screenPair(spaceTimePair: Pair<String, String>): Pair<String, String> {
         return if(width > height) Pair(spaceTimePair.second, spaceTimePair.first) else spaceTimePair
-    }
-
-    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
-        super.onLayout(changed, left, top, right, bottom)
-        if(changed) {
-            updateViewSize()
-            if(!updating) update()
-        }
     }
 
     /** Update the view size [viewSize]. */
@@ -216,10 +240,9 @@ class MapView(context: Context, attributeSet: AttributeSet):
 
     /** Update the map's bitmap transformation matrix ([bitmapMatrix]). */
     private fun updateMatrix() {
-        bitmapMatrix = Matrix()
-
         // Rotate so that the time (height) axis of the a map's bitmap is shown
         // along the long axis of the view.
+        bitmapMatrix = Matrix()
         bitmapMatrix.setRotate(if(width > height) 90f else 0f)
 
         // Flip so that time goes from top>bottom or left>right and space matches ROI.
@@ -248,6 +271,9 @@ class MapView(context: Context, attributeSet: AttributeSet):
     /** Set parameters related to whether the map is being updated live.  */
     fun setLiveUpdateState(updating: Boolean) { this.updating = updating }
 
+    /** Reset the map view. */
+    fun reset() { updateZoom(Point(1f, 1f)) }
+
     /** Update the map shown.
      *
      * This is intended to be run within a coroutine. Therefore the bitmap of the section of map
@@ -272,25 +298,6 @@ class MapView(context: Context, attributeSet: AttributeSet):
             )}
         }
     }
-
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-        findViewTreeLifecycleOwner()?.let{ newBitmap.observe(it) { bm-> setImageBitmap(bm) } }
-    }
-
-    override fun onDraw(canvas: Canvas) {
-        super.onDraw(canvas)
-        // Draw the bars.
-        creator?.let {
-            canvas.drawLine(barEnd.x, barStart.y, barEnd.x, barEnd.y, barPaint)
-            canvas.drawLine(barStart.x, barEnd.y, barEnd.x, barEnd.y, barPaint)
-            canvas.drawText(barText.first, barStart.x, barEnd.y, barTextPaint)
-            canvas.drawText(barText.second, barEnd.x, barStart.y, barTextPaint)
-        }
-    }
-
-    /** Reset the map view. */
-    fun reset() { updateZoom(Point(1f, 1f)) }
 
     // ---------------------------------------------------------------------------------------------
     // Gesture reaction.
