@@ -81,21 +81,6 @@ class Point(var x: Float = 0f, var y: Float = 0f) {
             return ps.map{ listOf(it.x, it.y) }.flatten().toFloatArray()
         }
 
-        /** The two opposing corners of a rectangle.*/
-        fun fromRect(r: RectF): List<Point> {
-            return listOf(Point(r.left, r.top), Point(r.right, r.bottom))
-        }
-
-        fun toRect(ps: List<Point>, i: Int = 0): RectF? {
-            if(ps.size - i < 2) return null
-            return RectF(
-                minOf(ps[i].x, ps[i + 1].x),
-                minOf(ps[i].y, ps[i + 1].y),
-                maxOf(ps[i].x, ps[i + 1].x),
-                maxOf(ps[i].y, ps[i + 1].y)
-            )
-        }
-
         fun ofViewExtent(view: View): Point {
             return Point(view.width.toFloat(), view.height.toFloat())
         }
