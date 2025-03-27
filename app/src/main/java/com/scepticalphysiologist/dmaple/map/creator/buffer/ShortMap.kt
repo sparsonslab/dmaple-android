@@ -1,11 +1,9 @@
 package com.scepticalphysiologist.dmaple.map.creator.buffer
 
-import android.graphics.Color
 import mil.nga.tiff.FieldType
 import mil.nga.tiff.FileDirectory
 import mil.nga.tiff.Rasters
 import java.nio.ByteBuffer
-
 
 /** A map consisting of short integers.
  *

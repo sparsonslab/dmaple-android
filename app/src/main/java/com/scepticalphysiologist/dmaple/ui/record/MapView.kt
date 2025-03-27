@@ -282,28 +282,21 @@ class MapView(context: Context, attributeSet: AttributeSet):
      * */
     fun update() {
         creator?.let { mapCreator ->
-            println(measureTimeMillis {
-
-                // Update size.
-                updateBitmapSize(mapCreator.spaceTimeSampleSize())
-                // Extract section of the map as a bitmap.
-                val pE = Point.minOf(bitmapSize, viewSizeInBitmapPixels)
-                val p0 = Point.maxOf(bitmapSize - pE - offset, Point())
-                val p1 = p0 + pE
-                mapCreator.getMapBitmap(
-                    idx = mapIdx,
-                    crop = Rect(p0.x.toInt(), p0.y.toInt(), p1.x.toInt(), p1.y.toInt()),
-                    stepX = pixelStep.x.toInt(), stepY = pixelStep.y.toInt(),
-                    backing = bitmapBacking,
-                )?.let { bm ->
-                    // Rotate and scale the bitmap and post to the main thread for display.
-                    newBitmap.postValue(transformBitmap(bm, bitmapMatrix)
-                )}
-
-
-            })
-
-
+            // Update size.
+            updateBitmapSize(mapCreator.spaceTimeSampleSize())
+            // Extract section of the map as a bitmap.
+            val pE = Point.minOf(bitmapSize, viewSizeInBitmapPixels)
+            val p0 = Point.maxOf(bitmapSize - pE - offset, Point())
+            val p1 = p0 + pE
+            mapCreator.getMapBitmap(
+                idx = mapIdx,
+                crop = Rect(p0.x.toInt(), p0.y.toInt(), p1.x.toInt(), p1.y.toInt()),
+                stepX = pixelStep.x.toInt(), stepY = pixelStep.y.toInt(),
+                backing = bitmapBacking,
+            )?.let { bm ->
+                // Rotate and scale the bitmap and post to the main thread for display.
+                newBitmap.postValue(transformBitmap(bm, bitmapMatrix)
+            )}
         }
     }
 
