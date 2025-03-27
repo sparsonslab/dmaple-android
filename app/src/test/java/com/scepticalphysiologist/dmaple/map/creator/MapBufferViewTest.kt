@@ -88,7 +88,7 @@ class ShortMapTest {
         map.fromTiffDirectory(dirRead!!)
         assertNumbersEqual(
             expected = pixels,
-            actual = pixels.indices.map{map.get(it, 0).toInt() - Short.MIN_VALUE.toInt()}.toList()
+            actual = pixels.indices.map{map.get(it, 0).toInt()}.toList()
         )
     }
 
