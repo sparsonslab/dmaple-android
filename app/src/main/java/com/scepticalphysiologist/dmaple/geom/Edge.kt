@@ -7,7 +7,12 @@ enum class Edge {
     RIGHT,
     TOP;
 
-    /** Rotate an edge. */
+    /** Rotate an edge.
+     *
+     * Edges run clockwise (+rotation) from LEFT > BOTTOM > RIGHT > TOP. This matches their
+     * definition in an [android.graphics.Rect] and [Rectangle], where in terms of coordinate space,
+     * left < right and top < bottom.
+     */
     fun rotate(degrees: Int): Edge {
         var k = (this.ordinal + degrees / 90) % 4
         if (k < 0) k += 4
