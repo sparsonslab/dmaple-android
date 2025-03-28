@@ -174,7 +174,7 @@ class MapCreator(val roi: FieldRoi) {
     // Display
     // ---------------------------------------------------------------------------------------------
 
-    val forks = ForkJoinPool(8)
+    private val forks = ForkJoinPool(8)
 
     /** Get a portion of one of the maps as a bitmap.
      *
@@ -201,9 +201,8 @@ class MapCreator(val roi: FieldRoi) {
             if(bs.width * bs.height > backing.size) return null
             // Pass values from buffer to bitmap backing and return bitmap.
 
-
+            // https://stackoverflow.com/questions/30802463/how-many-threads-are-spawned-in-parallelstream-in-java-8
             forks.submit {
-
                 sequence{
                     var k = -1
                     for(j in area.top until area.bottom step stepY)
@@ -214,10 +213,7 @@ class MapCreator(val roi: FieldRoi) {
                 }.toList().parallelStream().forEach {
                     backing[it[2]] = buffer.getColorInt(it[0], it[1])
                 }
-
             }
-
-
 
             return Bitmap.createBitmap(backing, bs.width, bs.height, Bitmap.Config.ARGB_8888)
         }
