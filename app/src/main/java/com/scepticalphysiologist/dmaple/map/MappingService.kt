@@ -101,20 +101,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** Auto exposure, white-balance and focus are on. */
     private var autosOn: Boolean = true
 
-    // Buffering
+    // Recording
     // ---------
-    /** Provides file-mapped byte buffers for holding map data as it is created.
-     * 10 buffers gives 10 spatio-temporal maps.
-     * 100 MB ~= 60 min x 60 sec/min x 30 frame/sec x 1000 bytes/frame.
-     * */
-    val bufferProvider = MapBufferProvider(
-        sourceDirectory = MainActivity.storageDirectory!!,
-        nBuffers = 10,
-        bufferByteSize = 100_000_000L
-    )
-
-    // Recording State
-    // ---------------
     /** The mapping ROIs in their last view frame. */
     private var rois = mutableListOf<FieldRoi>()
     /** The measurement ruler in its last view frame. */
@@ -125,6 +113,15 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     private var currentMap: Pair<Int, Int> = Pair(0, 0)
     /** Maps are being created ("recording"). */
     private var creating: Boolean = false
+    /** Provides file-mapped byte buffers for holding map data as it is created.
+     * 10 buffers gives 10 spatio-temporal maps.
+     * 100 MB ~= 60 min x 60 sec/min x 30 frame/sec x 1000 bytes/frame.
+     * */
+    val bufferProvider = MapBufferProvider(
+        sourceDirectory = MainActivity.storageDirectory!!,
+        nBuffers = 10,
+        bufferByteSize = 100_000_000L
+    )
     /** The instant that creation of maps started. */
     private var startTime: Instant = Instant.now()
     /** The last bitmap captured from the camera. */
