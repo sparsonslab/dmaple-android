@@ -1,4 +1,4 @@
-package com.scepticalphysiologist.dmaple.map.creator.buffer
+package com.scepticalphysiologist.dmaple.map.buffer
 
 import android.graphics.Color
 import androidx.core.graphics.blue

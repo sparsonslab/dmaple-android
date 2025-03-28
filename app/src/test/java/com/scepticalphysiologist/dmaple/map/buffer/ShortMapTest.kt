@@ -1,7 +1,8 @@
-package com.scepticalphysiologist.dmaple.map.creator.buffer
+package com.scepticalphysiologist.dmaple.map.buffer
 
 import android.graphics.Color
 import com.scepticalphysiologist.dmaple.assertNumbersEqual
+import com.scepticalphysiologist.dmaple.map.buffer.ShortMap
 import com.scepticalphysiologist.dmaple.map.creator.findTiff
 import mil.nga.tiff.TIFFImage
 import mil.nga.tiff.TiffReader

@@ -1,4 +1,4 @@
-package com.scepticalphysiologist.dmaple.map.creator.buffer
+package com.scepticalphysiologist.dmaple.map.buffer
 
 import mil.nga.tiff.FieldTagType
 import mil.nga.tiff.FieldType

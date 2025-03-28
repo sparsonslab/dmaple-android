@@ -1,6 +1,6 @@
 package com.scepticalphysiologist.dmaple
 
-import com.scepticalphysiologist.dmaple.map.creator.buffer.ShortMap
+import com.scepticalphysiologist.dmaple.map.buffer.ShortMap
 import com.scepticalphysiologist.dmaple.map.creator.setResolution
 import mil.nga.tiff.FieldTagType
 import mil.nga.tiff.TIFFImage

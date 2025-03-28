@@ -4,9 +4,9 @@ import android.graphics.Bitmap
 import android.graphics.Rect
 import android.util.Size
 import com.scepticalphysiologist.dmaple.geom.Edge
-import com.scepticalphysiologist.dmaple.map.creator.buffer.MapBufferView
-import com.scepticalphysiologist.dmaple.map.creator.buffer.RGBMap
-import com.scepticalphysiologist.dmaple.map.creator.buffer.ShortMap
+import com.scepticalphysiologist.dmaple.map.buffer.MapBufferView
+import com.scepticalphysiologist.dmaple.map.buffer.RGBMap
+import com.scepticalphysiologist.dmaple.map.buffer.ShortMap
 import com.scepticalphysiologist.dmaple.ui.record.ThresholdBitmap
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.field.FieldRuler
