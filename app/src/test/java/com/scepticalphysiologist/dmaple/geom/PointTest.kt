@@ -1,18 +1,18 @@
 package com.scepticalphysiologist.dmaple.geom
 
+import com.scepticalphysiologist.dmaple.assertPointsEqual
 import org.junit.Assert.assertEquals
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import java.util.stream.Stream
 import kotlin.math.PI
-import kotlin.math.absoluteValue
 
 class PointTest {
 
     companion object {
         @JvmStatic
-        fun PointPointOperations() = Stream.of(
+        fun pointPointOperations() = Stream.of(
             Arguments.of(Point(3f, 5f), "*", Point(7f, -6f), Point(21f, -30f)),
             Arguments.of(Point(3f, 5f), "+", Point(3.6f, -5.6f), Point(6.6f, -0.6f)),
             Arguments.of(Point(3f, 5f), "-", Point(7f, -6f), Point(-4f, 11f)),
@@ -24,7 +24,7 @@ class PointTest {
         )
 
         @JvmStatic
-        fun PointFloatOperations() = Stream.of(
+        fun pointFloatOperations() = Stream.of(
             Arguments.of(Point(3f, 5f), "*", 5f, Point(15f, 25f)),
             Arguments.of(Point(3f, 16.8f), "/", -4f, Point(-0.75f, -4.2f)),
             Arguments.of(Point(3f, 5f), "+", 0.00098f, Point(3.00098f, 5.00098f)),
@@ -36,7 +36,7 @@ class PointTest {
         )
 
         @JvmStatic
-        fun PointToPointOperations() = Stream.of(
+        fun pointToPointOperations() = Stream.of(
             Arguments.of(Point(3f, -5f), "abs", Point(3f, 5f)),
             Arguments.of(Point(3.087f, -5.874f), "ceil", Point(4f, -5f)),
             Arguments.of(Point(-2.67f, 0.07f), "ceil", Point(-2f, 1f)),
@@ -45,7 +45,7 @@ class PointTest {
         )
 
         @JvmStatic
-        fun PointToFloatOperations() = Stream.of(
+        fun pointToFloatOperations() = Stream.of(
             Arguments.of(Point(0f, 5f), "theta", 0.5f * PI.toFloat()),
             Arguments.of(Point(0f, -5f), "theta", -0.5f * PI.toFloat()),
             Arguments.of(Point(-5f, 0f), "theta", -0f),
@@ -65,7 +65,7 @@ class PointTest {
     }
 
     @ParameterizedTest(name = "case #{index} ==> {0} {1} {2} = {3}")
-    @MethodSource("PointPointOperations")
+    @MethodSource("pointPointOperations")
     fun `point point operators work`(a: Point, operator: String, b: Point, x: Point) {
         // Given: Two points, a and b.
         // When: They are combined with a mathematical operator.
@@ -79,7 +79,7 @@ class PointTest {
     }
 
     @ParameterizedTest(name = "case #{index} ==> {0} {1} {2} = {3}")
-    @MethodSource("PointFloatOperations")
+    @MethodSource("pointFloatOperations")
     fun `point float operators work`(a: Point, operator: String, b: Float, x: Point) {
         // Given: A point (a) and a float (b).
         // When: They are combined with a mathematical operator.
@@ -93,7 +93,7 @@ class PointTest {
     }
 
     @ParameterizedTest(name = "case #{index} ==> {1} of {0} = {2}")
-    @MethodSource("PointToPointOperations")
+    @MethodSource("pointToPointOperations")
     fun `point to point operators work`(a: Point, operator: String, x: Point) {
         // Given: A point (a).
         // When: The operator is applied.
@@ -107,7 +107,7 @@ class PointTest {
     }
 
     @ParameterizedTest(name = "case #{index} ==> {1} of {0} = {2}")
-    @MethodSource("PointToFloatOperations")
+    @MethodSource("pointToFloatOperations")
     fun `point to float operators work`(a: Point, operator: String, x: Float) {
         // Given: A point (a).
         // When: The operator is applied.
@@ -119,12 +119,4 @@ class PointTest {
         }
     }
 
-}
-
-
-fun assertPointsEqual(expected: Point, actual: Point, delta: Float = 1e-5f) {
-    if(((expected.x - actual.x).absoluteValue > delta) || ((expected.y - actual.y).absoluteValue > delta))
-        throw AssertionError(
-            "$expected is not equal to $actual."
-        )
 }

@@ -1,6 +1,6 @@
 package com.scepticalphysiologist.dmaple.map.field
 
-import com.google.gson.Gson
+import com.scepticalphysiologist.dmaple.assertSerializedObjectsEqual
 import com.scepticalphysiologist.dmaple.geom.Edge
 import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
@@ -116,8 +116,7 @@ class FieldRoiTest {
         val copied = roi.copy()
 
         // Then: The original and copied objects are equivalent (use serialisation to assert this).
-        val serializer = Gson()
-        assertEquals(serializer.toJson(roi), serializer.toJson(copied))
+        assertSerializedObjectsEqual(roi, copied)
     }
 
 }

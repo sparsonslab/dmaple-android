@@ -1,5 +1,7 @@
 package com.scepticalphysiologist.dmaple
 
+import com.google.gson.Gson
+import com.scepticalphysiologist.dmaple.geom.Point
 import kotlin.math.absoluteValue
 
 /** Assert that two lists of numbers are equal to within tolerance.
@@ -43,4 +45,17 @@ fun assertStringContains(actual: String, expected: List<String>) {
     for(substring in expected) if(substring !in actual) throw AssertionError(
         "<$substring> is not in <$actual>"
     )
+}
+
+
+/** Assert that two points are equivalent to within a distance of [delta]. */
+fun assertPointsEqual(expected: Point, actual: Point, delta: Float = 1e-5f) {
+    if(((expected.x - actual.x).absoluteValue > delta) || ((expected.y - actual.y).absoluteValue > delta))
+        throw AssertionError("$expected is not equal to $actual.")
+}
+
+fun assertSerializedObjectsEqual(obj1: Any?, obj2: Any?, serializer: Gson = Gson()) {
+    val ser1 = serializer.toJson(obj1)
+    val ser2 = serializer.toJson(obj2)
+    if(ser1 != ser2) throw AssertionError("$ser1 is not equal to $ser2")
 }
