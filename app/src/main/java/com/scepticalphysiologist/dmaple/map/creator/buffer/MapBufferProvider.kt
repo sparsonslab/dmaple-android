@@ -11,13 +11,13 @@ import java.nio.channels.FileChannel
  * File-mapped byte buffers can be very large (up to 2GB) without taking up any actual heap memory.
  * https://developer.android.com/reference/java/nio/MappedByteBuffer
  *
+ * @param sourceDirectory The directory in which the buffer files will be contained
+ * @param nBuffers The number of buffer files. There needs to be one per map. i.e. set this to
+ * the maximum number of maps likely to be recorded at one time.
  */
 class MapBufferProvider(
-    /** The directory in which the buffer files will be contained. */
     private val sourceDirectory: File,
-    /** The number of buffer files. There needs to be one per map. i.e. set this to the maximum
-     * number of maps likely to be recorded at one time. */
-    private val nBuffers: Int
+    nBuffers: Int
 ) {
 
     /** Buffer file names mapped to their streams or null if the buffer is not available (has
