@@ -1,6 +1,5 @@
 package com.scepticalphysiologist.dmaple.geom
 
-import android.graphics.RectF
 import android.view.MotionEvent
 import android.view.View
 import kotlin.math.atan
@@ -18,7 +17,7 @@ import kotlin.math.sin
  */
 class Point(var x: Float = 0f, var y: Float = 0f) {
 
-    override fun toString(): String { return "x = $x, y = $y" }
+    override fun toString(): String { return "($x, $y)" }
 
     operator fun plus(other: Point): Point { return Point(x + other.x, y + other.y) }
 
@@ -42,7 +41,7 @@ class Point(var x: Float = 0f, var y: Float = 0f) {
 
     fun swap(): Point { return Point(y, x) }
 
-    fun min(): Float { return kotlin.math.min(x, y) }
+    fun min(): Float { return minOf(x, y) }
 
     /** The distance from the origin.*/
     fun l2(): Float { return (x.pow(2) + y.pow(2)).pow(0.5f) }
@@ -70,7 +69,9 @@ class Point(var x: Float = 0f, var y: Float = 0f) {
 
         fun maxOf(p0: Point, p1: Point): Point { return Point(maxOf(p0.x, p1.x), maxOf(p0.y, p1.y)) }
 
-        /** The point with unit length from the origin for a given angle. */
+        /** The point with unit length from the origin for a given angle.
+         * @param theta The angle in radians.
+         * */
         fun unitLength(theta: Float): Point { return Point(cos(theta), sin(theta)) }
 
         /** Flatten a list of Points to a float array of (x, y, x, y, ...) pairs.
