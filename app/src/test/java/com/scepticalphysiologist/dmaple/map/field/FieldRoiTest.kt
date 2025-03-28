@@ -1,9 +1,12 @@
 package com.scepticalphysiologist.dmaple.map.field
 
+import com.google.gson.Gson
 import com.scepticalphysiologist.dmaple.geom.Edge
 import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
+import com.scepticalphysiologist.dmaple.map.creator.MapType
 import org.junit.Assert.assertEquals
+import org.junit.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -58,7 +61,6 @@ class FieldRoiTest {
                 ),
             )),
         )
-
     }
 
     @ParameterizedTest(name = "{index} ==> ")
@@ -78,4 +80,44 @@ class FieldRoiTest {
             assertEquals(rois[0].seedingEdge, rois[i].seedingEdge)
         }
     }
+
+    @Test
+    fun `crops to frame`() {
+        // Given: An ROI which extend beyond its frame.
+        val roi = FieldRoi(
+            frame=Frame(size = Point(100f, 100f), orientation = 0),
+            c0 = Point(50f, 50f), c1 = Point(150f, 150f),
+            seedingEdge = Edge.TOP
+        )
+
+        // When: The ROI is cropped to its frame.
+        roi.cropToFrame()
+
+        // Then: The ROI extends only to its frame.
+        assertEquals(roi.c0.x, 50f)
+        assertEquals(roi.c0.y, 50f)
+        assertEquals(roi.c1.x, 100f)
+        assertEquals(roi.c1.y, 100f)
+    }
+
+    @Test
+    fun `copies`() {
+        // Given: An ROI.
+        val roi = FieldRoi(
+            frame=Frame(size = Point(100f, 100f), orientation = 0),
+            c0 = Point(50f, 50f), c1 = Point(67f, 32f),
+            seedingEdge = Edge.TOP,
+            threshold = 47,
+            maps = listOf(MapType.DIAMETER, MapType.RADIUS),
+            uid = "someinterestingmap"
+        )
+
+        // When: It is copied.
+        val copied = roi.copy()
+
+        // Then: The original and copied objects are equivalent (use serialisation to assert this).
+        val serializer = Gson()
+        assertEquals(serializer.toJson(roi), serializer.toJson(copied))
+    }
+
 }
