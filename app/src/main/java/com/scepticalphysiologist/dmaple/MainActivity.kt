@@ -102,7 +102,6 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         // If all permissions have been given,
         if(grantResults.all{it == PackageManager.PERMISSION_GRANTED}) {
-            MappingService.initialiseBuffers()
             connectMappingService(applicationContext)
         } else {
             val warning = Warnings("The App Cannot Run")

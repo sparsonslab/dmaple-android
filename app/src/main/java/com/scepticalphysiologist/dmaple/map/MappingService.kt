@@ -37,6 +37,7 @@ import com.scepticalphysiologist.dmaple.geom.surfaceRotationDegrees
 import com.scepticalphysiologist.dmaple.etc.msg.Warnings
 import com.scepticalphysiologist.dmaple.etc.strftime
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
+import com.scepticalphysiologist.dmaple.map.creator.buffer.MapBufferProvider
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.field.FieldRuler
@@ -47,10 +48,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import java.io.File
-import java.io.IOException
-import java.io.RandomAccessFile
-import java.nio.MappedByteBuffer
-import java.nio.channels.FileChannel
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.Executors
@@ -75,81 +72,8 @@ import kotlin.system.measureTimeMillis
 class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     companion object {
-
-        // Camera
-        // ------
         /** The aspect ratio of the camera. */
         const val CAMERA_ASPECT_RATIO = AspectRatio.RATIO_16_9
-
-        // Map data buffering
-        // ------------------
-        /** A set of files in the app's storage used to create "mapped byte buffers" for
-         * storing map data as it is created. The names of the files mapped to their random access
-         * streams or null, if the file is not being used for buffering.
-         *
-         * Mapped byte buffers can be very large (up to 2GB) without taking up any actual
-         * heap memory.
-         * https://developer.android.com/reference/java/nio/MappedByteBuffer
-         * */
-        private val mapBuffers = mutableMapOf<String, RandomAccessFile?>(
-            "buffer_1.dat" to null,
-            "buffer_2.dat" to null,
-            "buffer_3.dat" to null,
-            "buffer_4.dat" to null,
-            "buffer_5.dat" to null,
-        )
-
-        /** The size (bytes) of each buffering file listed in [mapBuffers].
-         *
-         * 100 MB ~= 60 min x 60 sec/min x 30 frame/sec x 1000 bytes/frame.
-         * */
-        private const val MAP_BUFFER_SIZE: Long = 100_000_000L
-
-        /** Initialise the buffering files.
-         *
-         * This must be called by the main activity at creation.
-         * */
-        fun initialiseBuffers() {
-            for((bufferFile, accessStream) in mapBuffers) {
-                if(accessStream != null) continue
-                val file = File(MainActivity.storageDirectory, bufferFile)
-                if(!file.exists()) file.createNewFile()
-                val fileSize = file.length()
-                if(fileSize < MAP_BUFFER_SIZE) {
-                    val strm = RandomAccessFile(file, "rw")
-                    try { strm.setLength(MAP_BUFFER_SIZE) }
-                    // ... in case there isn't enough memory available.
-                    catch (_: IOException) {
-                        strm.close()
-                        return
-                    }
-                    strm.close()
-                }
-            }
-        }
-
-        fun nFreeBuffers(): Int { return mapBuffers.filterValues{it == null}.size }
-
-        /** Get a free buffer or null if no buffers are free. */
-        fun getFreeBuffer(): MappedByteBuffer? {
-            for((bufferFile, accessStream) in mapBuffers) {
-                if(accessStream != null) continue
-                val file = File(MainActivity.storageDirectory, bufferFile)
-                val strm = RandomAccessFile(file, "rw")
-                mapBuffers[bufferFile] = strm
-                return strm.channel.map(FileChannel.MapMode.READ_WRITE, 0, file.length())
-            }
-            return null
-        }
-
-        /** Free all buffers. */
-        fun freeAllBuffers() {
-            for((bufferFile, accessStream) in mapBuffers) {
-                accessStream?.channel?.close()
-                accessStream?.close()
-                mapBuffers[bufferFile] = null
-            }
-        }
     }
 
     // Camera
@@ -176,6 +100,11 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         get() = (1000f / frameRateFps.toFloat()).toLong()
     /** Auto exposure, white-balance and focus are on. */
     private var autosOn: Boolean = true
+
+    // Buffering
+    // ---------
+    /** Provides file-mapped byte buffers for holding map data as it is created. */
+    val bufferProvider = MapBufferProvider(MainActivity.storageDirectory!!, 10)
 
     // Recording State
     // ---------------
@@ -204,6 +133,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     override fun onCreate() {
         super.onCreate()
         display = (this.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay
+        bufferProvider.initialiseBuffers()
         cameraProvider = ProcessCameraProvider.getInstance(this).get()
         cameraProvider.unbindAll()
         setPreview()
@@ -386,7 +316,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         if(creating) return false
         setRoisAndRuler(RoisAndRuler(record.creators.map { it.roi }, null))
         clearCreators()
-        record.loadMapTiffs(MappingService::getFreeBuffer)
+        record.loadMapTiffs(bufferProvider::getFreeBuffer)
         creators.addAll(record.creators)
         lastCapture = record.field
         currentMap = Pair(0, 0)
@@ -434,7 +364,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         // Create map creators.
         val imageFrame = imageAnalysisFrame() ?: return warning
         val nBuffersRequired = rois.sumOf { roi -> roi.maps.sumOf { map -> map.nMaps } }
-        if(nBuffersRequired > nFreeBuffers()) {
+        if(nBuffersRequired > bufferProvider.nFreeBuffers()) {
             warning.add(message =
                 "There are not enough buffers to process all maps.\n" +
                 "Please reduce the number of ROIs or map types selected.",
@@ -446,7 +376,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             val creator = MapCreator(roi.inNewFrame(imageFrame))
             ruler?.let{ creator.setSpatialResolutionFromRuler(it) }
             creator.setTemporalResolutionFromFPS(frameRateFps.toFloat())
-            val buffers = (0 until creator.nMaps).map{getFreeBuffer()}.filterNotNull()
+            val buffers = (0 until creator.nMaps).map{ bufferProvider.getFreeBuffer()}.filterNotNull()
             if(creator.provideBuffers(buffers)) creators.add(creator)
         }
 
@@ -482,7 +412,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         if(creating) return
         creators.clear()
         currentMap = Pair(0, 0)
-        freeAllBuffers()
+        bufferProvider.freeAllBuffers()
         System.gc()
     }
 
