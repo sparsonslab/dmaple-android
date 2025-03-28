@@ -13,23 +13,19 @@ import java.nio.channels.FileChannel
  *
  * @param sourceDirectory The directory in which the buffer files will be contained
  * @param nBuffers The number of buffer files. There needs to be one per map. i.e. set this to
+ * @param bufferByteSize The size of each buffer in bytes.
  * the maximum number of maps likely to be recorded at one time.
  */
 class MapBufferProvider(
     private val sourceDirectory: File,
-    nBuffers: Int
+    nBuffers: Int,
+    private val bufferByteSize: Long
 ) {
 
     /** Buffer file names mapped to their streams or null if the buffer is not available (has
      * not been initiated or is being used already). */
     private val fileStreams: MutableMap<String, RandomAccessFile?> =
         (1..nBuffers).associate { "buffer_$it.dat" to null }.toMutableMap()
-
-    /** The size (bytes) of each buffering file listed in [fileStreams].
-     *
-     * 100 MB ~= 60 min x 60 sec/min x 30 frame/sec x 1000 bytes/frame.
-     * */
-    private val MAP_BUFFER_SIZE: Long = 100_000_000L
 
     /** Initialise the buffering files. */
     fun initialiseBuffers() {
@@ -38,9 +34,9 @@ class MapBufferProvider(
             val file = File(sourceDirectory, bufferFile)
             if(!file.exists()) file.createNewFile()
             val fileSize = file.length()
-            if(fileSize < MAP_BUFFER_SIZE) {
+            if(fileSize < bufferByteSize) {
                 val strm = RandomAccessFile(file, "rw")
-                try { strm.setLength(MAP_BUFFER_SIZE) }
+                try { strm.setLength(bufferByteSize) }
                 // ... in case there isn't enough memory available.
                 catch (_: IOException) {
                     strm.close()

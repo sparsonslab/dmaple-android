@@ -103,8 +103,15 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     // Buffering
     // ---------
-    /** Provides file-mapped byte buffers for holding map data as it is created. */
-    val bufferProvider = MapBufferProvider(MainActivity.storageDirectory!!, 10)
+    /** Provides file-mapped byte buffers for holding map data as it is created.
+     * 10 buffers gives 10 spatio-temporal maps.
+     * 100 MB ~= 60 min x 60 sec/min x 30 frame/sec x 1000 bytes/frame.
+     * */
+    val bufferProvider = MapBufferProvider(
+        sourceDirectory = MainActivity.storageDirectory!!,
+        nBuffers = 10,
+        bufferByteSize = 100_000_000L
+    )
 
     // Recording State
     // ---------------
