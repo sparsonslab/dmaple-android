@@ -152,7 +152,7 @@ class MapCreator(val roi: FieldRoi) {
                 spineMap?.let { map ->
                     j = segmentor.getSpine(i)
                     k = segmentor.longIdx[i]
-                    p = if (segmentor.gutIsHorizontal) bitmap.getPixel(k, j) else bitmap.getPixel(j, k)
+                    p = if(segmentor.gutIsHorizontal) bitmap.getPixel(k, j) else bitmap.getPixel(j, k)
                     map.add(p)
                 }
             }
