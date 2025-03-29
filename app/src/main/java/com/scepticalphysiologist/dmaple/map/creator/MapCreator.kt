@@ -145,17 +145,14 @@ class MapCreator(val roi: FieldRoi) {
             var j: Int
             var k: Int
             var p: Int
-            for (i in 0 until ns) {
+            for(i in 0 until ns) {
                 diameterMap?.addDistance(segmentor.getDiameter(i))
                 radiusMapLeft?.addDistance(segmentor.getLowerRadius(i))
                 radiusMapRight?.addDistance(segmentor.getUpperRadius(i))
                 spineMap?.let { map ->
                     j = segmentor.getSpine(i)
                     k = segmentor.longIdx[i]
-                    p = if (segmentor.gutIsHorizontal) bitmap.getPixel(
-                        k,
-                        j
-                    ) else bitmap.getPixel(j, k)
+                    p = if (segmentor.gutIsHorizontal) bitmap.getPixel(k, j) else bitmap.getPixel(j, k)
                     map.add(p)
                 }
             }
