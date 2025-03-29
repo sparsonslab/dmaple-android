@@ -33,8 +33,8 @@ class MapBufferProvider(
             if(accessStream != null) continue
             val file = File(sourceDirectory, bufferFile)
             if(!file.exists()) file.createNewFile()
-            val fileSize = file.length()
-            if(fileSize < bufferByteSize) {
+            // If the file isn't the required size, extend it.
+            if(file.length() < bufferByteSize) {
                 val strm = RandomAccessFile(file, "rw")
                 try { strm.setLength(bufferByteSize) }
                 // ... in case there isn't enough memory available.

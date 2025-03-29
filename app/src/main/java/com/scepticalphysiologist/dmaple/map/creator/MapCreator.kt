@@ -15,6 +15,7 @@ import mil.nga.tiff.FileDirectory
 import java.lang.IllegalArgumentException
 import java.lang.IndexOutOfBoundsException
 import java.nio.ByteBuffer
+import java.util.concurrent.ForkJoinPool
 import kotlin.math.ceil
 
 /** Handles the creation of spatio-temporal maps for a single ROI. */
@@ -63,6 +64,11 @@ class MapCreator(val roi: FieldRoi) {
     )
     /** The end of any one of the buffers has been reached. */
     private var reachedEnd = false
+
+    // Map Display
+    // -----------
+    /** A pool of forked threads for parallelized bitmap (map image) creation.*/
+    private val forkedPool = ForkJoinPool.commonPool()
 
     // ---------------------------------------------------------------------------------------------
     // Construction
@@ -196,13 +202,24 @@ class MapCreator(val roi: FieldRoi) {
             crop?.let { area.intersect(crop) }
             val bs = Size(rangeSize(area.width(), stepX), rangeSize(area.height(), stepY))
             if(bs.width * bs.height > backing.size) return null
-            // Pass values from buffer to bitmap backing and return bitmap.
-            var k = 0
-            for(j in area.top until area.bottom step stepY)
-                for(i in area.left until area.right step stepX) {
-                    backing[k] = buffer.getColorInt(i, j)
-                    k += 1
+
+            // Pass values from buffer to bitmap backing in parallel.
+            // The parallelisation really makes a big (> x2) difference!
+            // https://stackoverflow.com/questions/30802463/how-many-threads-are-spawned-in-parallelstream-in-java-8
+            forkedPool.submit {
+                sequence {
+                    var k = -1
+                    for (j in area.top until area.bottom step stepY)
+                        for (i in area.left until area.right step stepX) {
+                            k += 1
+                            yield(listOf(i, j, k))
+                        }
+                }.toList().parallelStream().forEach {
+                    backing[it[2]] = buffer.getColorInt(it[0], it[1])
                 }
+            }
+
+            //and return bitmap.
             return Bitmap.createBitmap(backing, bs.width, bs.height, Bitmap.Config.ARGB_8888)
         }
         // On start and rare occasions these might be thrown.

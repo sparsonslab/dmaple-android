@@ -20,7 +20,6 @@ import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.etc.transformBitmap
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
-import kotlin.system.measureTimeMillis
 
 /** A view for live display of a spatio-temporal map.
  *
@@ -93,7 +92,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
     private var scale  = 1f
     /** The maximum number of map pixels that should be shown (x = space, y = time).
      * This is important in maintaining the speed of map display. */
-    private val maxViewPixels = Point(100f, 600f)
+    private val maxViewPixels = Point(200f, 900f)
     /** Skipping of map pixels to display (x = space, y = time). */
     private var pixelStep = Point(1f, 1f)
     /** The size of the view in terms of bitmap pixels at the current zoom (x = space, y = time). */
@@ -295,6 +294,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
                 backing = bitmapBacking,
             )?.let { bm ->
                 // Rotate and scale the bitmap and post to the main thread for display.
+                // This transform takes most of the remaining time of the update loop (5 - 8 ms of 10 ms total).
                 newBitmap.postValue(transformBitmap(bm, bitmapMatrix)
             )}
         }
