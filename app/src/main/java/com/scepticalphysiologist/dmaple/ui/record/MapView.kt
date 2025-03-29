@@ -294,6 +294,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
                 backing = bitmapBacking,
             )?.let { bm ->
                 // Rotate and scale the bitmap and post to the main thread for display.
+                // This transform takes most of the remaining time of the update loop (5 - 8 ms of 10 ms total).
                 newBitmap.postValue(transformBitmap(bm, bitmapMatrix)
             )}
         }
