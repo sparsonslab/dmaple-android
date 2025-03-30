@@ -32,6 +32,7 @@
             android:key="SPINE_SKIP"
             android:title="Spatial Pixel Skip"
             android:summary="Skip pixels along the long axis of the gut, to reduce resolution of the map's spatial axis."
+
             app:showSeekBarValue="true"
             app:min="0"
             android:max="4"

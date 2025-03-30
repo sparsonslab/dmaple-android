@@ -1,12 +1,15 @@
 package com.scepticalphysiologist.dmaple.ui
 
 import android.app.Activity
+import android.content.Context
 import android.content.pm.ActivityInfo
 import android.graphics.Color
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.preference.DropDownPreference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
+import androidx.preference.SeekBarPreference
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.ui.record.ThresholdBitmap
@@ -97,6 +100,17 @@ class Settings: PreferenceFragmentCompat() {
             val entries = fps.map { it.toString() }.toTypedArray()
             pref.entries = entries
             pref.entryValues = entries
+        }
+
+        val fieldSize =MainActivity.mapService?.getFieldSize()?.let { sz ->
+            "${sz.x.toInt()} x ${sz.y.toInt()} pixels"
+        } ?: "unknown"
+        findPreference<SeekBarPreference>("SPINE_SKIP")?.let { pref ->
+            pref.setSummaryProvider {
+                "Skip pixels along the long axis of the gut, " +
+                "to reduce resolution of the map's spatial axis.\n" +
+                "The current size of the mapping (camera) field is ${fieldSize}."
+            }
         }
 
     }

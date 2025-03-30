@@ -272,6 +272,13 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         return listOf(30)
     }
 
+    /** Get the pixel width and height of the mapping field. */
+    fun getFieldSize(): Point? {
+        return analyser?.resolutionInfo?.let { info ->
+            Point(info.resolution.width.toFloat(), info.resolution.height.toFloat())
+        }
+    }
+
     /** Set the field's ROIs and ruler. */
     fun setRoisAndRuler(field: RoisAndRuler) {
         rois.clear()
