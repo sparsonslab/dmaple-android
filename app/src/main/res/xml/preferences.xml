@@ -18,6 +18,8 @@
         android:title="Frame Rate"
         android:summary="The approximate number of frame per second.\t%s fps." />
 
+
+
     <SwitchPreference
         android:key="THRESHOLD_INVERTED"
         android:title="Threshold Inversion"
@@ -33,6 +35,15 @@
         android:defaultValue="10"/>
 
     <SeekBarPreference
+        android:key="SPINE_SKIP"
+        android:title="Spine skip"
+        android:summary="Skip pixels along, to reduce the spatial resolution of the map."
+        app:showSeekBarValue="true"
+        app:min="0"
+        android:max="4"
+        android:defaultValue="0"/>
+
+    <SeekBarPreference
         android:key="SPINE_SMOOTH"
         android:title="Spine Smooth"
         android:summary="The pixel size of the kernel used to smooth the spine. Make larger for radius maps."
@@ -44,7 +55,7 @@
     <SeekBarPreference
         android:key="SPINE_MAX_GAP"
         android:title="Spine Gap"
-        android:summary="The maximum below-threshold pixel gap the spine can jump"
+        android:summary="The maximum number below-threshold pixel gap that can be ignored"
         app:showSeekBarValue="true"
         app:min="0"
         android:max="20"

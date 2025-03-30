@@ -36,6 +36,7 @@ class Settings: PreferenceFragmentCompat() {
             setKeepScreenOn(prefs.getBoolean("KEEP_SCREEN_ON", false))
             setFrameRate(prefs.getString("FRAME_RATE_FPS", "30"))
             setThresholdInverted(prefs.getBoolean("THRESHOLD_INVERTED", false))
+            setSpinePixelSkip(prefs.getInt("SPINE_SKIP", 0))
             setSeedMinWidth(prefs.getInt("SEED_MIN_WIDTH", 10))
             setSpineSmooth(prefs.getInt("SPINE_SMOOTH", 1))
             setSpineMaxGap(prefs.getInt("SPINE_MAX_GAP", 2))
@@ -60,12 +61,16 @@ class Settings: PreferenceFragmentCompat() {
             SpineOverlay.spinePaint.color = if(inverted) Color.WHITE else Color.BLACK
         }
 
+        private fun setSpinePixelSkip(entry: Any?) {
+            entry.toString().toIntOrNull()?.let { GutSegmentor.spineSkipPixels = it }
+        }
+
         private fun setSeedMinWidth(entry: Any?) {
             entry.toString().toIntOrNull()?.let { GutSegmentor.minWidth = it }
         }
 
         private fun setSpineSmooth(entry: Any?) {
-            entry.toString().toIntOrNull()?.let { GutSegmentor.smoothWinSize = it }
+            entry.toString().toIntOrNull()?.let { GutSegmentor.spineSmoothPixels = it }
         }
 
         private fun setSpineMaxGap(entry: Any?) {

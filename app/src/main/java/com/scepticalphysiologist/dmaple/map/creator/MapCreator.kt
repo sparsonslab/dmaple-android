@@ -16,6 +16,7 @@ import java.lang.IllegalArgumentException
 import java.lang.IndexOutOfBoundsException
 import java.nio.ByteBuffer
 import java.util.concurrent.ForkJoinPool
+import kotlin.math.abs
 import kotlin.math.ceil
 
 /** Handles the creation of spatio-temporal maps for a single ROI. */
@@ -169,7 +170,11 @@ class MapCreator(val roi: FieldRoi) {
     fun setTemporalResolutionFromFPS(fps: Float) { temporalRes = Pair(fps, "s") }
 
     /** Set the spatial resolution from a ruler. */
-    fun setSpatialResolutionFromRuler(ruler: FieldRuler) { spatialRes = ruler.getResolution() }
+    fun setSpatialResolutionFromRuler(ruler: FieldRuler) {
+        val fullResolution = ruler.getResolution()
+        val mapStep = abs(segmentor.longIdx[1] - segmentor.longIdx[0]).toFloat()
+        spatialRes = Pair(fullResolution.first / mapStep, fullResolution.second)
+    }
 
     /** At least one buffer has reached capacity and no more samples will be added to the maps,
      * irrespective of calls to [updateWithCameraBitmap]. */

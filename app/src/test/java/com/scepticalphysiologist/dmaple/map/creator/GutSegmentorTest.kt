@@ -140,7 +140,7 @@ class GutSegmentorTest {
         segmentor.gutIsAboveThreshold = true
         GutSegmentor.maxGap = 5
         GutSegmentor.minWidth = 5
-        GutSegmentor.smoothWinSize = 10
+        GutSegmentor.spineSmoothWin = 10
         segmentor.setFieldImage(image)
         segmentor.detectGutAndSeedSpine(Pair(1, ih - 1))
 
@@ -175,7 +175,7 @@ class GutSegmentorTest {
         segmentor.gutIsAboveThreshold = true
         GutSegmentor.maxGap = gap
         GutSegmentor.minWidth = 5
-        GutSegmentor.smoothWinSize = 10
+        GutSegmentor.spineSmoothWin = 10
         segmentor.setFieldImage(image)
         segmentor.detectGutAndSeedSpine(Pair(1, ih - 1))
 
