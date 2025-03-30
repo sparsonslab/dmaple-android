@@ -2,6 +2,7 @@ package com.scepticalphysiologist.dmaple.map.creator
 
 import android.graphics.Bitmap
 import com.scepticalphysiologist.dmaple.etc.ntscGrey
+import kotlin.math.ceil
 
 /** Segments a gut in an camera field.
  *
@@ -15,8 +16,13 @@ class GutSegmentor {
         var minWidth: Int = 10
         /** The maximum pixel gap (below threshold region) for thresholding. */
         var maxGap: Int = 2
-        /** The size of the smoothing window applied to the spine (required for radius mapping). */
-        var smoothWinSize: Int = 1
+        /** Pixels to skip along the spine (reduce the map spatial resolution). */
+        var spineSkipPixels: Int = 0
+        /** Pixels width to smooth the spine (required for radius mapping). */
+        var spineSmoothPixels = 1
+        /** The size of the smoothing window applied to the spine. */
+        private val spineSmoothWin: Int
+            get() = ceil(spineSmoothPixels.toFloat() / (spineSkipPixels + 1f)).toInt()
     }
 
     // The gut and its field
@@ -56,7 +62,9 @@ class GutSegmentor {
      * @param l1 The last index, at the opposite edge of the gut.
      * */
     fun setLongSection(l0: Int, l1: Int) {
-        longIdx = if(l0 < l1) (l0..l1).toList().toIntArray() else (l1..l0).toList().toIntArray()
+        val step = spineSkipPixels + 1
+        longIdx = if(l0 < l1) (l0..l1 step step).toList().toIntArray()
+                  else (l1..l0 step step).toList().toIntArray()
         val nl = longIdx.size
         spine = IntArray(nl)
         spineSmoothed = IntArray(nl)
@@ -163,13 +171,13 @@ class GutSegmentor {
             spine[i] = transIdx
             spineSmoothed[i] = transIdx
         }
-        if(smoothWinSize > 1) {
-            val w = smoothWinSize / 2
-            for(i in 0 until longIdx.size - smoothWinSize) {
+        if(spineSmoothWin > 1) {
+            val w = spineSmoothWin / 2
+            for(i in 0 until longIdx.size - spineSmoothWin) {
                 spineSmoothed[i + w] = 0
-                for (j in 0 until smoothWinSize)
+                for (j in 0 until spineSmoothWin)
                     spineSmoothed[i + w] += spine[i + j]
-                spineSmoothed[i + w] = spineSmoothed[i + w] / smoothWinSize
+                spineSmoothed[i + w] = spineSmoothed[i + w] / spineSmoothWin
             }
         }
     }

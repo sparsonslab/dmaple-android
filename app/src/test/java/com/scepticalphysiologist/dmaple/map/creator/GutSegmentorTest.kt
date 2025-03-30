@@ -10,8 +10,6 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowBitmap
 
-
-
 @RunWith(RobolectricTestRunner::class)
 @Config(shadows = [ShadowBitmap::class])
 class GutSegmentorTest {
@@ -29,12 +27,13 @@ class GutSegmentorTest {
                 image.setPixel(i, j, Color.WHITE)
 
         // When: The gut is segmented.
+        GutSegmentor.spineSkipPixels = 0
+        GutSegmentor.minWidth = 5
         val segmentor = GutSegmentor()
         segmentor.setLongSection(extent.first, extent.second)
         segmentor.gutIsHorizontal = true
         segmentor.threshold = 100f
         segmentor.gutIsAboveThreshold = true
-        GutSegmentor.minWidth = 5
         segmentor.setFieldImage(image)
         segmentor.detectGutAndSeedSpine(Pair(1, ih - 1))
 
@@ -82,12 +81,13 @@ class GutSegmentorTest {
             paintSlice(image, i + gutExtent.first, ih / 2, w, Color.WHITE, false)
 
         // When: The gut is segmented.
+        GutSegmentor.spineSkipPixels = 0
+        GutSegmentor.minWidth = 5
         val segmentor = GutSegmentor()
         segmentor.setLongSection(gutExtent.first, gutExtent.second)
         segmentor.gutIsHorizontal = true
         segmentor.threshold = 100f
         segmentor.gutIsAboveThreshold = true
-        GutSegmentor.minWidth = 5
         segmentor.setFieldImage(image)
         segmentor.detectGutAndSeedSpine(Pair(1, ih - 1))
 
@@ -121,6 +121,37 @@ class GutSegmentorTest {
     }
 
     @Test
+    fun `skip spine pixels`() {
+        // Given: A horizontal gut of incrementing widths.
+        val gutExtent = Pair(20, 200)
+        val gutWidth = Pair(5, 60)
+        val wS = (gutWidth.second - gutWidth.first).toFloat() / (gutExtent.second - gutExtent.first).toFloat()
+        val w0 = gutWidth.first - wS * gutExtent.first
+        var expectedWidths = (gutExtent.first..gutExtent.second).map{(it * wS + w0).toInt()}.toList()
+        val iw = maxOf(gutExtent.first, gutExtent.second) + 20
+        val ih = expectedWidths.max() + 50
+        var image = createBitmap(iw, ih, Color.BLACK)
+        for((i, w) in expectedWidths.withIndex())
+            paintSlice(image, i + gutExtent.first, ih / 2, w, Color.WHITE, false)
+
+        // When: The gut is segmented, skipping every other spine pixel.
+        GutSegmentor.minWidth = 5
+        GutSegmentor.spineSkipPixels = 1
+        val segmentor = GutSegmentor()
+        segmentor.setLongSection(gutExtent.first, gutExtent.second)
+        segmentor.gutIsHorizontal = true
+        segmentor.threshold = 100f
+        segmentor.gutIsAboveThreshold = true
+        segmentor.setFieldImage(image)
+        segmentor.detectGutAndSeedSpine(Pair(1, ih - 1))
+
+        // Then: The measured widths match the expected.
+        expectedWidths = expectedWidths.filterIndexed { index, i -> index % 2 == 0 }
+        val actualWidths = expectedWidths.indices.map{segmentor.getDiameter(it)}.toList()
+        assertEquals(expectedWidths, actualWidths)
+    }
+
+    @Test
     fun `behaviour at gut termination`() {
         // Given: A horizontal gut of constant width.
         val gutExtent = Pair(20, 100)
@@ -133,14 +164,15 @@ class GutSegmentorTest {
             paintSlice(image, i + gutExtent.first, ih / 2, w, Color.WHITE, false)
 
         // When: The gut is segmented 20 pixels past the gut's end.
+        GutSegmentor.spineSkipPixels = 0
+        GutSegmentor.minWidth = 5
+        GutSegmentor.maxGap = 5
+        GutSegmentor.spineSmoothPixels = 10
         val segmentor = GutSegmentor()
         segmentor.setLongSection(gutExtent.first, gutExtent.second + 20)
         segmentor.gutIsHorizontal = true
         segmentor.threshold = 100f
         segmentor.gutIsAboveThreshold = true
-        GutSegmentor.maxGap = 5
-        GutSegmentor.minWidth = 5
-        GutSegmentor.smoothWinSize = 10
         segmentor.setFieldImage(image)
         segmentor.detectGutAndSeedSpine(Pair(1, ih - 1))
 
@@ -168,14 +200,15 @@ class GutSegmentorTest {
             paintSlice(image, i + gutExtent.first + 10, j + i, gap, Color.BLACK, false)
 
         // When: The gut is segmented with a maxGap attribute the same as the gap width.
+        GutSegmentor.spineSkipPixels = 0
+        GutSegmentor.maxGap = gap
+        GutSegmentor.minWidth = 5
+        GutSegmentor.spineSmoothPixels = 10
         val segmentor = GutSegmentor()
         segmentor.setLongSection(gutExtent.first, gutExtent.second)
         segmentor.gutIsHorizontal = true
         segmentor.threshold = 100f
         segmentor.gutIsAboveThreshold = true
-        GutSegmentor.maxGap = gap
-        GutSegmentor.minWidth = 5
-        GutSegmentor.smoothWinSize = 10
         segmentor.setFieldImage(image)
         segmentor.detectGutAndSeedSpine(Pair(1, ih - 1))
 

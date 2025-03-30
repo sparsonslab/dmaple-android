@@ -2,52 +2,80 @@
 <androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <DropDownPreference
-        android:key="SCREEN_ORIENTATION"
-        android:title="Screen Orientation"
-        app:useSimpleSummaryProvider="true"/>
+    <PreferenceCategory
+        android:key="SCREEN_CATEGORY"
+        android:title="Screen">
 
-    <SwitchPreference
-        android:key="KEEP_SCREEN_ON"
-        android:title="Keep screen on"
-        android:summary="Do not allow the screen to sleep while the app is open."
-        android:defaultValue="false"/>
+        <DropDownPreference
+            android:key="SCREEN_ORIENTATION"
+            android:title="Orientation"
+            app:summary="Fix the app's screen orientation or allow it to adjust freely:\t[%s]"/>
 
-    <DropDownPreference
-        android:key="FRAME_RATE_FPS"
-        android:title="Frame Rate"
-        android:summary="The approximate number of frame per second.\t%s fps." />
+        <SwitchPreference
+            android:key="KEEP_SCREEN_ON"
+            android:title="Keep on"
+            android:summary="Do not allow the screen to sleep while the app is open."
+            android:defaultValue="false"/>
 
-    <SwitchPreference
-        android:key="THRESHOLD_INVERTED"
-        android:title="Threshold Inversion"
-        android:summary="If the gut is dark against a light background,"/>
+    </PreferenceCategory>
 
-    <SeekBarPreference
-        android:key="SEED_MIN_WIDTH"
-        android:title="Minimum Detection Width"
-        android:summary="The minimum pixel width of the gut for it to be detected."
-        app:showSeekBarValue="true"
-        app:min="2"
-        android:max="30"
-        android:defaultValue="10"/>
+    <PreferenceCategory
+        android:key="RESOLUTION_CATEGORY"
+        android:title="Mapping Resolution">
 
-    <SeekBarPreference
-        android:key="SPINE_SMOOTH"
-        android:title="Spine Smooth"
-        android:summary="The pixel size of the kernel used to smooth the spine. Make larger for radius maps."
-        app:showSeekBarValue="true"
-        app:min="1"
-        android:max="50"
-        android:defaultValue="1"/>
+        <DropDownPreference
+            android:key="FRAME_RATE_FPS"
+            android:title="Frame rate"
+            android:summary="The approximate number of frames per second:\t[%s] fps"/>
 
-    <SeekBarPreference
-        android:key="SPINE_MAX_GAP"
-        android:title="Spine Gap"
-        android:summary="The maximum below-threshold pixel gap the spine can jump"
-        app:showSeekBarValue="true"
-        app:min="0"
-        android:max="20"
-        android:defaultValue="2"/>
+        <SeekBarPreference
+            android:key="SPINE_SKIP"
+            android:title="Spatial Pixel Skip"
+            android:summary="Skip pixels along the long axis of the gut, to reduce resolution of the map's spatial axis."
+
+            app:showSeekBarValue="true"
+            app:min="0"
+            android:max="4"
+            android:defaultValue="0"/>
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="ALGORITHM_CATEGORY"
+        android:title="Mapping Algorithm">
+
+        <SwitchPreference
+            android:key="THRESHOLD_INVERTED"
+            android:title="Threshold Inversion"
+            android:summary="If the gut is dark against a light background,"/>
+
+        <SeekBarPreference
+            android:key="SEED_MIN_WIDTH"
+            android:title="Minimum Detection Width"
+            android:summary="The minimum pixel width of the gut for it to be detected."
+            app:showSeekBarValue="true"
+            app:min="2"
+            android:max="30"
+            android:defaultValue="10"/>
+
+        <SeekBarPreference
+            android:key="SPINE_MAX_GAP"
+            android:title="Spine Gap"
+            android:summary="The maximum number below-threshold pixel gap that can be ignored"
+            app:showSeekBarValue="true"
+            app:min="0"
+            android:max="20"
+            android:defaultValue="2"/>
+
+        <SeekBarPreference
+            android:key="SPINE_SMOOTH"
+            android:title="Spine Smooth"
+            android:summary="The pixel size of the kernel used to smooth the spine. Make larger for radius maps."
+            app:showSeekBarValue="true"
+            app:min="1"
+            android:max="50"
+            android:defaultValue="1"/>
+
+    </PreferenceCategory>
 
 </androidx.preference.PreferenceScreen>

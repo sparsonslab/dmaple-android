@@ -1,12 +1,15 @@
 package com.scepticalphysiologist.dmaple.ui
 
 import android.app.Activity
+import android.content.Context
 import android.content.pm.ActivityInfo
 import android.graphics.Color
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.preference.DropDownPreference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
+import androidx.preference.SeekBarPreference
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.ui.record.ThresholdBitmap
@@ -23,19 +26,20 @@ class Settings: PreferenceFragmentCompat() {
          * above an organ bath) and so the device will not detect an orientation.
          * */
         private val ORIENTATION_MAP = mapOf(
-            "auto" to ActivityInfo.SCREEN_ORIENTATION_SENSOR,
+            "free" to ActivityInfo.SCREEN_ORIENTATION_SENSOR,
             "landscape" to ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE,
-            "landscape rev" to ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE,
+            "landscape reverse" to ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE,
             "portrait" to ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,
-            "portrait rev" to ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT
+            "portrait reverse" to ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT
         )
 
         fun setFromPreferences(activity: Activity){
             val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
-            setScreenRotation(prefs.getString("SCREEN_ORIENTATION", "auto"), activity)
+            setScreenRotation(prefs.getString("SCREEN_ORIENTATION", "free"), activity)
             setKeepScreenOn(prefs.getBoolean("KEEP_SCREEN_ON", false))
             setFrameRate(prefs.getString("FRAME_RATE_FPS", "30"))
             setThresholdInverted(prefs.getBoolean("THRESHOLD_INVERTED", false))
+            setSpinePixelSkip(prefs.getInt("SPINE_SKIP", 0))
             setSeedMinWidth(prefs.getInt("SEED_MIN_WIDTH", 10))
             setSpineSmooth(prefs.getInt("SPINE_SMOOTH", 1))
             setSpineMaxGap(prefs.getInt("SPINE_MAX_GAP", 2))
@@ -60,12 +64,16 @@ class Settings: PreferenceFragmentCompat() {
             SpineOverlay.spinePaint.color = if(inverted) Color.WHITE else Color.BLACK
         }
 
+        private fun setSpinePixelSkip(entry: Any?) {
+            entry.toString().toIntOrNull()?.let { GutSegmentor.spineSkipPixels = it }
+        }
+
         private fun setSeedMinWidth(entry: Any?) {
             entry.toString().toIntOrNull()?.let { GutSegmentor.minWidth = it }
         }
 
         private fun setSpineSmooth(entry: Any?) {
-            entry.toString().toIntOrNull()?.let { GutSegmentor.smoothWinSize = it }
+            entry.toString().toIntOrNull()?.let { GutSegmentor.spineSmoothPixels = it }
         }
 
         private fun setSpineMaxGap(entry: Any?) {
@@ -92,6 +100,17 @@ class Settings: PreferenceFragmentCompat() {
             val entries = fps.map { it.toString() }.toTypedArray()
             pref.entries = entries
             pref.entryValues = entries
+        }
+
+        val fieldSize =MainActivity.mapService?.getFieldSize()?.let { sz ->
+            "${sz.x.toInt()} x ${sz.y.toInt()} pixels"
+        } ?: "unknown"
+        findPreference<SeekBarPreference>("SPINE_SKIP")?.let { pref ->
+            pref.setSummaryProvider {
+                "Skip pixels along the long axis of the gut, " +
+                "to reduce resolution of the map's spatial axis.\n" +
+                "The current size of the mapping (camera) field is ${fieldSize}."
+            }
         }
 
     }
