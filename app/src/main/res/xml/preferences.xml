@@ -9,7 +9,7 @@
         <DropDownPreference
             android:key="SCREEN_ORIENTATION"
             android:title="Orientation"
-            app:useSimpleSummaryProvider="true"/>
+            app:summary="Fix the app's screen orientation or allow it to adjust freely:\t[%s]"/>
 
         <SwitchPreference
             android:key="KEEP_SCREEN_ON"
@@ -21,12 +21,12 @@
 
     <PreferenceCategory
         android:key="RESOLUTION_CATEGORY"
-        android:title="Map Resolution">
+        android:title="Mapping Resolution">
 
         <DropDownPreference
             android:key="FRAME_RATE_FPS"
             android:title="Frame rate"
-            android:summary="The approximate number of frames per second.\t%s fps."/>
+            android:summary="The approximate number of frames per second:\t[%s] fps"/>
 
         <SeekBarPreference
             android:key="SPINE_SKIP"

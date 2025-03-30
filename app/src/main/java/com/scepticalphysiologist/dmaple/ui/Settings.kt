@@ -23,16 +23,16 @@ class Settings: PreferenceFragmentCompat() {
          * above an organ bath) and so the device will not detect an orientation.
          * */
         private val ORIENTATION_MAP = mapOf(
-            "auto" to ActivityInfo.SCREEN_ORIENTATION_SENSOR,
+            "free" to ActivityInfo.SCREEN_ORIENTATION_SENSOR,
             "landscape" to ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE,
-            "landscape rev" to ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE,
+            "landscape reverse" to ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE,
             "portrait" to ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,
-            "portrait rev" to ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT
+            "portrait reverse" to ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT
         )
 
         fun setFromPreferences(activity: Activity){
             val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
-            setScreenRotation(prefs.getString("SCREEN_ORIENTATION", "auto"), activity)
+            setScreenRotation(prefs.getString("SCREEN_ORIENTATION", "free"), activity)
             setKeepScreenOn(prefs.getBoolean("KEEP_SCREEN_ON", false))
             setFrameRate(prefs.getString("FRAME_RATE_FPS", "30"))
             setThresholdInverted(prefs.getBoolean("THRESHOLD_INVERTED", false))
