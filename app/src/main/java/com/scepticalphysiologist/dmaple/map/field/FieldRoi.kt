@@ -70,4 +70,18 @@ class FieldRoi(
         canvas.drawLine(p0.x, p0.y, p1.x, p1.y, pnt)
     }
 
+    /** Get the bounds of the longitudinal axis of the ROI. */
+    fun longitudinalAxis(): Pair<Float, Float> {
+        return when(seedingEdge) {
+            Edge.LEFT -> Pair(left, right)
+            Edge.RIGHT -> Pair(right, left)
+            Edge.TOP -> Pair(top, bottom)
+            Edge.BOTTOM -> Pair(bottom, top)
+        }
+    }
+
+    /** Get the bounds of the transverse axis of the ROI. */
+    fun transverseAxis(): Pair<Float, Float> {
+        return if(seedingEdge.isVertical()) Pair(top, bottom) else Pair(left, right)
+    }
 }

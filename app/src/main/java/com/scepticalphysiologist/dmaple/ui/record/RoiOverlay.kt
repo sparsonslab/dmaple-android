@@ -270,12 +270,7 @@ class RoiOverlay(context: Context?, attributeSet: AttributeSet?):
     }
 
     /** Callback for setting the active ROI's map types. */
-    private fun setMapTypes(selected: Map<MapType, Boolean>) {
-        activeRoi?.let { roi ->
-            println("selected = ${selected.toList()}")
-            roi.maps = selected.filter{it.value}.keys.toList()
-        }
-    }
+    private fun setMapTypes(selected: List<MapType>) { activeRoi?.let { roi -> roi.maps = selected } }
 
     /** Save the active ROI. */
     private fun saveActiveRoi() {

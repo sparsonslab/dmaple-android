@@ -75,7 +75,6 @@ class Explorer: Fragment() {
         val view = ComposeView(requireActivity())
         view.setBackgroundColor(Color.DarkGray.toArgb())
         view.setContent {
-
             LazyVerticalStaggeredGrid (
                 columns = StaggeredGridCells.Adaptive(minSize = 200.dp),
                 verticalItemSpacing = 10.dp,

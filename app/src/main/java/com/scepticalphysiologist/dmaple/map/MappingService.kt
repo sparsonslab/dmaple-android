@@ -260,6 +260,12 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         setPreview()
     }
 
+    /** Get the approximate frame rate (frames/second). */
+    fun getFps(): Int { return frameRateFps }
+
+    /** Get the allocated buffer size for each map. */
+    fun getBufferSize(): Long { return bufferProvider.bufferSize() }
+
     /** Get the available frame rates (frames per second). */
     fun getAvailableFps(): List<Int> {
         if(::camera.isInitialized) {

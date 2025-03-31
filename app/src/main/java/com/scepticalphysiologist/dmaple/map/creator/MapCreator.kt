@@ -80,13 +80,8 @@ class MapCreator(val roi: FieldRoi) {
         roi.cropToFrame()
 
         // Axes longitudinal and transverse to gut.
-        val axesLongAndTrans = when(roi.seedingEdge) {
-            Edge.LEFT -> Pair(Pair(roi.left, roi.right), Pair(roi.top, roi.bottom))
-            Edge.RIGHT -> Pair(Pair(roi.right, roi.left), Pair(roi.top, roi.bottom))
-            Edge.TOP -> Pair(Pair(roi.top, roi.bottom), Pair(roi.left, roi.right))
-            Edge.BOTTOM -> Pair(Pair(roi.bottom, roi.top), Pair(roi.left, roi.right))
-        }
-        val (longAxis, transAxis) = axesLongAndTrans
+        val longAxis = roi.longitudinalAxis()
+        val transAxis = roi.transverseAxis()
 
         // Gut segmentor.
         segmentor = GutSegmentor()

@@ -50,6 +50,9 @@ class MapBufferProvider(
     /** The number of buffers available for mapping. */
     fun nFreeBuffers(): Int { return fileStreams.filterValues{it == null}.size }
 
+    /** Get the allocated buffer size (bytes). */
+    fun bufferSize(): Long { return bufferByteSize }
+
     /** Get a free buffer or null if no buffers are free. */
     fun getFreeBuffer(): MappedByteBuffer? {
         for((bufferFile, accessStream) in fileStreams) {
