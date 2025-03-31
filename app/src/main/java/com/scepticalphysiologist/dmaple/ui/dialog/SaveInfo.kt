@@ -11,6 +11,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.text.input.KeyboardType
 
+/** Options for saving maps at the end of a recording.
+ *
+ * @param onDoSave A function to call when the user decides to save the maps. The function takes
+ * as an argument the suffix the user has chosen for the directory containing the saved maps.
+ * @param onDoNotSave A function to call when the user decides not to save the maps.
+ */
 class SaveInfo(
     val onDoSave: (String) -> Unit,
     val onDoNotSave: () -> Unit

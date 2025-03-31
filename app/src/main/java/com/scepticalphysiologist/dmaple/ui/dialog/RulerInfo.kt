@@ -17,7 +17,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import com.scepticalphysiologist.dmaple.map.field.FieldRuler
 
-/** A dialog to set the length and units of a ruler. */
+/** A dialog to set the length and units of a ruler.
+ *
+ * @param ruler The ruler being set.
+ * @param onSetRuler A function to be called when the user decides to set the ruler. Takes as an
+ * argument a pair of the ruler length and ruler unit.
+ * */
 class RulerInfo(
     val ruler: FieldRuler,
     val onSetRuler: (Pair<Float, String>) -> Unit

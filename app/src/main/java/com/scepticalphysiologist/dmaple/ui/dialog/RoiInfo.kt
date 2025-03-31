@@ -58,7 +58,6 @@ class RoiInfo(
         return items.map{"${it.first}\t${it.second}"}.joinToString("\n")
     }
 
-    /** The composable dialog. */
     @Composable
     override fun MakeDialog() {
         // State.

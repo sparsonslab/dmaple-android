@@ -9,7 +9,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 
-/** A collection of warning messages and whether they should stop some process. */
+/** A collection of warning messages and whether they should stop some process.
+ *
+ * @param title The title of the dialog.
+ * */
 class Warnings(
     private val title: String = "Warning"
 ): ComposeDialog() {

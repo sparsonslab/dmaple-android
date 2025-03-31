@@ -11,6 +11,7 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
+/** A composable alert dialog that can be shown from a fragment or view. */
 abstract class ComposeDialog {
 
     protected val titleFontSize = 18f.sp
@@ -19,9 +20,11 @@ abstract class ComposeDialog {
 
     protected val mainFontSize = 12f.sp
 
+    /** The dialog composable.*/
     @Composable
     abstract fun MakeDialog()
 
+    /** Show the dialog. */
     open fun show(activity: Activity) {
         activity.addContentView(
             ComposeView(activity).apply {
