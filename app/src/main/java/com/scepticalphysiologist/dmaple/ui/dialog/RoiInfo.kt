@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.map.creator.GutSegmentor
 import com.scepticalphysiologist.dmaple.map.creator.MapType
@@ -68,7 +69,7 @@ class RoiInfo(
 
         if(openDialog.value) {
             AlertDialog(
-                title = { Text("ROI", fontSize = titleFontSize) },
+                title = { Text("ROI", fontSize = titleFontSize, fontWeight = titleFontWeight) },
                 text = {
                     Column {
                         Text(

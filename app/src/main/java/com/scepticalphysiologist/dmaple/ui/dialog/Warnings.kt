@@ -33,7 +33,7 @@ class Warnings(
 
         if(openDialog.value) {
             AlertDialog(
-                title = { Text(title, fontSize = mainFontSize) },
+                title = { Text(title, fontSize = mainFontSize, fontWeight = titleFontWeight) },
                 text = {
                     Column { for(message in messages) Text(message.first, fontSize = mainFontSize) }
                 },

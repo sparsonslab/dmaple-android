@@ -8,11 +8,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 abstract class ComposeDialog {
 
     protected val titleFontSize = 18f.sp
+
+    protected val titleFontWeight = FontWeight.Bold
 
     protected val mainFontSize = 12f.sp
 

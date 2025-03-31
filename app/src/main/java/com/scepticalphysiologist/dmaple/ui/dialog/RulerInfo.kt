@@ -34,7 +34,7 @@ class RulerInfo(
 
         if(openDialog.value) {
             AlertDialog(
-                title = { Text("Ruler", fontSize = titleFontSize)},
+                title = { Text("Ruler", fontSize = titleFontSize, fontWeight = titleFontWeight)},
                 text = {
                     Column {
                         Text("Set the ruler length and unit.", fontSize = mainFontSize)

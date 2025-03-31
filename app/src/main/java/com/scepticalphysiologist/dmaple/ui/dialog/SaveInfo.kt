@@ -24,7 +24,7 @@ class SaveInfo(
 
         if(openDialog.value) {
             AlertDialog(
-                title = {Text("Save", fontSize = titleFontSize)},
+                title = {Text("Save", fontSize = titleFontSize, fontWeight = titleFontWeight)},
                 text = {
                     Column {
                         Text(
