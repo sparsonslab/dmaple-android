@@ -29,7 +29,6 @@ class RulerInfo(
         // State.
         val openDialog = remember { mutableStateOf(true) }
         val expanded = remember { mutableStateOf(false) }
-
         val selectedUnit = remember { mutableStateOf(ruler.unit) }
         val measuredLength = remember { mutableStateOf(ruler.length.toString()) }
 
@@ -71,7 +70,6 @@ class RulerInfo(
                             }
                         }
                     }
-
                 },
                 onDismissRequest = {},
                 confirmButton = {

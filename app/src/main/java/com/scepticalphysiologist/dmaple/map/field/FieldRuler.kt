@@ -5,7 +5,6 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
-import com.scepticalphysiologist.dmaple.ui.msg.QuantityDialog
 import kotlin.math.PI
 
 /** A ruler shown on a view used for calibration between pixel units and some measurement unit. */

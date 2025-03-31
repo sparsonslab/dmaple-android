@@ -1,18 +1,19 @@
 package com.scepticalphysiologist.dmaple.ui
 
+import android.app.Activity
 import android.app.Application
 import android.text.InputType
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import com.scepticalphysiologist.dmaple.MainActivity
-import com.scepticalphysiologist.dmaple.ui.msg.InputRequired
 import com.scepticalphysiologist.dmaple.ui.msg.Message
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.field.RoisAndRuler
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
+import com.scepticalphysiologist.dmaple.ui.msg.SaveInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -143,15 +144,7 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
 
     /** Show a dialog asking if the user wants to save the maps. */
     private fun askToSaveMaps() {
-        val dialog = InputRequired(
-            title = "Save Maps?",
-            message = "If you want to save the maps\nyou can set a directory name.",
-            initialValue = "",
-            inputType = InputType.TYPE_CLASS_TEXT
-        )
-        dialog.positive = Pair("Save", this::saveMaps)
-        dialog.negative = Pair("Do not save", this::doNotSaveMaps)
-        messages.postValue(dialog)
+        SaveInfo(::saveMaps, ::doNotSaveMaps)
     }
 
     /** Save all maps. */
