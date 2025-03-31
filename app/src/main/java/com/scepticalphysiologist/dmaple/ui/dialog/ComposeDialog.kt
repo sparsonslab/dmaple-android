@@ -1,4 +1,4 @@
-package com.scepticalphysiologist.dmaple.ui.msg
+package com.scepticalphysiologist.dmaple.ui.dialog
 
 import android.app.Activity
 import android.view.ViewGroup

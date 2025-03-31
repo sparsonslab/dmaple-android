@@ -1,4 +1,4 @@
-package com.scepticalphysiologist.dmaple.ui.msg
+package com.scepticalphysiologist.dmaple.ui.dialog
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row

@@ -1,6 +1,5 @@
-package com.scepticalphysiologist.dmaple.ui.msg
+package com.scepticalphysiologist.dmaple.ui.dialog
 
-import android.app.Activity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.AlertDialog

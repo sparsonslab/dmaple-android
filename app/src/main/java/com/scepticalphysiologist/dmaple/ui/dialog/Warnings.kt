@@ -1,4 +1,4 @@
-package com.scepticalphysiologist.dmaple.ui.msg
+package com.scepticalphysiologist.dmaple.ui.dialog
 
 import android.app.Activity
 import androidx.compose.foundation.layout.Column
@@ -23,6 +23,7 @@ class Warnings(
     /** Do any of the warnings stop the process? */
     fun shouldStop(): Boolean { return messages.any {it.second} }
 
+    /** Only show if there are some messages. */
     override fun show(activity: Activity) { if(messages.isNotEmpty()) super.show(activity) }
 
     @Composable

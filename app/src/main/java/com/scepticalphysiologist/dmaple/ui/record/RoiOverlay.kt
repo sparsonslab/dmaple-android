@@ -23,8 +23,8 @@ import com.scepticalphysiologist.dmaple.map.field.FieldImage
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.creator.MapType
 import com.scepticalphysiologist.dmaple.map.field.FieldRuler
-import com.scepticalphysiologist.dmaple.ui.msg.RoiInfo
-import com.scepticalphysiologist.dmaple.ui.msg.RulerInfo
+import com.scepticalphysiologist.dmaple.ui.dialog.RoiInfo
+import com.scepticalphysiologist.dmaple.ui.dialog.RulerInfo
 
 
 /** Gesture states for [RoiOverlay]. */

@@ -13,7 +13,7 @@ import androidx.camera.core.Preview.SurfaceProvider
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.MutableLiveData
 import com.scepticalphysiologist.dmaple.etc.PermissionSets
-import com.scepticalphysiologist.dmaple.ui.msg.Warnings
+import com.scepticalphysiologist.dmaple.ui.dialog.Warnings
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import com.scepticalphysiologist.dmaple.ui.Recorder

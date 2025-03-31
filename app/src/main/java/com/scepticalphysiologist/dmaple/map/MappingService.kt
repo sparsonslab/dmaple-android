@@ -34,7 +34,7 @@ import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.geom.surfaceRotationDegrees
-import com.scepticalphysiologist.dmaple.ui.msg.Warnings
+import com.scepticalphysiologist.dmaple.ui.dialog.Warnings
 import com.scepticalphysiologist.dmaple.etc.strftime
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider

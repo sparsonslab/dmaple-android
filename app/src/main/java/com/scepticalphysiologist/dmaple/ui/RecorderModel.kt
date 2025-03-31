@@ -1,8 +1,6 @@
 package com.scepticalphysiologist.dmaple.ui
 
-import android.app.Activity
 import android.app.Application
-import android.text.InputType
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
@@ -12,8 +10,8 @@ import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.field.RoisAndRuler
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
-import com.scepticalphysiologist.dmaple.ui.msg.ComposeDialog
-import com.scepticalphysiologist.dmaple.ui.msg.SaveInfo
+import com.scepticalphysiologist.dmaple.ui.dialog.ComposeDialog
+import com.scepticalphysiologist.dmaple.ui.dialog.SaveInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
