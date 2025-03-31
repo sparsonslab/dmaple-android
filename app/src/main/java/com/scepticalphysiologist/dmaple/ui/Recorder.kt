@@ -66,9 +66,9 @@ class Recorder: Fragment() {
             setUIState()
         }
 
-        // Show any warnings from the manin activity.
+        // Show any warnings from the main activity.
         MainActivity.message.observe(viewLifecycleOwner) { msg ->
-            msg?.show(binding.root.context)
+            msg?.show(requireActivity())
         }
 
         // Exposure control.
@@ -83,7 +83,7 @@ class Recorder: Fragment() {
         // Show warnings upon start/stop.
         var ignore = true // Prevent the last messages being shown at start-up.
         model.messages.observe(viewLifecycleOwner) {
-            if(!ignore) it?.show(binding.root.context)
+            if(!ignore) it?.show(requireActivity())
             ignore = false
         }
 

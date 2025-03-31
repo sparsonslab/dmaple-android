@@ -14,7 +14,7 @@ abstract class ComposeDialog {
     @Composable
     abstract fun MakeDialog()
 
-    fun show(activity: Activity) {
+    open fun show(activity: Activity) {
         activity.addContentView(
             ComposeView(activity).apply {
                 setContent {

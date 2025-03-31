@@ -7,12 +7,12 @@ import androidx.camera.view.PreviewView
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import com.scepticalphysiologist.dmaple.MainActivity
-import com.scepticalphysiologist.dmaple.ui.msg.Message
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.field.RoisAndRuler
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
+import com.scepticalphysiologist.dmaple.ui.msg.ComposeDialog
 import com.scepticalphysiologist.dmaple.ui.msg.SaveInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -40,7 +40,7 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
         if(mapper?.isCreatingMaps() == true) RecState.RECORDING else RecState.PRE_RECORD
 
     /** Indicate warning messages that should be shown, e.g. when starting mapping. */
-    val messages = MutableLiveData<Message<*>?>(null)
+    val messages = MutableLiveData<ComposeDialog?>(null)
     /** Indicate the elapsed time (seconds) of mapping. */
     val timer = MutableLiveData<Long>(0L)
     /** A coroutine scope for running the timer. */
@@ -144,7 +144,7 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
 
     /** Show a dialog asking if the user wants to save the maps. */
     private fun askToSaveMaps() {
-        SaveInfo(::saveMaps, ::doNotSaveMaps)
+        messages.postValue(SaveInfo(::saveMaps, ::doNotSaveMaps))
     }
 
     /** Save all maps. */
