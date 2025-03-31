@@ -1,5 +1,6 @@
 package com.scepticalphysiologist.dmaple.ui.dialog
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material.AlertDialog
@@ -73,14 +74,20 @@ class RoiInfo(
                 text = {
                     Column {
                         Text(
-                            text = "Set the maps to be created and get information about the recording.",
+                            text = "Set the maps to be created and see information about the recording.",
                             fontSize = mainFontSize
                         )
-                        for((map, selected) in selections) MapTypeRow(map, selected, ::setDescription)
-                        val items = description.value.split("\n").map{it.split("\t")}
-                        for(item in items) Row() {
-                            Text(text = item[1], modifier = Modifier.weight(0.2f), fontSize = mainFontSize)
-                            Text(text = item[0], modifier = Modifier.weight(0.8f), fontSize = mainFontSize)
+                        Row {
+                            Column(modifier = Modifier.weight(0.5f)) {
+                                for((map, selected) in selections) MapTypeRow(map, selected, ::setDescription)
+                            }
+                            Column(modifier = Modifier.weight(0.5f)) {
+                                val items = description.value.split("\n").map{it.split("\t")}
+                                for(item in items) Row() {
+                                    Text(text = item[1], modifier = Modifier.weight(0.2f), fontSize = mainFontSize)
+                                    Text(text = item[0], modifier = Modifier.weight(0.8f), fontSize = mainFontSize)
+                                }
+                            }
                         }
                     }
                 },
