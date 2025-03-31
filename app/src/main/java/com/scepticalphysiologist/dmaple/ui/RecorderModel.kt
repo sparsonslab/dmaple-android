@@ -6,8 +6,8 @@ import androidx.camera.view.PreviewView
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import com.scepticalphysiologist.dmaple.MainActivity
-import com.scepticalphysiologist.dmaple.etc.msg.InputRequired
-import com.scepticalphysiologist.dmaple.etc.msg.Message
+import com.scepticalphysiologist.dmaple.ui.msg.InputRequired
+import com.scepticalphysiologist.dmaple.ui.msg.Message
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator

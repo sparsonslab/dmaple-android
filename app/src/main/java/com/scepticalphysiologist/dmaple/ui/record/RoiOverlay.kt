@@ -18,7 +18,7 @@ import com.scepticalphysiologist.dmaple.geom.Edge
 import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.map.field.RoisAndRuler
-import com.scepticalphysiologist.dmaple.etc.msg.MultipleChoice
+import com.scepticalphysiologist.dmaple.ui.msg.MultipleChoice
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.creator.MapType

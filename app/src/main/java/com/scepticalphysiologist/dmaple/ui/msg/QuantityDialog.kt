@@ -1,4 +1,4 @@
-package com.scepticalphysiologist.dmaple.etc.msg
+package com.scepticalphysiologist.dmaple.ui.msg
 
 import android.content.Context
 import android.text.InputType
