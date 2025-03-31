@@ -1,5 +1,6 @@
 package com.scepticalphysiologist.dmaple.ui.record
 
+import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -23,6 +24,7 @@ import com.scepticalphysiologist.dmaple.map.field.FieldImage
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.creator.MapType
 import com.scepticalphysiologist.dmaple.map.field.FieldRuler
+import com.scepticalphysiologist.dmaple.ui.msg.RoiInfo
 
 
 /** Gesture states for [RoiOverlay]. */
@@ -262,19 +264,17 @@ class RoiOverlay(context: Context?, attributeSet: AttributeSet?):
     /** Open a dialog for the user to set the map types for the active ROI. */
     private fun requestMapTypes() {
         activeRoi?.let { roi ->
-            val dialog = MultipleChoice(
-                title = "Map Types",
-                choices = MapType.entries.map{Pair(it.title, it in roi.maps)}.toMutableList()
-            )
-            dialog.positive = Pair("Set", this::setMapTypes)
-            dialog.negative = Pair("Cancel", null)
-            dialog.show(context)
+            val roiInfo = RoiInfo(roi, this::setMapTypes)
+            roiInfo.show(context as Activity)
         }
     }
 
     /** Callback for setting the active ROI's map types. */
-    private fun setMapTypes(selected: List<Int>) {
-        activeRoi?.let { roi -> roi.maps = selected.map{MapType.entries[it]}.toList() }
+    private fun setMapTypes(selected: Map<MapType, Boolean>) {
+        activeRoi?.let { roi ->
+            println("selected = ${selected.toList()}")
+            roi.maps = selected.filter{it.value}.keys.toList()
+        }
     }
 
     /** Save the active ROI. */
@@ -368,7 +368,7 @@ class RoiOverlay(context: Context?, attributeSet: AttributeSet?):
             frame=Frame.fromView(this, display),
             c0 = Point(event.x - 50f, event.y - 50f),
             c1 = Point(event.x + 50f, event.y + 50f),
-            maps=listOf(MapType.DIAMETER)
+            maps= listOf(MapType.DIAMETER)
         ))
         activeRoi?.let {
             drag = Point(event.x, event.y)
