@@ -1,7 +1,5 @@
 package com.scepticalphysiologist.dmaple.ui.msg
 
-import android.app.Activity
-import android.view.ViewGroup
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material.AlertDialog
@@ -15,7 +13,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.sp
 import com.scepticalphysiologist.dmaple.MainActivity
@@ -34,7 +31,7 @@ import kotlin.math.abs
 class RoiInfo(
     val roi: FieldRoi,
     val onSetRoi: (List<MapType>) -> Unit
-) {
+): ComposeDialog() {
 
     /** The current map selection. */
     private val selections = MapType.entries.map{it to (it in roi.maps)}.toMap().toMutableMap()
@@ -64,25 +61,9 @@ class RoiInfo(
         return items.map{"${it.first}\t${it.second}"}.joinToString("\n")
     }
 
-    /** Show the dialog. */
-    fun show(activity: Activity) {
-        activity.addContentView(
-            ComposeView(activity).apply {
-                setContent {
-                    var showDialog by remember { mutableStateOf(true) }
-                    if (showDialog) RoiInfoDialog()
-                }
-            },
-            ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
-        )
-    }
-
     /** The composable dialog. */
     @Composable
-    fun RoiInfoDialog() {
+    override fun MakeDialog() {
         // State.
         val openDialog = remember { mutableStateOf(true) }
         val description = remember { mutableStateOf( makeDescription() ) }
@@ -90,7 +71,7 @@ class RoiInfo(
 
         if(openDialog.value) {
             AlertDialog(
-                title = { Text("Roi Info") },
+                title = { Text("Roi") },
                 text = {
                     Column {
                         Text(
@@ -115,11 +96,7 @@ class RoiInfo(
                         }
                     ) { Text("Set") }
                 },
-                dismissButton = {
-                    TextButton(
-                        onClick = { openDialog.value = false }
-                    )  { Text("Cancel")}
-                }
+                dismissButton = { TextButton(onClick = { openDialog.value = false }) { Text("Cancel")} }
             )
         }
     }

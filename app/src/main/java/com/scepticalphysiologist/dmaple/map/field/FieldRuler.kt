@@ -21,8 +21,13 @@ class FieldRuler(
     /** The length of the ruler in the measurement units. */
     var length: Float = 1f,
     /** The unit of the ruler. */
-    var unit: String = "cm"
+    var unit: String = FieldRuler.allowedUnits.first()
 ) {
+
+    companion object {
+        /** Allowed units for the ruler. */
+        val allowedUnits = listOf("mm", "cm", "inch")
+    }
 
     /** Get the resolution (pixels/unit) and unit. */
     fun getResolution(): Pair<Float, String> { return Pair((p1 - p0).l2() / length, unit) }
@@ -46,18 +51,6 @@ class FieldRuler(
         p1 = points[1]
         length = (p1 - p0).l2() * lengthRatio
         frame = newFrame
-    }
-
-    fun editLength(context: Context) {
-        val dialog = QuantityDialog(
-            title = "Ruler length",
-            message = "",
-            initial = Pair(length, unit),
-            unitSelection = listOf("mm", "cm", "inch")
-        )
-        dialog.positive = Pair("Set", this::newLength)
-        dialog.negative = Pair("Cancel", null)
-        dialog.show(context)
     }
 
     fun newLength(input: Pair<Float, String>) {

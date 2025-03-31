@@ -19,12 +19,12 @@ import com.scepticalphysiologist.dmaple.geom.Edge
 import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.map.field.RoisAndRuler
-import com.scepticalphysiologist.dmaple.ui.msg.MultipleChoice
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.creator.MapType
 import com.scepticalphysiologist.dmaple.map.field.FieldRuler
 import com.scepticalphysiologist.dmaple.ui.msg.RoiInfo
+import com.scepticalphysiologist.dmaple.ui.msg.RulerInfo
 
 
 /** Gesture states for [RoiOverlay]. */
@@ -288,16 +288,25 @@ class RoiOverlay(context: Context?, attributeSet: AttributeSet?):
         invalidate()
     }
 
+    /** Respond to a touch on the ruler. */
     private fun touchedRuler(touchPoint: Point, isDouble: Boolean): Boolean {
         ruler?.let {
-            if((touchPoint - it.p0).l2() < 100) { if(isDouble) it.editLength(context) else it.p0 = touchPoint }
-            else if((touchPoint - it.p1).l2() < 100) {if(isDouble) it.editLength(context) else it.p1 = touchPoint }
+            if((touchPoint - it.p0).l2() < 100) { if(isDouble) showRulerDialog(it) else it.p0 = touchPoint }
+            else if((touchPoint - it.p1).l2() < 100) {if(isDouble) showRulerDialog(it) else it.p1 = touchPoint }
             else return false
             invalidate()
             return true
         }
         return false
     }
+
+    /** Show the dialog to set the ruler length and units. */
+    private fun showRulerDialog(ruler: FieldRuler) {
+        RulerInfo(ruler, ::setRuler).show(context as Activity)
+    }
+
+    /** Set the ruler length and unit. */
+    private fun setRuler(lengthAndUnit: Pair<Float, String>) { ruler?.newLength(lengthAndUnit) }
 
     private fun clickedOnSavedRoi(touchPoint: Point): Boolean {
         for(i in savedRois.indices) {
