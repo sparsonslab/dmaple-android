@@ -1,6 +1,5 @@
 package com.scepticalphysiologist.dmaple.ui.dialog
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material.AlertDialog
@@ -14,7 +13,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.map.creator.GutSegmentor
 import com.scepticalphysiologist.dmaple.map.creator.MapType

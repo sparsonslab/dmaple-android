@@ -28,7 +28,7 @@ class SaveInfo(
                 text = {
                     Column {
                         Text(
-                            "Do you wish to save the maps?\n" +
+                            text =  "Do you wish to save the maps?\n" +
                                     "If so you may set a suffix for the directory containing the maps.",
                             fontSize = mainFontSize
                         )
@@ -36,6 +36,7 @@ class SaveInfo(
                             value = directorySuffix.value,
                             readOnly = false,
                             keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Ascii),
+                            maxLines = 1,
                             onValueChange = { directorySuffix.value = it }
                         )
                     }
