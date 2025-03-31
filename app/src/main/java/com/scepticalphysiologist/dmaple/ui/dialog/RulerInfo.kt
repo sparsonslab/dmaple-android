@@ -34,10 +34,10 @@ class RulerInfo(
 
         if(openDialog.value) {
             AlertDialog(
-                title = { Text("Ruler")},
+                title = { Text("Ruler", fontSize = titleFontSize)},
                 text = {
                     Column {
-                        Text("Set the ruler length and unit.")
+                        Text("Set the ruler length and unit.", fontSize = mainFontSize)
                         Row{
                             TextField(
                                 value = measuredLength.value,

@@ -1,6 +1,5 @@
 package com.scepticalphysiologist.dmaple.map.field
 
-import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import com.scepticalphysiologist.dmaple.geom.Frame

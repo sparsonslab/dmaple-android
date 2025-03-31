@@ -11,7 +11,7 @@ import androidx.compose.runtime.remember
 
 /** A collection of warning messages and whether they should stop some process. */
 class Warnings(
-    val title: String = "Warning"
+    private val title: String = "Warning"
 ): ComposeDialog() {
 
     /** The warning messages. Each message consists of the message and whether it should stop a process. */
@@ -33,9 +33,9 @@ class Warnings(
 
         if(openDialog.value) {
             AlertDialog(
-                title = { Text(title) },
+                title = { Text(title, fontSize = mainFontSize) },
                 text = {
-                    Column { for(message in messages) Text(message.first) }
+                    Column { for(message in messages) Text(message.first, fontSize = mainFontSize) }
                 },
                 onDismissRequest = {},
                 confirmButton = {},

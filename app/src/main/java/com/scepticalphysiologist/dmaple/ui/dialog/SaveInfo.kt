@@ -24,10 +24,14 @@ class SaveInfo(
 
         if(openDialog.value) {
             AlertDialog(
-                title = {Text("Save")},
+                title = {Text("Save", fontSize = titleFontSize)},
                 text = {
                     Column {
-                        Text("Do you wish to save the maps?\nIf so you may set a suffix for the directory containing the maps.")
+                        Text(
+                            "Do you wish to save the maps?\n" +
+                                    "If so you may set a suffix for the directory containing the maps.",
+                            fontSize = mainFontSize
+                        )
                         TextField(
                             value = directorySuffix.value,
                             readOnly = false,

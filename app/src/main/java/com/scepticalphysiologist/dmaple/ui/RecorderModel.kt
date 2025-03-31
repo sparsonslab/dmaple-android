@@ -141,9 +141,7 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
     // ---------------------------------------------------------------------------------------------
 
     /** Show a dialog asking if the user wants to save the maps. */
-    private fun askToSaveMaps() {
-        messages.postValue(SaveInfo(::saveMaps, ::doNotSaveMaps))
-    }
+    private fun askToSaveMaps() { messages.postValue(SaveInfo(::saveMaps, ::doNotSaveMaps)) }
 
     /** Save all maps. */
     private fun saveMaps(dir: String) { mapper?.saveAndClear(dir) }

@@ -13,10 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.unit.sp
 import com.scepticalphysiologist.dmaple.MainActivity
-import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.map.creator.GutSegmentor
 import com.scepticalphysiologist.dmaple.map.creator.MapType
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
@@ -71,19 +68,18 @@ class RoiInfo(
 
         if(openDialog.value) {
             AlertDialog(
-                title = { Text("Roi") },
+                title = { Text("ROI", fontSize = titleFontSize) },
                 text = {
                     Column {
                         Text(
                             text = "Set the maps to be created and get information about the recording.",
-                            fontSize = dimensionResource(R.dimen.small_text_size).value.sp
+                            fontSize = mainFontSize
                         )
                         for((map, selected) in selections) MapTypeRow(map, selected, ::setDescription)
                         val items = description.value.split("\n").map{it.split("\t")}
-                        val fs = dimensionResource(R.dimen.extra_small_text_size).value.sp
                         for(item in items) Row() {
-                            Text(text = item[1], modifier = Modifier.weight(0.2f), fontSize = fs)
-                            Text(text = item[0], modifier = Modifier.weight(0.8f), fontSize = fs)
+                            Text(text = item[1], modifier = Modifier.weight(0.2f), fontSize = mainFontSize)
+                            Text(text = item[0], modifier = Modifier.weight(0.8f), fontSize = mainFontSize)
                         }
                     }
                 },
@@ -114,7 +110,7 @@ class RoiInfo(
                     onSelected()
                 }
             )
-            Text(map.title, modifier = Modifier.align(Alignment.CenterVertically))
+            Text(map.title, fontSize = mainFontSize, modifier = Modifier.align(Alignment.CenterVertically))
         }
     }
 
