@@ -39,6 +39,7 @@ import com.scepticalphysiologist.dmaple.etc.strftime
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
+import com.scepticalphysiologist.dmaple.map.field.FieldParams
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.field.FieldRuler
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
@@ -390,7 +391,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             return warning
         }
         for(roi in rois) {
-            val creator = MapCreator(roi.inNewFrame(imageFrame))
+            val creator = MapCreator(roi.inNewFrame(imageFrame), FieldParams.preference.copy())
             ruler?.let{ creator.setSpatialResolutionFromRuler(it) }
             creator.setTemporalResolutionFromFPS(frameRateFps.toFloat())
             val buffers = (0 until creator.nMaps).map{ bufferProvider.getFreeBuffer()}.filterNotNull()

@@ -2,6 +2,8 @@ package com.scepticalphysiologist.dmaple.map.creator
 
 import android.graphics.Bitmap
 import com.scepticalphysiologist.dmaple.etc.ntscGrey
+import com.scepticalphysiologist.dmaple.map.field.FieldParams
+import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import kotlin.math.ceil
 
 /** Segments a gut in an camera field.
@@ -9,63 +11,55 @@ import kotlin.math.ceil
  * Uses sim[ple threshold detection to identify the lower and upper bounds of the gut which can
  * then be used to calculate diameter, radius, etc.
  */
-class GutSegmentor {
-
-    companion object {
-        /** The minimum pixel width of the gut at its seeding edge. */
-        var minWidth: Int = 10
-        /** The maximum pixel gap (below threshold region) for thresholding. */
-        var maxGap: Int = 2
-        /** Pixels to skip along the spine (reduce the map spatial resolution). */
-        var spineSkipPixels: Int = 0
-        /** Pixels width to smooth the spine (required for radius mapping). */
-        var spineSmoothPixels = 1
-        /** The size of the smoothing window applied to the spine. */
-        private val spineSmoothWin: Int
-            get() = ceil(spineSmoothPixels.toFloat() / (spineSkipPixels + 1f)).toInt()
-    }
+class GutSegmentor(roi: FieldRoi, val params: FieldParams) {
 
     // The gut and its field
     // ----------------------
     /** The field */
     private lateinit var bitmap: Bitmap
     /** The gut is horizontal within the field of view. */
-    var gutIsHorizontal: Boolean = true
-
-    // Variables
-    // ---------
+    val gutIsHorizontal: Boolean = roi.seedingEdge.isVertical()
     /** The grey-scale threshold at the gut boundary. */
-    var threshold: Float = 1f
-    /** The gut is above threshold (light against a dark background). */
-    var gutIsAboveThreshold: Boolean = true
+    private val threshold: Float = roi.threshold.toFloat()
+
+    private val transAxis: Pair<Int, Int>
+
+    private val spineSmoothWin: Int = ceil(
+        params.spineSmoothPixels.toFloat() / (params.spineSkipPixels + 1f)
+    ).toInt()
 
     // Boundaries
     // ----------
     /** The pixel indices along the longitudinal axis of the gut. */
-    var longIdx: IntArray = IntArray(0)
+    val longIdx: IntArray
     /** The transverse-axis indices of the spine along the centre of the gut. */
-    var spine: IntArray = IntArray(0)
+    val spine: IntArray
     /** The transverse-axis indices of the smoothed spine along the centre of the gut.*/
-    var spineSmoothed: IntArray = IntArray(0)
+    val spineSmoothed: IntArray
     /** The transverse-axis indices of the upper boundary of the gut. */
-    var upper: IntArray = IntArray(0)
+    val upper: IntArray
     /** The transverse-axis indices of the lower boundary of the gut. */
-    var lower: IntArray = IntArray(0)
+    val lower: IntArray
 
     // ---------------------------------------------------------------------------------------------
     // Initiation
     // ---------------------------------------------------------------------------------------------
 
-    /** Set the longitudinal-axis indices of the gut.
-     *
-     * @param l0 The first index, at the seeding edge of the gut.
-     * @param l1 The last index, at the opposite edge of the gut.
-     * */
-    fun setLongSection(l0: Int, l1: Int) {
-        val step = spineSkipPixels + 1
+    init {
+        // Axes longitudinal and transverse to gut.
+        fun pairFloatToInt(pair: Pair<Float, Float>): Pair<Int, Int> {
+            return Pair(pair.first.toInt(), pair.second.toInt())
+        }
+        val (l0, l1) = pairFloatToInt(roi.longitudinalAxis())
+        transAxis = pairFloatToInt(roi.transverseAxis())
+
+        // Longitudinal samples.
+        val step = params.spineSkipPixels + 1
         longIdx = if(l0 < l1) (l0..l1 step step).toList().toIntArray()
-                  else (l1..l0 step step).toList().toIntArray()
+        else (l1..l0 step step).toList().toIntArray()
         val nl = longIdx.size
+
+        // Holding arrays.
         spine = IntArray(nl)
         spineSmoothed = IntArray(nl)
         upper = IntArray(nl)
@@ -83,8 +77,8 @@ class GutSegmentor {
      * @param rTrans The transverse-axis index range, over which to detect the gut.
      * @return If a gut was detected.
      * */
-    fun detectGutAndSeedSpine(rTrans: Pair<Int, Int>): Boolean {
-        val gut = findWidestGut(longIdx.first(), rTrans) ?: return false
+    fun detectGutAndSeedSpine(): Boolean {
+        val gut = findWidestGut(longIdx.first(), transAxis) ?: return false
         spine[0] = gut.first + (gut.second - gut.first) / 2
         updateBoundaries()
         return true
@@ -117,15 +111,18 @@ class GutSegmentor {
         var g = 0
         val t0 = rTransChecked.first
         for((i, v) in section.withIndex()) {
-            if(v || ((w > 0) && (g <= maxGap))) {
+            if(v || ((w > 0) && (g <= params.maxGap))) {
                 w += 1
                 if(!v) g += 1 else g = 0
             }
             else {
-                if(w >= minWidth) guts.add(Pair(t0 + i - w, t0 + i - g - 1))
+                if(w >= params.minWidth) guts.add(Pair(t0 + i - w, t0 + i - g - 1))
                 g = 0
                 w = 0
             }
+            // Reached end of transverse axis within gap.
+            if((i == section.size - 1) && guts.isEmpty() && (w >= params.minWidth))
+                guts.add(Pair(t0 + i - w, t0 + i - g - 1))
         }
         return guts
     }
@@ -139,8 +136,8 @@ class GutSegmentor {
     private fun transverseSection(iLong: Int, rTrans: Pair<Int, Int>): BooleanArray {
         val range = (rTrans.first..rTrans.second)
         return (if(gutIsHorizontal)
-                 range.map{ (getPixel(iLong, it) > threshold) xor !gutIsAboveThreshold }
-            else range.map{ (getPixel(it, iLong) > threshold) xor !gutIsAboveThreshold }
+                 range.map{ (getPixel(iLong, it) > threshold) xor !(params.gutsAreAboveThreshold) }
+            else range.map{ (getPixel(it, iLong) > threshold) xor !(params.gutsAreAboveThreshold) }
         ).toBooleanArray()
     }
 
@@ -193,25 +190,25 @@ class GutSegmentor {
      * */
     private fun findEdge(iLong: Int, iTrans: Int, goUp: Boolean, ofGut: Boolean=true): Int {
         val d = if(goUp) 1 else -1
-        val findAbove = !gutIsAboveThreshold xor ofGut
+        val findAbove = !(params.gutsAreAboveThreshold) xor ofGut
         var i = iTrans
         var g = 0
         if(gutIsHorizontal){
-            if(findAbove) while((i >= 0) && (i < bitmap.height) && (g <= maxGap)) {
+            if(findAbove) while((i >= 0) && (i < bitmap.height) && (g <= params.maxGap)) {
                 if(getPixel(iLong, i) > threshold) g = 0 else g += 1
                 i += d
             }
-            else while((i >= 0) && (i < bitmap.height) && (g <= maxGap)){
+            else while((i >= 0) && (i < bitmap.height) && (g <= params.maxGap)){
                 if(getPixel(iLong, i) < threshold) g = 0 else g += 1
                 i += d
             }
         }
         else {
-            if (findAbove) while ((i >= 0) && (i < bitmap.width) && (g <= maxGap)) {
+            if (findAbove) while ((i >= 0) && (i < bitmap.width) && (g <= params.maxGap)) {
                 if (getPixel(i, iLong) > threshold) g = 0 else g += 1
                 i += d
             }
-            else while ((i >= 0) && (i < bitmap.width) && (g <= maxGap)) {
+            else while ((i >= 0) && (i < bitmap.width) && (g <= params.maxGap)) {
                 if (getPixel(i, iLong) < threshold) g = 0 else g += 1
                 i += d
             }

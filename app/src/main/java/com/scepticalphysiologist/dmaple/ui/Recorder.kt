@@ -193,7 +193,7 @@ class Recorder: Fragment() {
         recording = true
         lifecycleScope.launch(Dispatchers.Default) {
             while(recording) {
-                binding.maps.update()
+                binding.maps.updateBitmap()
                 delay(updateInterval)
                 binding.cameraAndRoi.spineOverlay.update()
             }

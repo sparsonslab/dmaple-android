@@ -3,11 +3,10 @@ package com.scepticalphysiologist.dmaple.map.creator
 import android.graphics.Bitmap
 import android.graphics.Rect
 import android.util.Size
-import com.scepticalphysiologist.dmaple.geom.Edge
+import com.scepticalphysiologist.dmaple.map.field.FieldParams
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferView
 import com.scepticalphysiologist.dmaple.map.buffer.RGBMap
 import com.scepticalphysiologist.dmaple.map.buffer.ShortMap
-import com.scepticalphysiologist.dmaple.ui.record.ThresholdBitmap
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.field.FieldRuler
 import mil.nga.tiff.FieldTagType
@@ -20,7 +19,7 @@ import kotlin.math.abs
 import kotlin.math.ceil
 
 /** Handles the creation of spatio-temporal maps for a single ROI. */
-class MapCreator(val roi: FieldRoi) {
+class MapCreator(val roi: FieldRoi, val params: FieldParams) {
 
     /** The number of maps produced by the creator. */
     val nMaps: Int = roi.maps.sumOf { it.nMaps }
@@ -40,8 +39,6 @@ class MapCreator(val roi: FieldRoi) {
     // ---------------
     /** The segmentor used for calculating the map values. */
     val segmentor: GutSegmentor
-    /** The range of pixels along the seeding edge, used to detect the gut. */
-    private val seedRange: Pair<Int, Int>
 
     // Buffering
     // ---------
@@ -78,18 +75,8 @@ class MapCreator(val roi: FieldRoi) {
     init {
         // Make sure the ROI fits in the image frame.
         roi.cropToFrame()
-
-        // Axes longitudinal and transverse to gut.
-        val longAxis = roi.longitudinalAxis()
-        val transAxis = roi.transverseAxis()
-
         // Gut segmentor.
-        segmentor = GutSegmentor()
-        segmentor.threshold = roi.threshold.toFloat()
-        segmentor.gutIsHorizontal = roi.seedingEdge.isVertical()
-        segmentor.gutIsAboveThreshold = !ThresholdBitmap.highlightAbove
-        segmentor.setLongSection(longAxis.first.toInt(), longAxis.second.toInt())
-        seedRange = Pair(transAxis.first.toInt(), transAxis.second.toInt())
+        segmentor = GutSegmentor(roi, params)
         ns = segmentor.longIdx.size
     }
 
@@ -134,7 +121,7 @@ class MapCreator(val roi: FieldRoi) {
         try {
             // Analyse the bitmap.
             segmentor.setFieldImage(bitmap)
-            if(nt == 0) segmentor.detectGutAndSeedSpine(seedRange)
+            if(nt == 0) segmentor.detectGutAndSeedSpine()
             else segmentor.updateBoundaries()
 
             // Update the map values.
@@ -187,15 +174,19 @@ class MapCreator(val roi: FieldRoi) {
      * i.e. the spatial down-sampling of the map.
      * @param stepY The number of time samples to step when sampling the map.
      * @param backing A backing array for the bitmap, into the map samples will be put.
+     * @param live The bitmap is intended to be shown as part of a live display. i.e.
+     * this function will be called at a high frequency).
      * */
     fun getMapBitmap(
         idx: Int,
         crop: Rect?,
         stepX: Int = 1, stepY: Int = 1,
         backing: IntArray,
+        live: Boolean,
     ): Bitmap? {
 
         val buffer = mapBuffers.mapNotNull {it.second}.getOrNull(idx) ?: return null
+
         try {
             // Only allow a valid area of the map to be returned,
             val area = Rect(0, 0, ns, nt)
@@ -204,9 +195,8 @@ class MapCreator(val roi: FieldRoi) {
             if(bs.width * bs.height > backing.size) return null
 
             // Pass values from buffer to bitmap backing in parallel.
-            // The parallelisation really makes a big (> x2) difference!
             // https://stackoverflow.com/questions/30802463/how-many-threads-are-spawned-in-parallelstream-in-java-8
-            forkedPool.submit {
+            val job = forkedPool.submit {
                 sequence {
                     var k = -1
                     for (j in area.top until area.bottom step stepY)
@@ -219,7 +209,14 @@ class MapCreator(val roi: FieldRoi) {
                 }
             }
 
-            //and return bitmap.
+            // If we are using the bitmap for live display allow the bitmap to be returned
+            // before we have actually finished updating the backing. This massively speeds
+            // up the frame rate apparent to the user (especially for maps with a large number
+            // of spatial samples), with only the small side effect that
+            // the last few time pixels of the map's view might look un-updated.
+            if(!live) job.join()
+
+            // Return bitmap.
             return Bitmap.createBitmap(backing, bs.width, bs.height, Bitmap.Config.ARGB_8888)
         }
         // On start and rare occasions these might be thrown.

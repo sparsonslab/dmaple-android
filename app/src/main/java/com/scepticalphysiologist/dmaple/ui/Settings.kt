@@ -1,19 +1,17 @@
 package com.scepticalphysiologist.dmaple.ui
 
 import android.app.Activity
-import android.content.Context
 import android.content.pm.ActivityInfo
 import android.graphics.Color
 import android.os.Bundle
-import android.view.WindowManager
 import androidx.preference.DropDownPreference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
 import androidx.preference.SeekBarPreference
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.R
+import com.scepticalphysiologist.dmaple.map.field.FieldParams
 import com.scepticalphysiologist.dmaple.ui.record.ThresholdBitmap
-import com.scepticalphysiologist.dmaple.map.creator.GutSegmentor
 import com.scepticalphysiologist.dmaple.ui.record.SpineOverlay
 
 class Settings: PreferenceFragmentCompat() {
@@ -60,24 +58,26 @@ class Settings: PreferenceFragmentCompat() {
 
         private fun setThresholdInverted(entry: Any?) {
             val inverted = if(entry is Boolean) entry else entry.toString().toBoolean()
+            FieldParams.preference.gutsAreAboveThreshold = !inverted
+            // todo - get the below from the above.
             ThresholdBitmap.highlightAbove = inverted
             SpineOverlay.spinePaint.color = if(inverted) Color.WHITE else Color.BLACK
         }
 
         private fun setSpinePixelSkip(entry: Any?) {
-            entry.toString().toIntOrNull()?.let { GutSegmentor.spineSkipPixels = it }
+            entry.toString().toIntOrNull()?.let { FieldParams.preference.spineSkipPixels = it }
         }
 
         private fun setSeedMinWidth(entry: Any?) {
-            entry.toString().toIntOrNull()?.let { GutSegmentor.minWidth = it }
+            entry.toString().toIntOrNull()?.let { FieldParams.preference.minWidth = it }
         }
 
         private fun setSpineSmooth(entry: Any?) {
-            entry.toString().toIntOrNull()?.let { GutSegmentor.spineSmoothPixels = it }
+            entry.toString().toIntOrNull()?.let { FieldParams.preference.spineSmoothPixels = it }
         }
 
         private fun setSpineMaxGap(entry: Any?) {
-            entry.toString().toIntOrNull()?.let { GutSegmentor.maxGap = it }
+            entry.toString().toIntOrNull()?.let { FieldParams.preference.maxGap = it }
         }
 
     }

@@ -15,8 +15,7 @@ fun invertBitmap(image: Bitmap) {
     for(i in 0 until image.width)
         for(j in 0 until image.height)
             image.setPixel(
-                i, j,
-                if(image.getPixel(i, j) == Color.BLACK) Color.WHITE else Color.BLACK
+                i, j, if(image.getPixel(i, j) == Color.BLACK) Color.WHITE else Color.BLACK
             )
 }
 

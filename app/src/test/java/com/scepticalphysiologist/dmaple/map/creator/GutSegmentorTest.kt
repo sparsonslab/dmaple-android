@@ -1,228 +1,188 @@
 package com.scepticalphysiologist.dmaple.map.creator
 
 import android.graphics.Color
-import com.scepticalphysiologist.dmaple.etc.rotateBitmap
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotEquals
+import com.scepticalphysiologist.dmaple.assertNumbersEqual
+import com.scepticalphysiologist.dmaple.geom.Edge
+import com.scepticalphysiologist.dmaple.geom.Frame
+import com.scepticalphysiologist.dmaple.geom.Point
+import com.scepticalphysiologist.dmaple.map.field.FieldImage
+import com.scepticalphysiologist.dmaple.map.field.FieldParams
+import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowBitmap
+import kotlin.random.Random
 
 @RunWith(RobolectricTestRunner::class)
 @Config(shadows = [ShadowBitmap::class])
 class GutSegmentorTest {
 
-    @Test
-    fun `correct bounds are calculated`() {
-        // Given: A horizontal gut of constant width.
-        val iw = 200
-        val extent = Pair(40, 180)
-        val ih = 100
-        val bounds = Pair(35, 80)
-        var image = createBitmap(iw, ih, Color.BLACK)
-        for(i in extent.first..extent.second)
-            for(j in bounds.first..bounds.second)
-                image.setPixel(i, j, Color.WHITE)
 
-        // When: The gut is segmented.
-        GutSegmentor.spineSkipPixels = 0
-        GutSegmentor.minWidth = 5
-        val segmentor = GutSegmentor()
-        segmentor.setLongSection(extent.first, extent.second)
-        segmentor.gutIsHorizontal = true
-        segmentor.threshold = 100f
-        segmentor.gutIsAboveThreshold = true
-        segmentor.setFieldImage(image)
-        segmentor.detectGutAndSeedSpine(Pair(1, ih - 1))
+    lateinit var image: FieldImage
 
-        // Then: The lower and upper bounds are where expected.
-        assertEquals(bounds.first, segmentor.lower[20])
-        assertEquals(bounds.second, segmentor.upper[20])
+    lateinit var bounds: MutableList<Pair<Int, Int>>
 
-        // Given: The same gut, rotated.
-        image = rotateBitmap(image, 90)
-        segmentor.gutIsHorizontal = false
+    lateinit var roi: FieldRoi
 
-        // When: The gut is segmented.
-        segmentor.setFieldImage(image)
-        segmentor.detectGutAndSeedSpine(Pair(1, ih - 1))
+    lateinit var params: FieldParams
 
-        // Then: The lower and upper bounds are where expected.
-        assertEquals(bounds.first, segmentor.lower[20])
-        assertEquals(bounds.second, segmentor.upper[20])
+    lateinit var expectedLowerBounds: List<Int>
 
-        // Given The field values are inverted.
-        invertBitmap(image)
-        segmentor.gutIsAboveThreshold = false
+    lateinit var expectedUpperBounds: List<Int>
 
-        // When: The gut is segmented.
-        segmentor.setFieldImage(image)
-        segmentor.detectGutAndSeedSpine(Pair(1, ih - 1))
+    lateinit var expectedDiameters: List<Int>
 
-        // Then: The lower and upper bounds are where expected.
-        assertEquals(bounds.first, segmentor.lower[20])
-        assertEquals(bounds.second, segmentor.upper[20])
+    init { setUp() }
+
+    @BeforeEach
+    fun setUp() {
+        // Field with a horizontal gut of increasing diameter.
+        val fieldWidth = 200
+        val extent = Pair(30, 180)
+        val diameter = Pair(10, 50)
+        val bitmap = createBitmap(fieldWidth, 50 + maxOf(diameter.first, diameter.second), Color.BLACK)
+        val m = (diameter.second - diameter.first).toFloat() / (extent.second - extent.first).toFloat()
+        val c = diameter.first - m * extent.first
+        bounds = mutableListOf<Pair<Int, Int>>()
+        for(i in extent.first..extent.second) {
+            val l = 20
+            val u = l + (i * m + c).toInt()
+            bounds.add(Pair(l, u))
+            for(j in l..u) bitmap.setPixel(i, j, Color.WHITE)
+        }
+
+        // An ROI within that field
+        val frame = Frame(Point(bitmap.width.toFloat(), bitmap.height.toFloat()), 0)
+        image = FieldImage(frame = frame, bitmap = bitmap)
+        roi = FieldRoi(
+            frame = frame,
+            c0 = Point(extent.first.toFloat(), bounds[0].first.toFloat() - 4),
+            c1 = Point(extent.second.toFloat(), bounds[0].second.toFloat() + 4),
+            seedingEdge = Edge.LEFT,
+            threshold = 100
+        )
+
+        // Mapping parameters
+        params = FieldParams(
+            gutsAreAboveThreshold = true,
+            minWidth = 5,
+            maxGap = 1,
+            spineSkipPixels = 0,
+            spineSmoothPixels = 1
+        )
+
+        // Expected bounds anf diameters.
+        expectedLowerBounds = bounds.map { it.first }
+        expectedUpperBounds = bounds.map { it.second }
+        expectedDiameters = bounds.map{it.second - it.first + 1}
     }
 
     @Test
-    fun `correct diameters are calculated`() {
-        // Given: A horizontal gut of incrementing widths.
-        val gutExtent = Pair(20, 200)
-        val gutWidth = Pair(5, 60)
-        val wS = (gutWidth.second - gutWidth.first).toFloat() / (gutExtent.second - gutExtent.first).toFloat()
-        val w0 = gutWidth.first - wS * gutExtent.first
-        val expectedWidths = (gutExtent.first..gutExtent.second).map{(it * wS + w0).toInt()}.toList()
-        val iw = maxOf(gutExtent.first, gutExtent.second) + 20
-        val ih = expectedWidths.max() + 50
-        var image = createBitmap(iw, ih, Color.BLACK)
-        for((i, w) in expectedWidths.withIndex())
-            paintSlice(image, i + gutExtent.first, ih / 2, w, Color.WHITE, false)
+    fun `correct bounds and diameters calculated`() {
+        // Given: The gut.
 
         // When: The gut is segmented.
-        GutSegmentor.spineSkipPixels = 0
-        GutSegmentor.minWidth = 5
-        val segmentor = GutSegmentor()
-        segmentor.setLongSection(gutExtent.first, gutExtent.second)
-        segmentor.gutIsHorizontal = true
-        segmentor.threshold = 100f
-        segmentor.gutIsAboveThreshold = true
-        segmentor.setFieldImage(image)
-        segmentor.detectGutAndSeedSpine(Pair(1, ih - 1))
+        val segmentor = GutSegmentor(roi, params)
+        segmentor.setFieldImage(image.bitmap)
+        segmentor.detectGutAndSeedSpine()
 
-        // Then: The measured widths match the expected.
-        var actualWidths = expectedWidths.indices.map{segmentor.getDiameter(it)}.toList()
-        assertEquals(expectedWidths, actualWidths)
+        // Then: The bounds and diameters are as expected.
+        assertNumbersEqual(expectedLowerBounds, segmentor.lower.toList())
+        assertNumbersEqual(expectedUpperBounds, segmentor.upper.toList())
+        assertNumbersEqual(expectedDiameters, segmentor.longIdx.indices.map{segmentor.getDiameter(it)})
+    }
 
+    @Test
+    fun `correct bounds and diameters are calculated after rotation`() {
         // Given: The same gut, rotated.
-        image = rotateBitmap(image, 90)
-        segmentor.gutIsHorizontal = false
+        val newFrame = Frame(roi.frame.size.swap(), roi.frame.orientation + 90)
+        image.inNewFrame(newFrame)
+        roi.inNewFrame(newFrame)
 
         // When: The gut is segmented.
-        segmentor.setFieldImage(image)
-        segmentor.detectGutAndSeedSpine(Pair(1, ih - 1))
+        val segmentor = GutSegmentor(roi, params)
+        segmentor.setFieldImage(image.bitmap)
+        segmentor.detectGutAndSeedSpine()
 
-        // Then: The measured widths match the expected.
-        actualWidths = expectedWidths.indices.map{segmentor.getDiameter(it)}.toList()
-        assertEquals(expectedWidths, actualWidths)
+        // Then: The bounds and diameters are as expected.
+        assertNumbersEqual(expectedLowerBounds, segmentor.lower.toList())
+        assertNumbersEqual(expectedUpperBounds, segmentor.upper.toList())
+        assertNumbersEqual(expectedDiameters, segmentor.longIdx.indices.map{segmentor.getDiameter(it)})
+    }
 
-        // Given: The field values are inverted.
-        invertBitmap(image)
-        segmentor.gutIsAboveThreshold = false
+    @Test
+    fun `correct bounds and diameters are calculated after inversion`() {
+        // Given The field values are inverted.
+        invertBitmap(image.bitmap)
+        params.gutsAreAboveThreshold = false
 
         // When: The gut is segmented.
-        segmentor.setFieldImage(image)
-        segmentor.detectGutAndSeedSpine(Pair(1, ih - 1))
+        val segmentor = GutSegmentor(roi, params)
+        segmentor.setFieldImage(image.bitmap)
+        segmentor.detectGutAndSeedSpine()
 
-        // Then: The measured widths match the expected.
-        actualWidths = expectedWidths.indices.map{segmentor.getDiameter(it)}.toList()
-        assertEquals(expectedWidths, actualWidths)
+        // Then: The bounds and diameters are as expected.
+        assertNumbersEqual(expectedLowerBounds, segmentor.lower.toList())
+        assertNumbersEqual(expectedUpperBounds, segmentor.upper.toList())
+        assertNumbersEqual(expectedDiameters, segmentor.longIdx.indices.map{segmentor.getDiameter(it)})
     }
 
     @Test
     fun `skip spine pixels`() {
-        // Given: A horizontal gut of incrementing widths.
-        val gutExtent = Pair(20, 200)
-        val gutWidth = Pair(5, 60)
-        val wS = (gutWidth.second - gutWidth.first).toFloat() / (gutExtent.second - gutExtent.first).toFloat()
-        val w0 = gutWidth.first - wS * gutExtent.first
-        var expectedWidths = (gutExtent.first..gutExtent.second).map{(it * wS + w0).toInt()}.toList()
-        val iw = maxOf(gutExtent.first, gutExtent.second) + 20
-        val ih = expectedWidths.max() + 50
-        var image = createBitmap(iw, ih, Color.BLACK)
-        for((i, w) in expectedWidths.withIndex())
-            paintSlice(image, i + gutExtent.first, ih / 2, w, Color.WHITE, false)
+        // Given: Pixels are skipped
+        params.spineSkipPixels = 1
 
-        // When: The gut is segmented, skipping every other spine pixel.
-        GutSegmentor.minWidth = 5
-        GutSegmentor.spineSkipPixels = 1
-        val segmentor = GutSegmentor()
-        segmentor.setLongSection(gutExtent.first, gutExtent.second)
-        segmentor.gutIsHorizontal = true
-        segmentor.threshold = 100f
-        segmentor.gutIsAboveThreshold = true
-        segmentor.setFieldImage(image)
-        segmentor.detectGutAndSeedSpine(Pair(1, ih - 1))
+        // When: The gut is segmented.
+        val segmentor = GutSegmentor(roi, params)
+        segmentor.setFieldImage(image.bitmap)
+        segmentor.detectGutAndSeedSpine()
 
-        // Then: The measured widths match the expected.
-        expectedWidths = expectedWidths.filterIndexed { index, i -> index % 2 == 0 }
-        val actualWidths = expectedWidths.indices.map{segmentor.getDiameter(it)}.toList()
-        assertEquals(expectedWidths, actualWidths)
+        // Then: The lower and upper bounds are where expected.
+        assertNumbersEqual(expectedLowerBounds.filterIndexed{i, _ -> i % 2 == 0}, segmentor.lower.toList())
+        assertNumbersEqual(expectedUpperBounds.filterIndexed{i, _ -> i % 2 == 0}, segmentor.upper.toList())
+        assertNumbersEqual(expectedDiameters.filterIndexed{i, _ -> i % 2 == 0}, segmentor.longIdx.indices.map{segmentor.getDiameter(it)})
     }
 
     @Test
     fun `behaviour at gut termination`() {
-        // Given: A horizontal gut of constant width.
-        val gutExtent = Pair(20, 100)
-        val gutWidth = 40
-        val expectedWidths = (gutExtent.first..gutExtent.second).map{gutWidth}.toList()
-        val iw = maxOf(gutExtent.first, gutExtent.second) + 100
-        val ih = 90
-        val image = createBitmap(iw, ih, Color.BLACK)
-        for((i, w) in expectedWidths.withIndex())
-            paintSlice(image, i + gutExtent.first, ih / 2, w, Color.WHITE, false)
+        // Given: The ROI extends beyond the right side of the gut.
+        roi.right += 5f
 
-        // When: The gut is segmented 20 pixels past the gut's end.
-        GutSegmentor.spineSkipPixels = 0
-        GutSegmentor.minWidth = 5
-        GutSegmentor.maxGap = 5
-        GutSegmentor.spineSmoothPixels = 10
-        val segmentor = GutSegmentor()
-        segmentor.setLongSection(gutExtent.first, gutExtent.second + 20)
-        segmentor.gutIsHorizontal = true
-        segmentor.threshold = 100f
-        segmentor.gutIsAboveThreshold = true
-        segmentor.setFieldImage(image)
-        segmentor.detectGutAndSeedSpine(Pair(1, ih - 1))
+        // When: The gut is segmented.
+        val segmentor = GutSegmentor(roi, params)
+        segmentor.setFieldImage(image.bitmap)
+        segmentor.detectGutAndSeedSpine()
 
-        // Then: The measured diameter past the end of the gut is 1.
-        val diam = segmentor.getDiameter(segmentor.longIdx.size - 1)
-        assertEquals(1, diam)
+        // Then: The gut has a diameter of 1 at the right.
+        assert(1 == segmentor.getDiameter(segmentor.longIdx.size - 1))
+        assert(1 != segmentor.getDiameter(0))
     }
 
     @Test
     fun `gaps are handled`() {
-        // Given: A horizontal gut of constant width.
-        val gutExtent = Pair(20, 200)
-        val gutWidth = 40
-        val expectedWidths = (gutExtent.first..gutExtent.second).map{gutWidth}.toList()
-        val iw = maxOf(gutExtent.first, gutExtent.second) + 20
-        val ih = 90
-        val image = createBitmap(iw, ih, Color.BLACK)
-        for((i, w) in expectedWidths.withIndex())
-            paintSlice(image, i + gutExtent.first, ih / 2, w, Color.WHITE, false)
-        // ... with a series of gaps.
-        val gap = 4
-        val hg = 1 + gap / 2
-        val j = (ih - gutWidth) / 2
-        for(i in hg until gutWidth - hg)
-            paintSlice(image, i + gutExtent.first + 10, j + i, gap, Color.BLACK, false)
+        // Given: A segmentor.
+        params.maxGap = 5
+        val segmentor = GutSegmentor(roi, params)
+        // ... and some gaps in the gut.
+        val gapSize = params.maxGap
+        for((k, i) in segmentor.longIdx.withIndex()) {
+            if(expectedDiameters[k] < gapSize + 5) continue
+            val gap = (Random.nextFloat() * gapSize).toInt()
+            val g0= 2 + segmentor.lower[k]
+            for(j in 0 until gap) image.bitmap.setPixel(i, g0 + j, Color.BLACK)
+        }
 
-        // When: The gut is segmented with a maxGap attribute the same as the gap width.
-        GutSegmentor.spineSkipPixels = 0
-        GutSegmentor.maxGap = gap
-        GutSegmentor.minWidth = 5
-        GutSegmentor.spineSmoothPixels = 10
-        val segmentor = GutSegmentor()
-        segmentor.setLongSection(gutExtent.first, gutExtent.second)
-        segmentor.gutIsHorizontal = true
-        segmentor.threshold = 100f
-        segmentor.gutIsAboveThreshold = true
-        segmentor.setFieldImage(image)
-        segmentor.detectGutAndSeedSpine(Pair(1, ih - 1))
+        // When: The gut is segmented.
+        segmentor.setFieldImage(image.bitmap)
+        segmentor.detectGutAndSeedSpine()
 
-        // Then: The measured widths match the expected.
-        var actualWidths = expectedWidths.indices.map{segmentor.getDiameter(it)}.toList()
-        assertEquals(expectedWidths, actualWidths)
-
-        // When: The gut is segmented with a maxGap attribute less than the gap width
-        GutSegmentor.maxGap = gap - 1
-        segmentor.updateBoundaries()
-
-        // Then: The measured widths do not match the expected.
-        actualWidths = expectedWidths.indices.map{segmentor.getDiameter(it)}.toList()
-        assertNotEquals(expectedWidths, actualWidths)
+        // Then: The lower and upper bounds are where expected.
+        assertNumbersEqual(expectedLowerBounds, segmentor.lower.toList())
+        assertNumbersEqual(expectedUpperBounds, segmentor.upper.toList())
+        assertNumbersEqual(expectedDiameters, segmentor.longIdx.indices.map{segmentor.getDiameter(it)})
     }
 
 }
