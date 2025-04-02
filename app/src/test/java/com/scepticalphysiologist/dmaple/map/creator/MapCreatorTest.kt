@@ -5,11 +5,12 @@ import com.scepticalphysiologist.dmaple.geom.Edge
 import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.geom.Rectangle
+import com.scepticalphysiologist.dmaple.map.field.FieldParams
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.ui.record.ThresholdBitmap
 import org.junit.Assert.assertEquals
-import org.junit.Before
 import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -27,31 +28,44 @@ class MapCreatorTest {
 
      lateinit var roi: FieldRoi
 
-    @Before
-    fun setUp() {
-        // The gut is not inverted.
-        ThresholdBitmap.highlightAbove = false
+     lateinit var params: FieldParams
 
-        // a series of camera frames of a gut positioned horizontally across the whole frame.
-        diameters = listOf(50, 55, 60, 65, 60, 55, 50)
-        frames = horizontalGutSeries(diameters = diameters, fieldWidth = 100)
+     init { setUp() }
 
-        // An ROI over that gut.
-        val (iw, ih) = Pair(frames[0].width, frames[0].height)
-        roi = FieldRoi(
+
+     @BeforeEach
+     fun setUp() {
+          // The gut is not inverted.
+          ThresholdBitmap.highlightAbove = false
+
+          // a series of camera frames of a gut positioned horizontally across the whole frame.
+          diameters = listOf(50, 55, 60, 65, 60, 55, 50)
+          frames = horizontalGutSeries(diameters = diameters, fieldWidth = 100)
+
+          // An ROI over that gut.
+          val (iw, ih) = Pair(frames[0].width, frames[0].height)
+          roi = FieldRoi(
             frame = Frame(size = Point(iw.toFloat(),  ih.toFloat()), orientation = 0),
             threshold = 50,
             seedingEdge = Edge.RIGHT,
             maps = listOf(MapType.DIAMETER),
             uid = "abcdefgh0123456789"
-        )
-        roi.set(Rectangle(Point(10f, 10f), Point(iw.toFloat() - 10f,ih.toFloat() - 10f)))
-    }
+          )
+          roi.set(Rectangle(Point(10f, 10f), Point(iw.toFloat() - 10f,ih.toFloat() - 10f)))
+
+          params = FieldParams(
+              gutsAreAboveThreshold = true,
+              minWidth = 5,
+              maxGap = 1,
+              spineSkipPixels = 0,
+              spineSmoothPixels = 1
+          )
+     }
 
     @Test
     fun `reach end of buffer condition reached`() {
         // Given: A map creator for the ROI.
-        var creator = MapCreator(roi)
+        var creator = MapCreator(roi, params)
 
         // When: The creator is provided with buffers large enough to hold all data from the frames.
         val bytesRequired = frames.size * creator.spaceSamples() * roi.maps.maxOf { it.bytesPerSample }
@@ -64,7 +78,7 @@ class MapCreatorTest {
         assertEquals(frames.size, creator.timeSamples())
 
         // When: The creator is provided with buffers NOT large enough to hold all data from the frames.
-        creator = MapCreator(roi)
+        creator = MapCreator(roi, params)
         buffers = (0..2).map{ ByteBuffer.allocate(bytesRequired - 100) }
         creator.provideBuffers(buffers)
         for(frame in frames) creator.updateWithCameraBitmap(frame)
@@ -77,7 +91,7 @@ class MapCreatorTest {
     @Test
     fun `correct diameter in maps`() {
         // Given: A map creator for the ROI.
-        val creator = MapCreator(roi)
+        val creator = MapCreator(roi, params)
 
         // When: The creator consumes all frames.
         val bytesRequired = frames.size * creator.spaceSamples() * roi.maps.maxOf { it.bytesPerSample }

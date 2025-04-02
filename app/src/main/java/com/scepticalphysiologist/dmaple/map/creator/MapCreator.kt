@@ -3,11 +3,10 @@ package com.scepticalphysiologist.dmaple.map.creator
 import android.graphics.Bitmap
 import android.graphics.Rect
 import android.util.Size
-import com.scepticalphysiologist.dmaple.geom.Edge
+import com.scepticalphysiologist.dmaple.map.field.FieldParams
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferView
 import com.scepticalphysiologist.dmaple.map.buffer.RGBMap
 import com.scepticalphysiologist.dmaple.map.buffer.ShortMap
-import com.scepticalphysiologist.dmaple.ui.record.ThresholdBitmap
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.field.FieldRuler
 import mil.nga.tiff.FieldTagType
@@ -20,7 +19,7 @@ import kotlin.math.abs
 import kotlin.math.ceil
 
 /** Handles the creation of spatio-temporal maps for a single ROI. */
-class MapCreator(val roi: FieldRoi) {
+class MapCreator(val roi: FieldRoi, val params: FieldParams) {
 
     /** The number of maps produced by the creator. */
     val nMaps: Int = roi.maps.sumOf { it.nMaps }
@@ -40,8 +39,6 @@ class MapCreator(val roi: FieldRoi) {
     // ---------------
     /** The segmentor used for calculating the map values. */
     val segmentor: GutSegmentor
-    /** The range of pixels along the seeding edge, used to detect the gut. */
-    private val seedRange: Pair<Int, Int>
 
     // Buffering
     // ---------
@@ -78,18 +75,8 @@ class MapCreator(val roi: FieldRoi) {
     init {
         // Make sure the ROI fits in the image frame.
         roi.cropToFrame()
-
-        // Axes longitudinal and transverse to gut.
-        val longAxis = roi.longitudinalAxis()
-        val transAxis = roi.transverseAxis()
-
         // Gut segmentor.
-        segmentor = GutSegmentor()
-        segmentor.threshold = roi.threshold.toFloat()
-        segmentor.gutIsHorizontal = roi.seedingEdge.isVertical()
-        segmentor.gutIsAboveThreshold = !ThresholdBitmap.highlightAbove
-        segmentor.setLongSection(longAxis.first.toInt(), longAxis.second.toInt())
-        seedRange = Pair(transAxis.first.toInt(), transAxis.second.toInt())
+        segmentor = GutSegmentor(roi, params)
         ns = segmentor.longIdx.size
     }
 
@@ -134,7 +121,7 @@ class MapCreator(val roi: FieldRoi) {
         try {
             // Analyse the bitmap.
             segmentor.setFieldImage(bitmap)
-            if(nt == 0) segmentor.detectGutAndSeedSpine(seedRange)
+            if(nt == 0) segmentor.detectGutAndSeedSpine()
             else segmentor.updateBoundaries()
 
             // Update the map values.

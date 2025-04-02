@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.map.creator.GutSegmentor
 import com.scepticalphysiologist.dmaple.map.creator.MapType
+import com.scepticalphysiologist.dmaple.map.field.FieldParams
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import kotlin.math.abs
 
@@ -37,7 +38,7 @@ class RoiInfo(
     private fun makeDescription(): String {
         // Samples and bytes.
         val longAxes = roi.longitudinalAxis()
-        val samplePerFrame = abs((longAxes.first - longAxes.second).toInt()) / GutSegmentor.spineSkipPixels
+        val samplePerFrame = abs((longAxes.first - longAxes.second).toInt()) / (FieldParams.preference.spineSkipPixels + 1)
         val bytesPerSample = selections.filter { it.value }.map{it.key.bytesPerSample}.maxOrNull() ?: 0
         val items: MutableList<Pair<String, Any>> = mutableListOf(
             Pair("bytes / sample", bytesPerSample),
