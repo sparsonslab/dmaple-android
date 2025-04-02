@@ -180,6 +180,7 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
         crop: Rect?,
         stepX: Int = 1, stepY: Int = 1,
         backing: IntArray,
+        live: Boolean,
     ): Bitmap? {
 
         val buffer = mapBuffers.mapNotNull {it.second}.getOrNull(idx) ?: return null
@@ -194,7 +195,7 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
             // Pass values from buffer to bitmap backing in parallel.
             // The parallelisation really makes a big (> x2) difference!
             // https://stackoverflow.com/questions/30802463/how-many-threads-are-spawned-in-parallelstream-in-java-8
-            forkedPool.submit {
+            val job = forkedPool.submit {
                 sequence {
                     var k = -1
                     for (j in area.top until area.bottom step stepY)
@@ -205,9 +206,16 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
                 }.toList().parallelStream().forEach {
                     backing[it[2]] = buffer.getColorInt(it[0], it[1])
                 }
-            }.join() // IMPORTANT to join so that this finishes before we return.
+            }
 
-            //and return bitmap.
+            // If we are using the bitmap for live display allow the bitmap to be returned
+            // before we have actually finished updating the backing. This massively speeds
+            // up the frame rate apparent to the user (especially for maps with a large number
+            // of spatial samples), with only the small side effect that
+            // the last few time pixels of the map's view might look un-updated.
+            if(!live) job.join()
+
+            // Return bitmap.
             return Bitmap.createBitmap(backing, bs.width, bs.height, Bitmap.Config.ARGB_8888)
         }
         // On start and rare occasions these might be thrown.
