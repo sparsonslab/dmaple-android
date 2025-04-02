@@ -63,7 +63,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
     private var mapIdx: Int = 0
     /** Used for passing the map's bitmap out of the coroutine into the main UI thread. */
     private var newBitmap = MutableLiveData<Bitmap?>(null)
-    /** The map is being updated live. i.e. [update] is being called repeatedly by some outside process.*/
+    /** The map is being updated live. i.e. [updateBitmap] is being called repeatedly by some outside process.*/
     private var updating: Boolean = false
 
     // Display
@@ -132,7 +132,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
         super.onLayout(changed, left, top, right, bottom)
         if(changed) {
             updateViewSize()
-            if(!updating) update()
+            if(!updating) updateBitmap()
         }
     }
 
@@ -265,7 +265,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
         creator = creatorAndMapIdx.first
         mapIdx = creatorAndMapIdx.second
         updateBar()
-        if(!updating) update()
+        if(!updating) updateBitmap()
     }
 
     /** Set parameters related to whether the map is being updated live.  */
@@ -279,7 +279,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
      * This is intended to be run within a coroutine. Therefore the bitmap of the section of map
      * to be shown is posted as live data so that it can be displayed in the main UI thread.
      * */
-    fun update() {
+    fun updateBitmap() {
         creator?.let { mapCreator ->
             // Update size.
             updateBitmapSize(mapCreator.spaceTimeSampleSize())
@@ -319,7 +319,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
         if(dFinger.x > dFinger.y) zFactor.y = 1f else zFactor.x = 1f
         // Zoom.
         updateZoom(zFactor * zoom)
-        if(!updating) update()
+        if(!updating) updateBitmap()
     }
 
     /** Scroll the map from a scrolling finger movement.
@@ -330,7 +330,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
         val bitmapShift = spaceTimePoint(ds) * scale / zoom
         // todo - Direction of shift should depend on orientation
         offset = Point.maxOf(offset + bitmapShift, Point(0f, 0f))
-        if(!updating) update()
+        if(!updating) updateBitmap()
     }
 
     // ---------------------------------------------------------------------------------------------

@@ -391,9 +391,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             return warning
         }
         for(roi in rois) {
-            // todo - passing the default GlobalMappingParams object allows the user to change
-            //   mapping parameters 'live' from setting. Should we really be passing a copy?
-            val creator = MapCreator(roi.inNewFrame(imageFrame), FieldParams.preference)
+            val creator = MapCreator(roi.inNewFrame(imageFrame), FieldParams.preference.copy())
             ruler?.let{ creator.setSpatialResolutionFromRuler(it) }
             creator.setTemporalResolutionFromFPS(frameRateFps.toFloat())
             val buffers = (0 until creator.nMaps).map{ bufferProvider.getFreeBuffer()}.filterNotNull()

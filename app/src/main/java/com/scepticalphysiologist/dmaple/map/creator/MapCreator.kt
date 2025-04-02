@@ -183,6 +183,7 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
     ): Bitmap? {
 
         val buffer = mapBuffers.mapNotNull {it.second}.getOrNull(idx) ?: return null
+
         try {
             // Only allow a valid area of the map to be returned,
             val area = Rect(0, 0, ns, nt)
@@ -204,7 +205,7 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
                 }.toList().parallelStream().forEach {
                     backing[it[2]] = buffer.getColorInt(it[0], it[1])
                 }
-            }
+            }.join() // IMPORTANT to join so that this finishes before we return.
 
             //and return bitmap.
             return Bitmap.createBitmap(backing, bs.width, bs.height, Bitmap.Config.ARGB_8888)
