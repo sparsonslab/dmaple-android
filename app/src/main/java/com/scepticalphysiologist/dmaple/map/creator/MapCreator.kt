@@ -173,8 +173,9 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
      * @param stepX The number of space samples to step when sampling the map.
      * i.e. the spatial down-sampling of the map.
      * @param stepY The number of time samples to step when sampling the map.
-     * @param backing A backing array for the bitmap, into the map samples will be put
-     * high frequency)
+     * @param backing A backing array for the bitmap, into the map samples will be put.
+     * @param live The bitmap is intended to be shown as part of a live display. i.e.
+     * this function will be called at a high frequency).
      * */
     fun getMapBitmap(
         idx: Int,
