@@ -173,7 +173,8 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
      * @param stepX The number of space samples to step when sampling the map.
      * i.e. the spatial down-sampling of the map.
      * @param stepY The number of time samples to step when sampling the map.
-     * @param backing A backing array for the bitmap, into the map samples will be put.
+     * @param backing A backing array for the bitmap, into the map samples will be put
+     * high frequency)
      * */
     fun getMapBitmap(
         idx: Int,
@@ -193,7 +194,6 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
             if(bs.width * bs.height > backing.size) return null
 
             // Pass values from buffer to bitmap backing in parallel.
-            // The parallelisation really makes a big (> x2) difference!
             // https://stackoverflow.com/questions/30802463/how-many-threads-are-spawned-in-parallelstream-in-java-8
             val job = forkedPool.submit {
                 sequence {
