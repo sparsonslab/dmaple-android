@@ -110,19 +110,17 @@ class GutSegmentor(roi: FieldRoi, val params: FieldParams) {
         var w = 0
         var g = 0
         val t0 = rTransChecked.first
+        val n = section.size - 1
         for((i, v) in section.withIndex()) {
-            if(v || ((w > 0) && (g <= params.maxGap))) {
+            if((i < n) && (v || ((w > 0) && (g < params.maxGap)))) {
                 w += 1
-                if(!v) g += 1 else g = 0
+                if(v) g = 0 else g += 1
             }
             else {
-                if(w >= params.minWidth) guts.add(Pair(t0 + i - w, t0 + i - g - 1))
+                if(w - g >= params.minWidth) guts.add(Pair(t0 + i - w, t0 + i - g - if(v) 0 else 1))
                 g = 0
                 w = 0
             }
-            // Reached end of transverse axis within gap.
-            if((i == section.size - 1) && guts.isEmpty() && (w >= params.minWidth))
-                guts.add(Pair(t0 + i - w, t0 + i - g - 1))
         }
         return guts
     }
