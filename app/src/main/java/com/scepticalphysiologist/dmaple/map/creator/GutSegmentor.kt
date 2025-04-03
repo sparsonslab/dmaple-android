@@ -188,7 +188,7 @@ class GutSegmentor(roi: FieldRoi, val params: FieldParams) {
      * */
     private fun findEdge(iLong: Int, iTrans: Int, goUp: Boolean, ofGut: Boolean=true): Int {
         val d = if(goUp) 1 else -1
-        val findAbove = !(params.gutsAreAboveThreshold) xor ofGut
+        val findAbove = !(params.gutsAreAboveThreshold) != ofGut
         var i = iTrans
         var g = 0
         if(gutIsHorizontal){
@@ -212,7 +212,7 @@ class GutSegmentor(roi: FieldRoi, val params: FieldParams) {
             }
         }
         val k = i - d * (g + 1)
-        return if(goUp xor (k > iTrans)) iTrans else k
+        return if(goUp != (k > iTrans)) iTrans else k
     }
 
     // ---------------------------------------------------------------------------------------------
