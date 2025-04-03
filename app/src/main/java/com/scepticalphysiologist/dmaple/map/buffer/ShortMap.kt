@@ -52,6 +52,12 @@ class ShortMap(buffer: ByteBuffer, nx: Int): MapBufferView<Short>(buffer, nx) {
         set(i, j, v)
     }
 
+    override fun directFromRaster(raster: Rasters) {
+        nx = raster.width
+        buffer.position(0)
+        buffer.put(raster.sampleValues[0])
+    }
+
     override fun fromTiffDirectory(dir: FileDirectory): Pair<Int, Int> {
         val rasterDimen =  super.fromTiffDirectory(dir)
         maxv = 0

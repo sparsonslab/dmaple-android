@@ -54,4 +54,45 @@ class RGBMap(buffer: ByteBuffer, nx: Int): MapBufferView<Int>(buffer, nx) {
         ))
     }
 
+    override fun directFromRaster(raster: Rasters) {
+        nx = raster.width
+        buffer.position(0)
+        //println("n raster buffer = ${raster.sampleValues.size}")
+
+        /// makes the app crash! causes the external files directory to not be mounted,
+        //val n = 1 //raster.interleaveValues.capacity()
+        //val m = 3 * raster.width * raster.height
+        //println("n = $n, m = $m")
+
+        println("interleaved = ${raster.hasInterleaveValues()}")
+
+        val channels = raster.sampleValues
+        val n = raster.width * raster.height
+        try {
+            for (i in 0 until n)
+                buffer.putInt(
+                    Color.rgb(
+                        channels[0].getInt(i), channels[1].getInt(i), channels[2].getInt(i)
+                    )
+                )
+        } catch(_: java.lang.IndexOutOfBoundsException) {}
+/*
+
+        buffer.put(raster.sampleValues[0])
+
+
+        for(j in 0 until raster.height)
+            for(i in 0 until raster.width)
+                buffer.putInt(
+                    Color.argb(
+                        255,
+                        raster.getPixelSample(0, i, j).toInt(),
+                        raster.getPixelSample(1, i, j).toInt(),
+                        raster.getPixelSample(2, i, j).toInt()
+                    )
+                )
+        */
+
+    }
+
 }

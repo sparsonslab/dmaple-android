@@ -8,6 +8,9 @@ import mil.nga.tiff.util.TiffConstants
 import java.lang.IndexOutOfBoundsException
 import java.lang.Math.floorDiv
 import java.nio.ByteBuffer
+import java.nio.ShortBuffer
+import java.util.concurrent.ForkJoinPool
+import kotlin.system.measureTimeMillis
 
 /** A wrapper ("view") around a byte buffer that holds a map's data.
  *
@@ -70,6 +73,8 @@ abstract class MapBufferView<T : Number>(
     /** Get the (i, j) pixel of an image raster. */
     abstract fun fromRaster(i: Int, j: Int, raster: Rasters)
 
+    abstract fun directFromRaster(raster: Rasters)
+
     /** Convert the map into a TIFF slice/directory.
      *
      * @param identifier A string used to identify the map in the TIFF.
@@ -108,24 +113,21 @@ abstract class MapBufferView<T : Number>(
         return dir
     }
 
+    val forkedPool = ForkJoinPool.commonPool()
+
     /** Load the map from a TIFF image slice/directory.
      *
      * @param dir The slice/directory with the map
      * @return The x-y pixel size (space and time sample size of the map).
      * */
     open fun fromTiffDirectory(dir: FileDirectory): Pair<Int, Int> {
-        // Read from the raster into the buffer.
-        buffer.position(0)
-        val raster = dir.readRasters()
-        nx = raster.width
-        try {
-            for(j in 0 until raster.height)
-                for(i in 0 until raster.width)
-                    fromRaster(i, j, raster)
-        } catch(_: IndexOutOfBoundsException) {}
 
-        // Set the buffer position to end of the tiff data.
-        buffer.position(bufferPosition(raster.width - 1, raster.height - 1))
+        val raster = dir.readRasters()
+
+        val t = measureTimeMillis {
+            directFromRaster(raster)
+        }
+        println("t tiff = $t")
         return Pair(raster.width, raster.height)
     }
 }

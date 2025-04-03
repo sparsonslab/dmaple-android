@@ -16,6 +16,7 @@ import mil.nga.tiff.TiffWriter
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.ByteBuffer
+import kotlin.system.measureTimeMillis
 
 /** Input-output of a mapping recording.
  *
@@ -81,6 +82,7 @@ class MappingRecord(
     /** Once a record has been read, load the map TIFFs. */
     fun loadMapTiffs(bufferProvider: (() -> ByteBuffer?)) {
         val tiffFiles = location.listFiles()?.filter { it.name.endsWith(".tiff") } ?: return
+
         for(creator in creators) {
             val dirs = mutableListOf<FileDirectory>()
             for(file in tiffFiles) {
@@ -90,7 +92,8 @@ class MappingRecord(
             val buffers = (0 until creator.nMaps).map{bufferProvider.invoke()}.filterNotNull()
             if(buffers.size < creator.nMaps) return
             creator.provideBuffers(buffers)
-            creator.fromTiff(dirs)
+            val t = measureTimeMillis { creator.fromTiff(dirs) }
+            println("t load = $t")
         }
     }
 
