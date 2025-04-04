@@ -92,8 +92,7 @@ class MappingRecord(
             val buffers = (0 until creator.nMaps).map{bufferProvider.invoke()}.filterNotNull()
             if(buffers.size < creator.nMaps) return
             creator.provideBuffers(buffers)
-            val t = measureTimeMillis { creator.fromTiff(dirs) }
-            println("t load = $t")
+            creator.fromTiff(dirs)
         }
     }
 
