@@ -43,28 +43,37 @@ class ShortMap(buffer: ByteBuffer, nx: Int): MapBufferView<Short>(buffer, nx) {
                 (v and 0xff shl 0)
     }
 
-    override fun toRaster(i: Int, j: Int, raster: Rasters) {
-        raster.setPixelSample(0, i, j, get(i, j))
-    }
+    override fun toTiffDirectory(identifier: String, y: Int?): FileDirectory  {
+        // Directory
+        val dir = super.toTiffDirectory(identifier, y)
+        dir.bitsPerSample = listOf(16)
+        dir.samplesPerPixel = 1
+        val dimen = Pair(dir.imageWidth.toInt(), dir.imageHeight.toInt())
 
-    override fun fromRaster(i: Int, j: Int, raster: Rasters) {
-        val v = raster.getPixelSample(0, i, j).toShort()
-        set(i, j, v)
-    }
+        // Raster.
+        val raster = Rasters(dimen.first, dimen.second, 1,  FieldType.SHORT, buffer.order())
+        copyBuffer(src=buffer, dst=raster.sampleValues[0])
 
-    override fun directFromRaster(raster: Rasters) {
-        nx = raster.width
-        buffer.position(0)
-        buffer.put(raster.sampleValues[0])
+        // Add raster to directory.
+        dir.setRowsPerStrip(raster.calculateRowsPerStrip(dir.planarConfiguration))
+        dir.writeRasters = raster
+        return dir
     }
 
     override fun fromTiffDirectory(dir: FileDirectory): Pair<Int, Int> {
-        val rasterDimen =  super.fromTiffDirectory(dir)
+        val raster = dir.readRasters()
+        val dimen = Pair(raster.width, raster.height)
+        nx = dimen.first
+        copyBuffer(src = raster.sampleValues[0], dst = buffer)
+
+        // Reset maximum.
         maxv = 0
-        for(i in 0 until currentSample()) {
-            val v = buffer.getShort(i * bytesPerSample)
+        val n = dimen.first * dimen.second
+        for(i in 0 until n) {
+            val v = buffer.getShort(i * 2)
             if(v > maxv) maxv = v
         }
-        return rasterDimen
+        return dimen
     }
+
 }

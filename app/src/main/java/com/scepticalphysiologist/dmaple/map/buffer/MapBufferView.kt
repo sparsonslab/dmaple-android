@@ -3,14 +3,9 @@ package com.scepticalphysiologist.dmaple.map.buffer
 import mil.nga.tiff.FieldTagType
 import mil.nga.tiff.FieldType
 import mil.nga.tiff.FileDirectory
-import mil.nga.tiff.Rasters
 import mil.nga.tiff.util.TiffConstants
-import java.lang.IndexOutOfBoundsException
 import java.lang.Math.floorDiv
 import java.nio.ByteBuffer
-import java.nio.ShortBuffer
-import java.util.concurrent.ForkJoinPool
-import kotlin.system.measureTimeMillis
 
 /** A wrapper ("view") around a byte buffer that holds a map's data.
  *
@@ -67,21 +62,13 @@ abstract class MapBufferView<T : Number>(
     // TIFF I/O
     // ---------------------------------------------------------------------------------------------
 
-    /** Set the (i, j) pixel of an image raster. */
-    abstract fun toRaster(i: Int, j: Int, raster: Rasters)
-
-    /** Get the (i, j) pixel of an image raster. */
-    abstract fun fromRaster(i: Int, j: Int, raster: Rasters)
-
-    abstract fun directFromRaster(raster: Rasters)
-
     /** Convert the map into a TIFF slice/directory.
      *
      * @param identifier A string used to identify the map in the TIFF.
      * @param y The yth time pixel up to which to use. Null to use the current position.
      * @return A TIFF slice with the map's data.
      * */
-    fun toTiffDirectory(
+    open fun toTiffDirectory(
         identifier: String = "",
         y: Int? = null,
     ): FileDirectory {
@@ -93,41 +80,39 @@ abstract class MapBufferView<T : Number>(
         val dir = FileDirectory()
         dir.setImageWidth(nx)
         dir.setImageHeight(ny)
-        dir.samplesPerPixel = bitsPerChannel.size
-        dir.setBitsPerSample(bitsPerChannel)
         dir.setStringEntryValue(FieldTagType.ImageUniqueID, identifier)
-
-        // Write in map data.
-        val raster = Rasters(nx, ny, bitsPerChannel.size, fieldType)
         dir.compression = TiffConstants.COMPRESSION_NO
         dir.planarConfiguration = TiffConstants.PLANAR_CONFIGURATION_CHUNKY
-        dir.setRowsPerStrip(raster.calculateRowsPerStrip(dir.planarConfiguration))
-        dir.writeRasters = raster
-        // todo - set raster from buffer directly using raster.setinterleaved method. Tried this
-        //    but not working???
-        try {
-            for(j in 0 until ny)
-                for(i in 0 until nx)
-                    toRaster(i, j, raster)
-        } catch(_: IndexOutOfBoundsException) {}
         return dir
     }
-
-    val forkedPool = ForkJoinPool.commonPool()
 
     /** Load the map from a TIFF image slice/directory.
      *
      * @param dir The slice/directory with the map
      * @return The x-y pixel size (space and time sample size of the map).
      * */
-    open fun fromTiffDirectory(dir: FileDirectory): Pair<Int, Int> {
+    abstract fun fromTiffDirectory(dir: FileDirectory): Pair<Int, Int>
 
-        val raster = dir.readRasters()
-
-        val t = measureTimeMillis {
-            directFromRaster(raster)
-        }
-        println("t tiff = $t")
-        return Pair(raster.width, raster.height)
-    }
 }
+
+/** Copy the content of one buffer to another. */
+fun copyBuffer(src: ByteBuffer, dst: ByteBuffer) {
+    // Make sure we are copying from the start of both buffers.
+    src.position(0)
+    dst.position(0)
+
+    // Adjust the limit of the source to that of the destination,
+    // so we don't get buffer overflow on the destination.
+    val srcOldLimit = src.limit()
+    if(dst.limit() < src.limit()) src.limit(dst.limit())
+
+    // Do the copy, setting the destination endianness to that of the source.
+    try {
+        dst.put(src)
+        dst.order(src.order())
+    } catch(_: java.nio.BufferOverflowException) {}
+
+    // Re-set the source limit.
+    src.limit(srcOldLimit)
+}
+

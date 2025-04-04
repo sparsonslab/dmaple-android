@@ -1,10 +1,7 @@
 package com.scepticalphysiologist.dmaple.map.buffer
 
-import android.graphics.Color
-import androidx.core.graphics.blue
-import androidx.core.graphics.green
-import androidx.core.graphics.red
 import mil.nga.tiff.FieldType
+import mil.nga.tiff.FileDirectory
 import mil.nga.tiff.Rasters
 import java.nio.ByteBuffer
 
@@ -38,61 +35,34 @@ class RGBMap(buffer: ByteBuffer, nx: Int): MapBufferView<Int>(buffer, nx) {
 
     override fun getColorInt(i: Int, j: Int): Int { return get(i, j) }
 
-    override fun toRaster(i: Int, j: Int, raster: Rasters) {
-        val color = getColorInt(i, j)
-        raster.setPixelSample(0, i, j, color.red)
-        raster.setPixelSample(1, i, j, color.green)
-        raster.setPixelSample(2, i, j, color.blue)
+    override fun toTiffDirectory(identifier: String, y: Int?): FileDirectory {
+        // Directory
+        val dir = super.toTiffDirectory(identifier, y)
+        dir.bitsPerSample = listOf(8, 8, 8)
+        dir.samplesPerPixel = 3
+        val dimen = Pair(dir.imageWidth.toInt(), dir.imageHeight.toInt())
+
+        // Interleaved raster.
+        val interleave =  ByteBuffer.allocate(dimen.first * dimen.second * 3)
+        interleave.order(buffer.order())
+        val raster = Rasters(
+            dimen.first, dimen.second,
+            listOf(FieldType.BYTE, FieldType.BYTE, FieldType.BYTE).toTypedArray(),
+            interleave
+        )
+        copyBuffer(src=buffer, dst=raster.interleaveValues)
+
+        // Add raster to directory.
+        dir.setRowsPerStrip(raster.calculateRowsPerStrip(dir.planarConfiguration))
+        dir.writeRasters = raster
+        return dir
     }
 
-    override fun fromRaster(i: Int, j: Int, raster: Rasters) {
-        set(i, j, Color.argb(
-            255,
-            raster.getPixelSample(0, i, j).toInt(),
-            raster.getPixelSample(1, i, j).toInt(),
-            raster.getPixelSample(2, i, j).toInt()
-        ))
-    }
-
-    override fun directFromRaster(raster: Rasters) {
+    override fun fromTiffDirectory(dir: FileDirectory): Pair<Int, Int> {
+        val raster = dir.readInterleavedRasters()
         nx = raster.width
-        buffer.position(0)
-        //println("n raster buffer = ${raster.sampleValues.size}")
-
-        /// makes the app crash! causes the external files directory to not be mounted,
-        //val n = 1 //raster.interleaveValues.capacity()
-        //val m = 3 * raster.width * raster.height
-        //println("n = $n, m = $m")
-
-        println("interleaved = ${raster.hasInterleaveValues()}")
-
-        val channels = raster.sampleValues
-        val n = raster.width * raster.height
-        try {
-            for (i in 0 until n)
-                buffer.putInt(
-                    Color.rgb(
-                        channels[0].getInt(i), channels[1].getInt(i), channels[2].getInt(i)
-                    )
-                )
-        } catch(_: java.lang.IndexOutOfBoundsException) {}
-/*
-
-        buffer.put(raster.sampleValues[0])
-
-
-        for(j in 0 until raster.height)
-            for(i in 0 until raster.width)
-                buffer.putInt(
-                    Color.argb(
-                        255,
-                        raster.getPixelSample(0, i, j).toInt(),
-                        raster.getPixelSample(1, i, j).toInt(),
-                        raster.getPixelSample(2, i, j).toInt()
-                    )
-                )
-        */
-
+        copyBuffer(src=raster.interleaveValues, dst=buffer)
+        return Pair(raster.width, raster.height)
     }
 
 }

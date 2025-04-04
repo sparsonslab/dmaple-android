@@ -61,7 +61,7 @@ class ShortMapTest {
     fun `to and from tiff round trip`() {
         // Given: A short-type map with incrementing distances.
         val map = ShortMap(buffer = ByteBuffer.allocate(10_000), nx = 10)
-        val pixels = (0..200).toList()
+        val pixels = (0 until 200).toList()
         for(pixel in pixels) map.addDistance(pixel)
 
         // When: The map is converted to a TIFF directory.

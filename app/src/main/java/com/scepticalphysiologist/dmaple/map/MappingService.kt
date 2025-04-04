@@ -119,7 +119,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
      * 100 MB ~= 60 min x 60 sec/min x 30 frame/sec x 1000 bytes/frame.
      * */
     val bufferProvider = MapBufferProvider(
-        // todo - occassional null pointer exception on this at start-up
+        // todo - occasional null pointer exception on this at saving record.
         sourceDirectory = MainActivity.storageDirectory!!,
         nBuffers = 10,
         bufferByteSize = 100_000_000L
