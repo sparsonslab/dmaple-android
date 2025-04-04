@@ -49,17 +49,20 @@ class MappingRecord(
 
             fun <T> deserialize(file: File, cls: Class<T>): T? {
                 if(!file.exists()) return null
-                try { return Gson().fromJson(file.readText(), cls) } catch (_: JsonSyntaxException) { }
+                try {
+                    return Gson().fromJson(file.readText(), cls)
+                }
+                catch (_: JsonSyntaxException) { }
+                catch(_: java.io.FileNotFoundException) {}
                 return null
             }
+            // Field parameters.
+            val params = deserialize(File(location, "params.json"), FieldParams::class.java) ?: return null
 
             // Field of view
             var field: Bitmap?= null
             val fieldFile = File(location, "field.jpg")
             if(fieldFile.exists()) field = BitmapFactory.decodeFile(fieldFile.absolutePath)
-
-            // Field parameters.
-            val params = deserialize(File(location, "params.json"), FieldParams::class.java) ?: return null
 
             // ROI JSON files.
             val roiFiles = location.listFiles()?.filter{
