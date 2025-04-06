@@ -15,6 +15,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowColor
 import java.io.File
+import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 import java.util.Random
 
@@ -59,7 +60,10 @@ class RGBMapTest {
         assertNotNull(dirRead)
 
         // Then: The read-back colors match those written.
-        map.fromTiffDirectory(dirRead!!)
+        val strm = RandomAccessFile(file, "r")
+        map.fromTiffDirectory(dirRead!!, strm)
+        strm.channel.close()
+        strm.close()
         assertNumbersEqual(
             expected = pixels,
             actual = pixels.indices.map{map.get(it, 0)}.toList()
