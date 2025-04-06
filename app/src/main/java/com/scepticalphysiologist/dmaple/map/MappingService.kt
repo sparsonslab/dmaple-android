@@ -335,7 +335,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         if(creating) return false
         setRoisAndRuler(RoisAndRuler(record.creators.map { it.roi }, null))
         clearCreators()
-        record.loadMapTiffs(bufferProvider::getFreeBuffer)
+        record.loadMapTiffs(bufferProvider)
         creators.addAll(record.creators)
         lastCapture = record.field
         currentMap = Pair(0, 0)

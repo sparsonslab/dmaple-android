@@ -1,9 +1,16 @@
 package com.scepticalphysiologist.dmaple.map.buffer
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import mil.nga.tiff.FieldType
 import mil.nga.tiff.FileDirectory
 import mil.nga.tiff.Rasters
+import java.io.RandomAccessFile
 import java.nio.ByteBuffer
+import java.nio.channels.FileChannel
+import java.util.concurrent.ForkJoinPool
+import kotlin.system.measureTimeMillis
 
 /** A map consisting of RGB color values. */
 class RGBMap(buffer: ByteBuffer, nx: Int): MapBufferView<Int>(buffer, nx) {
@@ -43,12 +50,12 @@ class RGBMap(buffer: ByteBuffer, nx: Int): MapBufferView<Int>(buffer, nx) {
         val dimen = Pair(dir.imageWidth.toInt(), dir.imageHeight.toInt())
 
         // Interleaved raster.
-        val interleave =  ByteBuffer.allocate(dimen.first * dimen.second * 3)
+        val interleave =  ByteBuffer.allocate(dimen.first * dimen.second * 3) // might be larger than memory!!
         interleave.order(buffer.order())
         val raster = Rasters(
             dimen.first, dimen.second,
             listOf(FieldType.BYTE, FieldType.BYTE, FieldType.BYTE).toTypedArray(),
-            interleave
+            interleave  // hand the raster the file-mapped buffer directly?
         )
         copyBuffer(src=buffer, dst=raster.interleaveValues)
 
@@ -58,11 +65,5 @@ class RGBMap(buffer: ByteBuffer, nx: Int): MapBufferView<Int>(buffer, nx) {
         return dir
     }
 
-    override fun fromTiffDirectory(dir: FileDirectory): Pair<Int, Int> {
-        val raster = dir.readInterleavedRasters()
-        nx = raster.width
-        copyBuffer(src=raster.interleaveValues, dst=buffer)
-        return Pair(raster.width, raster.height)
-    }
 
 }

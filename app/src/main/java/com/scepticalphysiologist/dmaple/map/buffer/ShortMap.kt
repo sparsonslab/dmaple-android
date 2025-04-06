@@ -3,7 +3,9 @@ package com.scepticalphysiologist.dmaple.map.buffer
 import mil.nga.tiff.FieldType
 import mil.nga.tiff.FileDirectory
 import mil.nga.tiff.Rasters
+import java.io.RandomAccessFile
 import java.nio.ByteBuffer
+import java.nio.channels.FileChannel
 
 /** A map consisting of short integers.
  *
@@ -60,20 +62,14 @@ class ShortMap(buffer: ByteBuffer, nx: Int): MapBufferView<Short>(buffer, nx) {
         return dir
     }
 
-    override fun fromTiffDirectory(dir: FileDirectory): Pair<Int, Int> {
-        val raster = dir.readRasters()
-        val dimen = Pair(raster.width, raster.height)
-        nx = dimen.first
-        copyBuffer(src = raster.sampleValues[0], dst = buffer)
-
+    override fun fromTiffDirectory(dir: FileDirectory, stream: RandomAccessFile) {
+        super.fromTiffDirectory(dir, stream)
         // Reset maximum.
         maxv = 0
-        val n = dimen.first * dimen.second
-        for(i in 0 until n) {
-            val v = buffer.getShort(i * 2)
+        for(i in 0 until buffer.position() step 2) {
+            val v = buffer.getShort(i)
             if(v > maxv) maxv = v
         }
-        return dimen
     }
 
 }

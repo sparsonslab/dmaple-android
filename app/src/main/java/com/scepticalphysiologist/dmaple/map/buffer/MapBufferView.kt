@@ -4,8 +4,10 @@ import mil.nga.tiff.FieldTagType
 import mil.nga.tiff.FieldType
 import mil.nga.tiff.FileDirectory
 import mil.nga.tiff.util.TiffConstants
+import java.io.RandomAccessFile
 import java.lang.Math.floorDiv
 import java.nio.ByteBuffer
+import java.nio.channels.FileChannel
 
 /** A wrapper ("view") around a byte buffer that holds a map's data.
  *
@@ -91,7 +93,18 @@ abstract class MapBufferView<T : Number>(
      * @param dir The slice/directory with the map
      * @return The x-y pixel size (space and time sample size of the map).
      * */
-    abstract fun fromTiffDirectory(dir: FileDirectory): Pair<Int, Int>
+    open fun fromTiffDirectory(dir: FileDirectory, stream: RandomAccessFile) {
+        nx = dir.imageWidth.toInt()
+        val offsets = dir.stripOffsets.map{it.toLong()}
+        val lengths = dir.stripByteCounts.map{it.toLong()}
+        var j: Long = 0
+        buffer.position(0)
+        for (i in offsets.indices) {
+            val mbuffer = stream.channel.map(FileChannel.MapMode.READ_ONLY, offsets[i], lengths[i])
+            buffer.put(mbuffer)
+            j += lengths[i]
+        }
+    }
 
 }
 
