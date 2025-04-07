@@ -12,8 +12,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Text
@@ -76,9 +76,9 @@ class Explorer: Fragment() {
         val view = ComposeView(requireActivity())
         view.setBackgroundColor(Color.DarkGray.toArgb())
         view.setContent {
-            LazyVerticalStaggeredGrid (
-                columns = StaggeredGridCells.Adaptive(minSize = 200.dp),
-                verticalItemSpacing = 10.dp,
+            LazyVerticalGrid (
+                columns = GridCells.Adaptive(minSize = 200.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.padding(10.dp)
             ) { items(MappingRecord.records.size) { i -> RecordItem(i) } }
