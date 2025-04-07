@@ -96,12 +96,9 @@ abstract class MapBufferView<T : Number>(
 
         // Create raster from buffer.
         buffer.position(0)
-        val raster = Rasters(
-            dir.imageWidth.toInt(),
-            dir.imageHeight.toInt(),
-            channelTypes,
-            buffer
-        )
+        buffer.limit(nx * ny * bytesPerSample)
+        val raster = Rasters(nx, ny, channelTypes, buffer)
+        buffer.limit(buffer.capacity())
 
         // Add raster to directory.
         dir.setRowsPerStrip(raster.calculateRowsPerStrip(dir.planarConfiguration))
