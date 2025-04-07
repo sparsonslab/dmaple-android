@@ -7,6 +7,7 @@ import mil.nga.tiff.util.TiffConstants
 import java.io.RandomAccessFile
 import java.lang.Math.floorDiv
 import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.nio.channels.FileChannel
 
 /** A wrapper ("view") around a byte buffer that holds a map's data.
@@ -48,14 +49,20 @@ abstract class MapBufferView<T : Number>(
     // Buffer access (to be implemented by concrete subclasses)
     // ---------------------------------------------------------------------------------------------
 
-    /** Set the value of the (i, j) pixel. */
-    abstract fun set(i: Int, j: Int, value: T)
-
-    /** Get the value of the (i, j) pixel. */
-    abstract fun get(i: Int, j: Int): T
-
     /** Add a value to the map. */
-    abstract fun add(value: T)
+    abstract fun addSample(value: T)
+
+    /** Get the ith sample. */
+    abstract fun getSample(i: Int): T
+
+    /** Set the ith sample. */
+    abstract fun setSample(i: Int, value: T)
+
+    /** Get the (i, j)th pixel. */
+    fun getPixel(i: Int, j: Int): T { return getSample(i + j * nx) }
+
+    /** Set the (i, j)th pixel. */
+    fun setPixel(i: Int, j: Int, value: T) { setSample(i + j * nx, value) }
 
     /** Get a color integer to show the (i, j) pixel in a bitmap. */
     abstract fun getColorInt(i: Int, j: Int): Int
@@ -99,13 +106,17 @@ abstract class MapBufferView<T : Number>(
         val lengths = dir.stripByteCounts.map{it.toLong()}
         var j: Long = 0
         buffer.position(0)
+        buffer.order(ByteOrder.nativeOrder())
         for (i in offsets.indices) {
             val mbuffer = stream.channel.map(FileChannel.MapMode.READ_ONLY, offsets[i], lengths[i])
+            // Although the channel's mapped buffer might say it is any byte order,
+            // it is ALWAYS native order.
+            // Therefore set both src and dst to native order.
+            mbuffer.order(ByteOrder.nativeOrder())
             buffer.put(mbuffer)
             j += lengths[i]
         }
     }
-
 }
 
 /** Copy the content of one buffer to another. */

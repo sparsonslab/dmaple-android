@@ -140,7 +140,7 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
                     j = segmentor.getSpine(i)
                     k = segmentor.longIdx[i]
                     p = if(segmentor.gutIsHorizontal) bitmap.getPixel(k, j) else bitmap.getPixel(j, k)
-                    map.add(p)
+                    map.addSample(p)
                 }
             }
             nt += 1
