@@ -1,10 +1,8 @@
-package com.scepticalphysiologist.dmaple.etc
+package com.scepticalphysiologist.dmaple.ui.widget
 
 import android.content.Context
 import android.view.Gravity
-import android.view.View
 import android.widget.FrameLayout
-import android.widget.FrameLayout.LayoutParams
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.SeekBar
@@ -42,17 +40,19 @@ class SwitchableSlider(
     val position = MutableLiveData<Int>(0)
 
     init {
-        this.orientation = LinearLayout.VERTICAL
+        this.orientation = VERTICAL
         this.layoutParams = LayoutParams(50, LayoutParams.MATCH_PARENT)
 
         // Padding
         val filler = FrameLayout(context)
-        filler.layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, 0.5f)
+        filler.layoutParams =
+            LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, 0.5f)
         this.addView(filler)
 
         // Slider
         val sliderFrame = FrameLayout(context)
-        sliderFrame.layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, 0.5f)
+        sliderFrame.layoutParams =
+            LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, 0.5f)
         slider.setOnSeekBarChangeListener(this)
         slider.min = range.first
         slider.max = range.second
@@ -60,7 +60,9 @@ class SwitchableSlider(
         slider.progressDrawable.setTint(color)
         slider.rotation = 270f
         // set width (really height as the slider is rotated) to anything BUT update in onLayout to half of screen height.
-        sliderFrame.addView(slider, LayoutParams(0, LayoutParams.MATCH_PARENT, Gravity.CENTER))
+        sliderFrame.addView(slider,
+            FrameLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, Gravity.CENTER)
+        )
         this.addView(sliderFrame)
 
         // Switch.
@@ -68,7 +70,7 @@ class SwitchableSlider(
         switch.background = null
         switch.setOnClickListener { switch(null) }
         // Give 0 weight - height will adjust to the needed size.
-        this.addView(switch, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, 0f))
+        this.addView(switch, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, 0f))
     }
 
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
@@ -78,8 +80,8 @@ class SwitchableSlider(
 
     /** Switch the slider visibility. */
     fun switch(show: Boolean? = null){
-        slider.visibility = show?.let{ if(it) View.VISIBLE else View.INVISIBLE } ?:
-                if(slider.visibility == View.VISIBLE) View.INVISIBLE else View.VISIBLE
+        slider.visibility = show?.let{ if(it) VISIBLE else INVISIBLE } ?:
+                if(slider.visibility == VISIBLE) INVISIBLE else VISIBLE
     }
 
     /** Set the position of the slider. */
