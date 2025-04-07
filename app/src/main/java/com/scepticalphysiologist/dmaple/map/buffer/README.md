@@ -10,9 +10,9 @@ files is "memory mapped", via a `FileChannel`, to a `ByteBuffer` - specifically 
 acts as a block of "virtual memory" that can be randomly accessed just like real memory. Each file/buffer is
 used to collect data for a single spatio-temporal map (100 MB can hold a typical map of ~1 hour).
 
-[`MapBufferProvider`](MapBufferProvider.kt) creates the buffer files, if they do not already exist, provides
+[`MapBufferProvider`](MapBufferProvider.kt) creates the buffer files (if they do not already exist), provides
 the `MappedByteBuffer` objects as they are required, and keeps track of how many files/buffers are free (have 
-not be allocated for a map).
+not been allocated for a map).
 
 The `MappedByteBuffer` buffers are "wrapped" in a "view" to provide read/write for specific data types, much in the
 way the Java provides "views" for the `ByteBuffer` class (`ShortBuffer`, `FloatBuffer`, etc.). [`MapBufferView`](MapBufferView.kt) 
