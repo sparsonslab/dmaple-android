@@ -2,7 +2,7 @@ package com.scepticalphysiologist.dmaple.map.buffer
 
 import mil.nga.tiff.FieldType
 import mil.nga.tiff.FileDirectory
-import mil.nga.tiff.Rasters
+import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 
 /** A map consisting of short integers.
@@ -17,48 +17,38 @@ import java.nio.ByteBuffer
  * */
 class ShortMap(buffer: ByteBuffer, nx: Int): MapBufferView<Short>(buffer, nx) {
 
-    override val fieldType = FieldType.SHORT
-
-    override val bytesPerChannel = listOf(2)
+    override val channelTypes = listOf(FieldType.SHORT).toTypedArray()
 
     /** The maximum sample value. */
     private var maxv: Short = 0
 
-    fun addDistance(value: Int) { add(value.toShort()) }
-
-    override fun set(i: Int, j: Int, value: Short) { buffer.putShort(bufferPosition(i, j), value) }
-
-    override fun get(i: Int, j: Int): Short { return buffer.getShort(bufferPosition(i, j)) }
-
-    override fun add(value: Short) {
+    override fun addSample(value: Short) {
         buffer.putShort(value)
         if(value > maxv) maxv = value
     }
 
+    override fun getSample(i: Int): Short { return buffer.getShort(i * 2) }
+
+    override fun setSample(i: Int, value: Short) { buffer.putShort(i * 2, value) }
+
     override fun getColorInt(i: Int, j: Int): Int {
-        val v = (255f * get(i, j).toFloat() / maxv).toInt()
+        val v = (255f * getPixel(i, j).toFloat() / maxv).toInt()
         return (255 shl 24) or
                 (v and 0xff shl 16) or
                 (v and 0xff shl 8) or
                 (v and 0xff shl 0)
     }
 
-    override fun toRaster(i: Int, j: Int, raster: Rasters) {
-        raster.setPixelSample(0, i, j, get(i, j))
-    }
+    /** Add a distance. */
+    fun addDistance(value: Int) { addSample(value.toShort()) }
 
-    override fun fromRaster(i: Int, j: Int, raster: Rasters) {
-        val v = raster.getPixelSample(0, i, j).toShort()
-        set(i, j, v)
-    }
-
-    override fun fromTiffDirectory(dir: FileDirectory): Pair<Int, Int> {
-        val rasterDimen =  super.fromTiffDirectory(dir)
+    override fun fromTiffDirectory(dir: FileDirectory, stream: RandomAccessFile) {
+        super.fromTiffDirectory(dir, stream)
+        // Reset maximum.
         maxv = 0
-        for(i in 0 until currentSample()) {
-            val v = buffer.getShort(i * bytesPerSample)
+        for(i in 0 until buffer.position() / 2) {
+            val v = getSample(i)
             if(v > maxv) maxv = v
         }
-        return rasterDimen
     }
 }

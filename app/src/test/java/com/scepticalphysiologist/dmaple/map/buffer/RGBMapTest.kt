@@ -2,7 +2,6 @@ package com.scepticalphysiologist.dmaple.map.buffer
 
 import android.graphics.Color
 import com.scepticalphysiologist.dmaple.assertNumbersEqual
-import com.scepticalphysiologist.dmaple.map.buffer.RGBMap
 import com.scepticalphysiologist.dmaple.map.creator.findTiff
 import mil.nga.tiff.TIFFImage
 import mil.nga.tiff.TiffReader
@@ -15,6 +14,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowColor
 import java.io.File
+import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 import java.util.Random
 
@@ -30,10 +30,10 @@ class RGBMapTest {
 
         // When: A pixel value is set.
         val setPixelValue: Int = Color.RED
-        map.set(8, 5, setPixelValue)
+        map.setPixel(8, 5, setPixelValue)
 
         // Then: The pixel returned by get is the same value as set.
-        assertEquals(setPixelValue, map.get(8, 5))
+        assertEquals(setPixelValue, map.getPixel(8, 5))
     }
 
     @Test
@@ -44,7 +44,7 @@ class RGBMapTest {
         val pixels = (0..100).map{
             Color.argb(1f, rng.nextFloat(), rng.nextFloat(), rng.nextFloat())
         }
-        for(pixel in pixels) map.add(pixel)
+        for(pixel in pixels) map.addSample(pixel)
 
         // When: The map is written to a TIFF image
         val mapId = "abcdef"
@@ -59,10 +59,13 @@ class RGBMapTest {
         assertNotNull(dirRead)
 
         // Then: The read-back colors match those written.
-        map.fromTiffDirectory(dirRead!!)
+        val strm = RandomAccessFile(file, "r")
+        map.fromTiffDirectory(dirRead!!, strm)
+        strm.channel.close()
+        strm.close()
         assertNumbersEqual(
             expected = pixels,
-            actual = pixels.indices.map{map.get(it, 0)}.toList()
+            actual = pixels.indices.map{map.getSample(it)}.toList()
         )
     }
 

@@ -119,6 +119,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
      * 100 MB ~= 60 min x 60 sec/min x 30 frame/sec x 1000 bytes/frame.
      * */
     val bufferProvider = MapBufferProvider(
+        // todo - occasional null pointer exception on this at saving record.
         sourceDirectory = MainActivity.storageDirectory!!,
         nBuffers = 10,
         bufferByteSize = 100_000_000L
@@ -334,7 +335,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         if(creating) return false
         setRoisAndRuler(RoisAndRuler(record.creators.map { it.roi }, null))
         clearCreators()
-        record.loadMapTiffs(bufferProvider::getFreeBuffer)
+        record.loadMapTiffs(bufferProvider)
         creators.addAll(record.creators)
         lastCapture = record.field
         currentMap = Pair(0, 0)

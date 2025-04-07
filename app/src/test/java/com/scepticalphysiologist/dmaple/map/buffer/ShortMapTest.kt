@@ -2,7 +2,6 @@ package com.scepticalphysiologist.dmaple.map.buffer
 
 import android.graphics.Color
 import com.scepticalphysiologist.dmaple.assertNumbersEqual
-import com.scepticalphysiologist.dmaple.map.buffer.ShortMap
 import com.scepticalphysiologist.dmaple.map.creator.findTiff
 import mil.nga.tiff.TIFFImage
 import mil.nga.tiff.TiffReader
@@ -15,6 +14,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowColor
 import java.io.File
+import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 
 @RunWith(RobolectricTestRunner::class)
@@ -28,10 +28,10 @@ class ShortMapTest {
 
         // When: A pixel value is set.
         val setPixelValue: Short = 145
-        map.set(8, 5, setPixelValue)
+        map.setPixel(8, 5, setPixelValue)
 
         // Then: The pixel returned by get is the same value as set.
-        assertEquals(setPixelValue, map.get(8, 5))
+        assertEquals(setPixelValue, map.getPixel(8, 5))
     }
 
     @Test
@@ -61,7 +61,7 @@ class ShortMapTest {
     fun `to and from tiff round trip`() {
         // Given: A short-type map with incrementing distances.
         val map = ShortMap(buffer = ByteBuffer.allocate(10_000), nx = 10)
-        val pixels = (0..200).toList()
+        val pixels = (0 until 200).toList()
         for(pixel in pixels) map.addDistance(pixel)
 
         // When: The map is converted to a TIFF directory.
@@ -85,10 +85,13 @@ class ShortMapTest {
         assertNotNull(dirRead)
 
         // Then: The read-back distances match those written.
-        map.fromTiffDirectory(dirRead!!)
+        val strm = RandomAccessFile(file, "r")
+        map.fromTiffDirectory(dirRead!!, strm)
+        strm.channel.close()
+        strm.close()
         assertNumbersEqual(
             expected = pixels,
-            actual = pixels.indices.map{map.get(it, 0).toInt()}.toList()
+            actual = pixels.indices.map{map.getSample(it)}.toList()
         )
     }
 

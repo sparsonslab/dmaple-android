@@ -5,9 +5,11 @@ import mil.nga.tiff.FieldType
 import mil.nga.tiff.FileDirectory
 import mil.nga.tiff.Rasters
 import mil.nga.tiff.util.TiffConstants
-import java.lang.IndexOutOfBoundsException
+import java.io.RandomAccessFile
 import java.lang.Math.floorDiv
 import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.nio.channels.FileChannel
 
 /** A wrapper ("view") around a byte buffer that holds a map's data.
  *
@@ -19,17 +21,13 @@ import java.nio.ByteBuffer
  */
 abstract class MapBufferView<T : Number>(
     protected val buffer: ByteBuffer,
-    protected var nx: Int
+    private var nx: Int
 ) {
 
-    /** The "field type" for the TIFF image. */
-    protected abstract val fieldType: FieldType
     /** The number of bytes in each channel. */
-    protected abstract val bytesPerChannel: List<Int>
-    /** The number of bits in each channel. */
-    protected val bitsPerChannel: List<Int> get() = bytesPerChannel.map{it * 8}
+    protected abstract val channelTypes: Array<FieldType>
     /** The number of bytes per space-time sample. */
-    protected val bytesPerSample: Int get() = bytesPerChannel.sum()
+    private val bytesPerSample: Int get() = channelTypes.sumOf { it.bytes }
 
     // ---------------------------------------------------------------------------------------------
     // Buffer indexing
@@ -48,14 +46,20 @@ abstract class MapBufferView<T : Number>(
     // Buffer access (to be implemented by concrete subclasses)
     // ---------------------------------------------------------------------------------------------
 
-    /** Set the value of the (i, j) pixel. */
-    abstract fun set(i: Int, j: Int, value: T)
-
-    /** Get the value of the (i, j) pixel. */
-    abstract fun get(i: Int, j: Int): T
-
     /** Add a value to the map. */
-    abstract fun add(value: T)
+    abstract fun addSample(value: T)
+
+    /** Get the ith sample. */
+    abstract fun getSample(i: Int): T
+
+    /** Set the ith sample. */
+    abstract fun setSample(i: Int, value: T)
+
+    /** Get the (i, j)th pixel. */
+    fun getPixel(i: Int, j: Int): T { return getSample(i + j * nx) }
+
+    /** Set the (i, j)th pixel. */
+    fun setPixel(i: Int, j: Int, value: T) { setSample(i + j * nx, value) }
 
     /** Get a color integer to show the (i, j) pixel in a bitmap. */
     abstract fun getColorInt(i: Int, j: Int): Int
@@ -63,12 +67,6 @@ abstract class MapBufferView<T : Number>(
     // ---------------------------------------------------------------------------------------------
     // TIFF I/O
     // ---------------------------------------------------------------------------------------------
-
-    /** Set the (i, j) pixel of an image raster. */
-    abstract fun toRaster(i: Int, j: Int, raster: Rasters)
-
-    /** Get the (i, j) pixel of an image raster. */
-    abstract fun fromRaster(i: Int, j: Int, raster: Rasters)
 
     /** Convert the map into a TIFF slice/directory.
      *
@@ -88,23 +86,23 @@ abstract class MapBufferView<T : Number>(
         val dir = FileDirectory()
         dir.setImageWidth(nx)
         dir.setImageHeight(ny)
-        dir.samplesPerPixel = bitsPerChannel.size
-        dir.setBitsPerSample(bitsPerChannel)
         dir.setStringEntryValue(FieldTagType.ImageUniqueID, identifier)
-
-        // Write in map data.
-        val raster = Rasters(nx, ny, bitsPerChannel.size, fieldType)
         dir.compression = TiffConstants.COMPRESSION_NO
         dir.planarConfiguration = TiffConstants.PLANAR_CONFIGURATION_CHUNKY
+
+        // Specific to buffer.
+        dir.bitsPerSample = channelTypes.map{it.bits}
+        dir.samplesPerPixel = channelTypes.size
+
+        // Create raster from buffer.
+        buffer.position(0)
+        buffer.limit(nx * ny * bytesPerSample)
+        val raster = Rasters(nx, ny, channelTypes, buffer)
+        buffer.limit(buffer.capacity())
+
+        // Add raster to directory.
         dir.setRowsPerStrip(raster.calculateRowsPerStrip(dir.planarConfiguration))
         dir.writeRasters = raster
-        // todo - set raster from buffer directly using raster.setinterleaved method. Tried this
-        //    but not working???
-        try {
-            for(j in 0 until ny)
-                for(i in 0 until nx)
-                    toRaster(i, j, raster)
-        } catch(_: IndexOutOfBoundsException) {}
         return dir
     }
 
@@ -113,19 +111,21 @@ abstract class MapBufferView<T : Number>(
      * @param dir The slice/directory with the map
      * @return The x-y pixel size (space and time sample size of the map).
      * */
-    open fun fromTiffDirectory(dir: FileDirectory): Pair<Int, Int> {
-        // Read from the raster into the buffer.
+    open fun fromTiffDirectory(dir: FileDirectory, stream: RandomAccessFile) {
+        nx = dir.imageWidth.toInt()
+        val offsets = dir.stripOffsets.map{it.toLong()}
+        val lengths = dir.stripByteCounts.map{it.toLong()}
+        var j: Long = 0
         buffer.position(0)
-        val raster = dir.readRasters()
-        nx = raster.width
-        try {
-            for(j in 0 until raster.height)
-                for(i in 0 until raster.width)
-                    fromRaster(i, j, raster)
-        } catch(_: IndexOutOfBoundsException) {}
-
-        // Set the buffer position to end of the tiff data.
-        buffer.position(bufferPosition(raster.width - 1, raster.height - 1))
-        return Pair(raster.width, raster.height)
+        buffer.order(ByteOrder.nativeOrder())
+        for (i in offsets.indices) {
+            val mbuffer = stream.channel.map(FileChannel.MapMode.READ_ONLY, offsets[i], lengths[i])
+            // Although the channel's mapped buffer might say it is any byte order,
+            // it is ALWAYS native order.
+            // Therefore set both src and dst to native order.
+            mbuffer.order(ByteOrder.nativeOrder())
+            buffer.put(mbuffer)
+            j += lengths[i]
+        }
     }
 }

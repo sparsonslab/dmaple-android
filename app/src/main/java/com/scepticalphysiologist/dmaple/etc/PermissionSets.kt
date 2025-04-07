@@ -16,7 +16,8 @@ enum class PermissionSets (
         permissions = setOf(
             Manifest.permission.CAMERA,
             Manifest.permission.FOREGROUND_SERVICE,
-            Manifest.permission.FOREGROUND_SERVICE_CAMERA
+            Manifest.permission.FOREGROUND_SERVICE_CAMERA,
+            Manifest.permission.POST_NOTIFICATIONS
         ),
     );
 

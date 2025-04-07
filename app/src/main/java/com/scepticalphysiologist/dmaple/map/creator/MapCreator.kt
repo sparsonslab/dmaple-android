@@ -3,6 +3,7 @@ package com.scepticalphysiologist.dmaple.map.creator
 import android.graphics.Bitmap
 import android.graphics.Rect
 import android.util.Size
+import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
 import com.scepticalphysiologist.dmaple.map.field.FieldParams
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferView
 import com.scepticalphysiologist.dmaple.map.buffer.RGBMap
@@ -11,6 +12,9 @@ import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.field.FieldRuler
 import mil.nga.tiff.FieldTagType
 import mil.nga.tiff.FileDirectory
+import mil.nga.tiff.TiffReader
+import java.io.File
+import java.io.RandomAccessFile
 import java.lang.IllegalArgumentException
 import java.lang.IndexOutOfBoundsException
 import java.nio.ByteBuffer
@@ -136,7 +140,7 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
                     j = segmentor.getSpine(i)
                     k = segmentor.longIdx[i]
                     p = if(segmentor.gutIsHorizontal) bitmap.getPixel(k, j) else bitmap.getPixel(j, k)
-                    map.add(p)
+                    map.addSample(p)
                 }
             }
             nt += 1
@@ -239,20 +243,40 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
         }.filterNotNull()
     }
 
-    /** Load the maps from TIFF slices/directories. */
-    fun fromTiff(tiffs: List<FileDirectory>) {
-        mapBuffers.map { (description, buffer) ->
-            buffer?.let { buff ->
-                findTiff(tiffs, description)?.let { tiff ->
-                    val (nx, ny) = buff.fromTiffDirectory(tiff)
-                    ns = nx
-                    nt = ny
-                    val (xr, yr) = getResolution(tiff)
-                    spatialRes = xr
-                    temporalRes = yr
-                }
-            }
+    fun loadFromTiffs(recordFolder: File, bufferProvider: MapBufferProvider): Boolean {
+        // TIFF files associated with the creator.
+        val files = recordFolder.listFiles()?.filter{
+            it.name.startsWith(roi.uid) && it.name.endsWith(".tiff")
+        } ?: listOf()
+        if(files.isEmpty()) return false
+
+        // Provide buffers
+        if(bufferProvider.nFreeBuffers() < nMaps) return false
+        val buffers = (0 until nMaps).map{bufferProvider.getFreeBuffer()}.filterNotNull()
+        val provided = provideBuffers(buffers)
+        if(!provided) return false
+
+        // Load.
+        for((description, buffer) in mapBuffers) {
+            // Check buffer and get file to read from.
+            if(buffer == null) continue
+            val file = files.firstOrNull { it.name.contains(description) } ?: continue
+
+            // Read directory from file.
+            val dir = TiffReader.readTiff(file).fileDirectories[0]
+            ns = dir.imageWidth.toInt()
+            nt = dir.imageHeight.toInt()
+            val (xr, yr) = getResolution(dir)
+            spatialRes = xr
+            temporalRes = yr
+
+            // Read directory into buffer.
+            val strm = RandomAccessFile(file, "r")
+            buffer.fromTiffDirectory(dir, strm)
+            strm.channel.close()
+            strm.close()
         }
+        return true
     }
 
 }
