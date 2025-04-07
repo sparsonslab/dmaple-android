@@ -57,7 +57,7 @@ class MappingRecord(
                     return Gson().fromJson(file.readText(), cls)
                 }
                 catch (_: JsonSyntaxException) { }
-                catch(_: java.io.FileNotFoundException) {}
+                catch(_: java.io.FileNotFoundException) {} // Can happen from access-denied, when file is there.
                 return null
             }
             // Field parameters.
