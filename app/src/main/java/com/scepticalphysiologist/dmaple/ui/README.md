@@ -8,10 +8,10 @@ to the top left corner of the screen to reveal a live view of the map(s) as they
 - **[`Settings`](Settings.kt)**. For setting preferences - screen presentation, mapping algorithm parameters.
 - **[`Explorer`](Explorer.kt)**. A file explorer for selecting previous recordings that can then be loaded onto the Recorder UI.
 
-| Package | Description                                                                                         |
-|---------|-----------------------------------------------------------------------------------------------------|
-| dialog  | Dialogs for showing warnings, setting the maps of a mapping ROI, setting the ruler and saving maps. |
-| record  | The custom `View`s that make up the `Recorder` fragment.                                            |
+| Package          | Description                                                                                         |
+|------------------|-----------------------------------------------------------------------------------------------------|
+| [dialog](dialog) | Dialogs for showing warnings, setting the maps of a mapping ROI, setting the ruler and saving maps. |
+| [record](record) | The custom `View`s that make up the `Recorder` fragment.                                            |
 
 
 ## Layout
