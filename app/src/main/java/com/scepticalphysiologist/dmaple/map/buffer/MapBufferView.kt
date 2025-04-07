@@ -30,19 +30,6 @@ abstract class MapBufferView<T : Number>(
     private val bytesPerSample: Int get() = channelTypes.sumOf { it.bytes }
 
     // ---------------------------------------------------------------------------------------------
-    // Buffer indexing
-    // ---------------------------------------------------------------------------------------------
-
-    /** The buffer position of the (i, j)th (space, time) sample. */
-    protected fun bufferPosition(i: Int, j: Int): Int { return bytesPerSample * (j * nx + i) }
-
-    /** The current space-time sample. */
-    protected fun currentSample(): Int { return floorDiv(buffer.position(),  bytesPerSample) }
-
-    /** The current time sample. */
-    protected fun currentTimeSample(): Int { return floorDiv(buffer.position(), bytesPerSample * nx) }
-
-    // ---------------------------------------------------------------------------------------------
     // Buffer access (to be implemented by concrete subclasses)
     // ---------------------------------------------------------------------------------------------
 
@@ -79,7 +66,7 @@ abstract class MapBufferView<T : Number>(
         y: Int? = null,
     ): FileDirectory {
         // y (row/temporal) position
-        val currentTime = currentTimeSample()
+        val currentTime = floorDiv(buffer.position(), bytesPerSample * nx)
         val ny = minOf(y ?: currentTime, currentTime)
 
         // Basic image properties
