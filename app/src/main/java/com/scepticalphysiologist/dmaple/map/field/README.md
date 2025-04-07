@@ -1,7 +1,7 @@
 # The Mapping Field
 
-The mapping field is just the field of view of the camera (or at least the images returned by the camera)
-and the objects the user draws on that field, namely:
+The mapping field is just the area ("field of view") imaged by the camera and the objects the user 
+draws on that field, namely:
 
 -  [`FieldRoi`](FieldRoi.kt). Rectangular ROIs the demarcate a length of a particular gut that is to be
 mapped. The ROI includes attributes such as the type of maps that are to be created for the length of gut;
