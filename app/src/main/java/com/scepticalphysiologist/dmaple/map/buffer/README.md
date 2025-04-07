@@ -22,8 +22,8 @@ is an abstract parent class for two concrete views:
 - [`RGBMap`](RGBMap.kt). RGB colors of the camera along the gut spine (spine maps).
 
 [`MapBufferView`](MapBufferView.kt) also has methods for writing the map data into a TIFF directory
-and loading a map from a TIFF directory. These methods also avoid putting any data into real memory by file
-channels, and makes saving and loading of maps relatively quick.
+and loading a map from a TIFF directory. These methods also use file-channels/memory-mapping to avoid 
+putting any data into real memory and this makes saving and loading of maps relatively quick.
 
 ### References
 
