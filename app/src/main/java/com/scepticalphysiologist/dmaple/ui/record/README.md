@@ -1,4 +1,4 @@
-## record: Views of the Camera Field and Spatio-temporal Map
+# Views of the Camera Field and Spatio-temporal Map
 
 These classes make up the view of the [`Recorder`](../Recorder.kt) fragment. They form overlapping 
 layers of a single frame layout, from top to bottom:
@@ -22,7 +22,7 @@ recording, the `FieldView` takes up the whole fragment and the `MapView` is hidd
 
 
 
-### MapView
+## MapView
 
 
 | ![image](../../images/mapview_calls.jpg) |

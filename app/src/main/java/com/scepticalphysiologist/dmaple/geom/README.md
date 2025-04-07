@@ -1,4 +1,4 @@
-## geom: Geometric Objects
+# Geometric Objects
 
 The main use of these geometric classes is to encapsulate rectangular regions-of-interest (ROIs) for
 mapping and handle their transformation as the user re-sizes them and as they rotate with the device 
