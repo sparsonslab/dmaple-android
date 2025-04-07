@@ -2,7 +2,6 @@ package com.scepticalphysiologist.dmaple.map.buffer
 
 import mil.nga.tiff.FieldType
 import mil.nga.tiff.FileDirectory
-import mil.nga.tiff.Rasters
 import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 

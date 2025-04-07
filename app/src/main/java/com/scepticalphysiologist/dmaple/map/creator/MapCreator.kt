@@ -243,22 +243,6 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
         }.filterNotNull()
     }
 
-    /** Load the maps from TIFF slices/directories. */
-    fun fromTiff(tiffs: List<FileDirectory>) {
-        mapBuffers.map { (description, buffer) ->
-            buffer?.let { buff ->
-                findTiff(tiffs, description)?.let { tiff ->
-                   // val (nx, ny) = buff.fromTiffDirectory(tiff)
-                   // ns = nx
-                    //nt = ny
-                    val (xr, yr) = getResolution(tiff)
-                    spatialRes = xr
-                    temporalRes = yr
-                }
-            }
-        }
-    }
-
     fun loadFromTiffs(recordFolder: File, bufferProvider: MapBufferProvider): Boolean {
         // TIFF files associated with the creator.
         val files = recordFolder.listFiles()?.filter{

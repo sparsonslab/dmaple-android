@@ -1,8 +1,6 @@
 package com.scepticalphysiologist.dmaple.map.buffer
 
 import mil.nga.tiff.FieldType
-import mil.nga.tiff.FileDirectory
-import mil.nga.tiff.Rasters
 import java.nio.ByteBuffer
 
 /** A map consisting of RGB color values. */
