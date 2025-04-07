@@ -2,11 +2,11 @@
 
 There are only three `Fragment` interfaces in the whole app:
 
-- **Recorder**. Shows the mapping field (camera feed) onto which the user can draw and set-up mapping ROIs
+- **[`Recorder`](Recorder.kt)**. Shows the mapping field (camera feed) onto which the user can draw and set-up mapping ROIs
 and calibrate the spatial dimensions using a "ruler". When a recording is started, the mapping field retreats
 to the top left corner of the screen to reveal a live view of the map(s) as they are created.
-- **Settings**. For setting preferences - screen presentation, mapping algorithm parameters.
-- **Explorer**. A file explorer for selecting previous recordings that can then be loaded onto the Recorder UI.
+- **[`Settings`](Settings.kt)**. For setting preferences - screen presentation, mapping algorithm parameters.
+- **[`Explorer`](Explorer.kt)**. A file explorer for selecting previous recordings that can then be loaded onto the Recorder UI.
 
 | Package | Description                                                                                         |
 |---------|-----------------------------------------------------------------------------------------------------|
