@@ -99,7 +99,6 @@ abstract class MapBufferView<T : Number>(
         nx = dir.imageWidth.toInt()
         val offsets = dir.stripOffsets.map{it.toLong()}
         val lengths = dir.stripByteCounts.map{it.toLong()}
-        var j: Long = 0
         buffer.position(0)
         buffer.order(ByteOrder.nativeOrder())
         for (i in offsets.indices) {
@@ -109,7 +108,6 @@ abstract class MapBufferView<T : Number>(
             // Therefore set both src and dst to native order.
             mbuffer.order(ByteOrder.nativeOrder())
             buffer.put(mbuffer)
-            j += lengths[i]
         }
     }
 }
