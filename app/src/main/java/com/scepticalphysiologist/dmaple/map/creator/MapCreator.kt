@@ -4,7 +4,6 @@ import android.graphics.Bitmap
 import android.graphics.Rect
 import android.util.Size
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
-import com.scepticalphysiologist.dmaple.map.field.FieldParams
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferView
 import com.scepticalphysiologist.dmaple.map.buffer.RGBMap
 import com.scepticalphysiologist.dmaple.map.buffer.ShortMap

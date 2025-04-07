@@ -6,7 +6,6 @@ import com.scepticalphysiologist.dmaple.geom.Edge
 import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
-import com.scepticalphysiologist.dmaple.map.field.FieldParams
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import org.junit.Test
 import org.junit.jupiter.api.BeforeEach

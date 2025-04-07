@@ -3,22 +3,17 @@ package com.scepticalphysiologist.dmaple.map.record
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Environment
-import androidx.camera.video.internal.BufferProvider
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
-import com.scepticalphysiologist.dmaple.map.field.FieldParams
+import com.scepticalphysiologist.dmaple.map.creator.FieldParams
 import mil.nga.tiff.FieldTagType
-import mil.nga.tiff.FileDirectory
 import mil.nga.tiff.TIFFImage
-import mil.nga.tiff.TiffReader
 import mil.nga.tiff.TiffWriter
 import java.io.File
 import java.io.FileOutputStream
-import java.nio.ByteBuffer
-import kotlin.system.measureTimeMillis
 
 /** Input-output of a mapping recording.
  *

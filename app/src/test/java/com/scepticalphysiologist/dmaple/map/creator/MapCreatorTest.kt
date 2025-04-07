@@ -5,7 +5,6 @@ import com.scepticalphysiologist.dmaple.geom.Edge
 import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.geom.Rectangle
-import com.scepticalphysiologist.dmaple.map.field.FieldParams
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.ui.record.ThresholdBitmap
 import org.junit.Assert.assertEquals

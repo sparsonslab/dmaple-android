@@ -10,7 +10,7 @@ import androidx.preference.PreferenceManager
 import androidx.preference.SeekBarPreference
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.R
-import com.scepticalphysiologist.dmaple.map.field.FieldParams
+import com.scepticalphysiologist.dmaple.map.creator.FieldParams
 import com.scepticalphysiologist.dmaple.ui.record.ThresholdBitmap
 import com.scepticalphysiologist.dmaple.ui.record.SpineOverlay
 

@@ -14,9 +14,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.scepticalphysiologist.dmaple.MainActivity
-import com.scepticalphysiologist.dmaple.map.creator.GutSegmentor
 import com.scepticalphysiologist.dmaple.map.creator.MapType
-import com.scepticalphysiologist.dmaple.map.field.FieldParams
+import com.scepticalphysiologist.dmaple.map.creator.FieldParams
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import kotlin.math.abs
 

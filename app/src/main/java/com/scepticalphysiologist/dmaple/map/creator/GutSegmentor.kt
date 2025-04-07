@@ -2,7 +2,6 @@ package com.scepticalphysiologist.dmaple.map.creator
 
 import android.graphics.Bitmap
 import com.scepticalphysiologist.dmaple.etc.ntscGrey
-import com.scepticalphysiologist.dmaple.map.field.FieldParams
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import kotlin.math.ceil
 

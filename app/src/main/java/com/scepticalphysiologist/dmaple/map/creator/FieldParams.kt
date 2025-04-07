@@ -1,4 +1,4 @@
-package com.scepticalphysiologist.dmaple.map.field
+package com.scepticalphysiologist.dmaple.map.creator
 
 /** Parameters used to define map creation globally for the whole field, rather than for
  * specific [FieldRoi]s. */
