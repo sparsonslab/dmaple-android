@@ -61,10 +61,7 @@ abstract class MapBufferView<T : Number>(
      * @param y The yth time pixel up to which to use. Null to use the current position.
      * @return A TIFF slice with the map's data.
      * */
-    fun toTiffDirectory(
-        identifier: String = "",
-        y: Int? = null,
-    ): FileDirectory {
+    fun toTiffDirectory(identifier: String = "", y: Int? = null): FileDirectory {
         // y (row/temporal) position
         val currentTime = floorDiv(buffer.position(), bytesPerSample * nx)
         val ny = minOf(y ?: currentTime, currentTime)
@@ -96,7 +93,7 @@ abstract class MapBufferView<T : Number>(
     /** Load the map from a TIFF image slice/directory.
      *
      * @param dir The slice/directory with the map
-     * @return The x-y pixel size (space and time sample size of the map).
+     * @param stream A random access stream to the TIFF file.
      * */
     open fun fromTiffDirectory(dir: FileDirectory, stream: RandomAccessFile) {
         nx = dir.imageWidth.toInt()
