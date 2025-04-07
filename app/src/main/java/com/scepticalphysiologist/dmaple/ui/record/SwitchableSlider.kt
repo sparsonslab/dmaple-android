@@ -1,4 +1,4 @@
-package com.scepticalphysiologist.dmaple.ui.widget
+package com.scepticalphysiologist.dmaple.ui.record
 
 import android.content.Context
 import android.view.Gravity

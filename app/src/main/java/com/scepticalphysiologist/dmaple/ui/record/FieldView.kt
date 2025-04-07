@@ -15,7 +15,6 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.geom.Point
-import com.scepticalphysiologist.dmaple.ui.widget.SwitchableSlider
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.geom.aspectRatioRatio
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
