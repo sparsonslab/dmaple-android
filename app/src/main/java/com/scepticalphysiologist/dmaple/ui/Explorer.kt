@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
@@ -97,19 +99,22 @@ class Explorer: Fragment() {
         val roiDescription = record.creators.joinToString("\n") { it.roi.maps.toString() }
 
         // UI
-        // todo - block clicking on all items one one is clicked.
         Box (
             modifier = Modifier
-                .clickable(
-                    enabled = !loading,
-                    onClick = {
-                        loading = true
-                        scope.launch(Dispatchers.IO) {
-                            loadRecord(recordIndex)
-                            loading = false
+                .pointerInput(Unit) {
+                    // Load a record by double-tapping.
+                    detectTapGestures(
+                        onDoubleTap = {
+                            if(!loading) { // prevent loading more than one record at a time.
+                                loading = true
+                                scope.launch(Dispatchers.IO) {
+                                    loadRecord(recordIndex)
+                                    loading = false
+                                }
+                            }
                         }
-                    },
-                )
+                    )
+                }
                 .background(color= Color.LightGray, shape=itemShape)
                 .padding(5.dp)
                 .clip(itemShape)
