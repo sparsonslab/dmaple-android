@@ -18,9 +18,7 @@ import java.nio.ByteBuffer
  * */
 class ShortMap(buffer: ByteBuffer, nx: Int): MapBufferView<Short>(buffer, nx) {
 
-    override val fieldType = FieldType.SHORT
-
-    override val bytesPerChannel = listOf(2)
+    override val channelTypes = listOf(FieldType.SHORT).toTypedArray()
 
     /** The maximum sample value. */
     private var maxv: Short = 0
@@ -45,23 +43,6 @@ class ShortMap(buffer: ByteBuffer, nx: Int): MapBufferView<Short>(buffer, nx) {
     /** Add a distance. */
     fun addDistance(value: Int) { addSample(value.toShort()) }
 
-    override fun toTiffDirectory(identifier: String, y: Int?): FileDirectory  {
-        // Directory
-        val dir = super.toTiffDirectory(identifier, y)
-        dir.bitsPerSample = listOf(16)
-        dir.samplesPerPixel = 1
-        val dimen = Pair(dir.imageWidth.toInt(), dir.imageHeight.toInt())
-
-        // Raster.
-        val raster = Rasters(dimen.first, dimen.second, 1,  FieldType.SHORT, buffer.order())
-        copyBuffer(src=buffer, dst=raster.sampleValues[0])
-
-        // Add raster to directory.
-        dir.setRowsPerStrip(raster.calculateRowsPerStrip(dir.planarConfiguration))
-        dir.writeRasters = raster
-        return dir
-    }
-
     override fun fromTiffDirectory(dir: FileDirectory, stream: RandomAccessFile) {
         super.fromTiffDirectory(dir, stream)
         // Reset maximum.
@@ -71,5 +52,4 @@ class ShortMap(buffer: ByteBuffer, nx: Int): MapBufferView<Short>(buffer, nx) {
             if(v > maxv) maxv = v
         }
     }
-
 }

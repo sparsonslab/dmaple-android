@@ -8,9 +8,7 @@ import java.nio.ByteBuffer
 /** A map consisting of RGB color values. */
 class RGBMap(buffer: ByteBuffer, nx: Int): MapBufferView<Int>(buffer, nx) {
 
-    override val fieldType = FieldType.BYTE
-
-    override var bytesPerChannel = listOf(1, 1, 1)
+    override var channelTypes = listOf(FieldType.BYTE, FieldType.BYTE, FieldType.BYTE).toTypedArray()
 
     override fun addSample(value: Int) {
         buffer.put((value shr 16).toByte())
@@ -34,29 +32,5 @@ class RGBMap(buffer: ByteBuffer, nx: Int): MapBufferView<Int>(buffer, nx) {
     }
 
     override fun getColorInt(i: Int, j: Int): Int { return getPixel(i, j) }
-
-    override fun toTiffDirectory(identifier: String, y: Int?): FileDirectory {
-        // Directory
-        val dir = super.toTiffDirectory(identifier, y)
-        dir.bitsPerSample = listOf(8, 8, 8)
-        dir.samplesPerPixel = 3
-        val dimen = Pair(dir.imageWidth.toInt(), dir.imageHeight.toInt())
-
-        // Interleaved raster.
-        val interleave =  ByteBuffer.allocate(dimen.first * dimen.second * 3) // might be larger than memory!!
-        interleave.order(buffer.order())
-        val raster = Rasters(
-            dimen.first, dimen.second,
-            listOf(FieldType.BYTE, FieldType.BYTE, FieldType.BYTE).toTypedArray(),
-            interleave  // hand the raster the file-mapped buffer directly?
-        )
-        copyBuffer(src=buffer, dst=raster.interleaveValues)
-
-        // Add raster to directory.
-        dir.setRowsPerStrip(raster.calculateRowsPerStrip(dir.planarConfiguration))
-        dir.writeRasters = raster
-        return dir
-    }
-
 
 }

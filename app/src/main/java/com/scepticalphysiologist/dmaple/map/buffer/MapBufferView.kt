@@ -3,6 +3,7 @@ package com.scepticalphysiologist.dmaple.map.buffer
 import mil.nga.tiff.FieldTagType
 import mil.nga.tiff.FieldType
 import mil.nga.tiff.FileDirectory
+import mil.nga.tiff.Rasters
 import mil.nga.tiff.util.TiffConstants
 import java.io.RandomAccessFile
 import java.lang.Math.floorDiv
@@ -20,17 +21,13 @@ import java.nio.channels.FileChannel
  */
 abstract class MapBufferView<T : Number>(
     protected val buffer: ByteBuffer,
-    protected var nx: Int
+    private var nx: Int
 ) {
 
-    /** The "field type" for the TIFF image. */
-    protected abstract val fieldType: FieldType
     /** The number of bytes in each channel. */
-    protected abstract val bytesPerChannel: List<Int>
-    /** The number of bits in each channel. */
-    protected val bitsPerChannel: List<Int> get() = bytesPerChannel.map{it * 8}
+    protected abstract val channelTypes: Array<FieldType>
     /** The number of bytes per space-time sample. */
-    protected val bytesPerSample: Int get() = bytesPerChannel.sum()
+    private val bytesPerSample: Int get() = channelTypes.sumOf { it.bytes }
 
     // ---------------------------------------------------------------------------------------------
     // Buffer indexing
@@ -77,7 +74,7 @@ abstract class MapBufferView<T : Number>(
      * @param y The yth time pixel up to which to use. Null to use the current position.
      * @return A TIFF slice with the map's data.
      * */
-    open fun toTiffDirectory(
+    fun toTiffDirectory(
         identifier: String = "",
         y: Int? = null,
     ): FileDirectory {
@@ -92,6 +89,23 @@ abstract class MapBufferView<T : Number>(
         dir.setStringEntryValue(FieldTagType.ImageUniqueID, identifier)
         dir.compression = TiffConstants.COMPRESSION_NO
         dir.planarConfiguration = TiffConstants.PLANAR_CONFIGURATION_CHUNKY
+
+        // Specific to buffer.
+        dir.bitsPerSample = channelTypes.map{it.bits}
+        dir.samplesPerPixel = channelTypes.size
+
+        // Create raster from buffer.
+        buffer.position(0)
+        val raster = Rasters(
+            dir.imageWidth.toInt(),
+            dir.imageHeight.toInt(),
+            channelTypes,
+            buffer
+        )
+
+        // Add raster to directory.
+        dir.setRowsPerStrip(raster.calculateRowsPerStrip(dir.planarConfiguration))
+        dir.writeRasters = raster
         return dir
     }
 
