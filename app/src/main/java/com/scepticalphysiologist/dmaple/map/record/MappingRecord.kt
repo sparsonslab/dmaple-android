@@ -53,9 +53,7 @@ class MappingRecord(
 
             fun <T> deserialize(file: File, cls: Class<T>): T? {
                 if(!file.exists()) return null
-                try {
-                    return Gson().fromJson(file.readText(), cls)
-                }
+                try { return Gson().fromJson(file.readText(), cls) }
                 catch (_: JsonSyntaxException) { }
                 catch(_: java.io.FileNotFoundException) {} // Can happen from access-denied, when file is there.
                 return null
