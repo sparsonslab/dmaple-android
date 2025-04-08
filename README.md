@@ -1,5 +1,7 @@
 # DMapLE for Android
 
+![<img src="images/dmaple_icon.png" width="100"/>](images/dmaple_icon.png)
+
 A common experimental technique in gastrointestinal motility is to remove a length of the gastrointestinal
 tract ("gut") of an animal to a warmed and oxygenated "organ bath" of saline. Such an *[ex vivo](https://en.wikipedia.org/wiki/Ex_vivo)* preparation
 will stay motile for several hours (depending on the skill of the experimentalist) and will display
