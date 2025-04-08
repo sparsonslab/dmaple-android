@@ -36,6 +36,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.Fragment
@@ -98,7 +99,9 @@ class Explorer: Fragment() {
 
         // The record being shown.
         val record = MappingRecord.records[recordIndex]
-        val roiDescription = record.creators.joinToString("\n") { it.roi.maps.toString() }
+        val roiDescription = record.creators.joinToString("\n") {
+            "${it.roi.uid} (${it.roi.maps.joinToString(", ").lowercase()})"
+        }
         val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
         // UI
@@ -128,17 +131,18 @@ class Explorer: Fragment() {
                 ) {
                     Row(
                         modifier = Modifier.padding(bottom = 5.dp).fillMaxSize(),
-                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
+                        val fSize = dimensionResource(R.dimen.small_text_size).value.sp
                         Text(
-                            text = record.name,
-                            fontSize = dimensionResource(R.dimen.small_text_size).value.sp,
+                            text = strftime(record.creationTime, "dd/MM/YYYY, HH:mm:ss"),
+                            fontSize = fSize,
+                            fontWeight = FontWeight.Light,
+                            modifier = Modifier.padding(end=10.dp)
                         )
                         Text(
-                            text = strftime(record.creationTime, "dd/MM/YYYY,  HH:mm:ss"),
-                            fontSize = dimensionResource(
-                                if(isLandscape) R.dimen.small_text_size else R.dimen.extra_small_text_size
-                            ).value.sp,
+                            text = record.name,
+                            fontSize = fSize,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                     Row {
