@@ -1,5 +1,6 @@
 package com.scepticalphysiologist.dmaple.ui
 
+import android.content.res.Configuration
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -10,10 +11,11 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Text
@@ -23,6 +25,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,6 +34,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -39,6 +43,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import com.scepticalphysiologist.dmaple.R
+import com.scepticalphysiologist.dmaple.etc.strftime
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -56,7 +61,7 @@ class Explorer: Fragment() {
 
     /** Corner rounding for the record items shown. */
     private val itemShape = RoundedCornerShape(
-        topStart = 0.dp, topEnd = 0.dp, bottomStart = 10.dp, bottomEnd = 10.dp
+        topStart = 10.dp, topEnd = 10.dp, bottomStart = 10.dp, bottomEnd = 10.dp
     )
 
     override fun onCreateView(
@@ -76,10 +81,8 @@ class Explorer: Fragment() {
         val view = ComposeView(requireActivity())
         view.setBackgroundColor(Color.DarkGray.toArgb())
         view.setContent {
-            LazyVerticalGrid (
-                columns = GridCells.Adaptive(minSize = 200.dp),
+            LazyColumn (
                 verticalArrangement = Arrangement.spacedBy(10.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.padding(10.dp)
             ) { items(MappingRecord.records.size) { i -> RecordItem(i) } }
         }
@@ -96,6 +99,7 @@ class Explorer: Fragment() {
         // The record being shown.
         val record = MappingRecord.records[recordIndex]
         val roiDescription = record.creators.joinToString("\n") { it.roi.maps.toString() }
+        val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
         // UI
         Box (
@@ -118,20 +122,46 @@ class Explorer: Fragment() {
                 .padding(5.dp)
                 .clip(itemShape)
         ) {
-            // Label and description of the record and an image of the field.
-            Column {
-                Text(
-                    text = record.name,
-                    fontSize = dimensionResource(R.dimen.small_text_size).value.sp,
-                    modifier = Modifier.padding(bottom = 5.dp)
-                )
-                Text(
-                    text = roiDescription,
-                    fontSize = dimensionResource(R.dimen.extra_small_text_size).value.sp,
-                    modifier = Modifier.padding(bottom = 5.dp)
-                )
-                record.field?.let { Image(bitmap = it.asImageBitmap(), contentDescription = null) }
+            Row {
+                Column(
+                    modifier = Modifier.weight(0.8f).padding(end=10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(bottom = 5.dp).fillMaxSize(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = record.name,
+                            fontSize = dimensionResource(R.dimen.small_text_size).value.sp,
+                        )
+                        Text(
+                            text = strftime(record.creationTime, "dd/MM/YYYY,  HH:mm:ss"),
+                            fontSize = dimensionResource(
+                                if(isLandscape) R.dimen.small_text_size else R.dimen.extra_small_text_size
+                            ).value.sp,
+                        )
+                    }
+                    Row {
+                        Text(
+                            text = roiDescription,
+                            fontSize = dimensionResource(R.dimen.extra_small_text_size).value.sp,
+                            modifier = Modifier.padding(bottom = 5.dp)
+                        )
+                    }
+                }
+                Column(
+                    modifier = Modifier.weight(0.2f),
+                    horizontalAlignment = AbsoluteAlignment.Right
+                ) {
+                    record.field?.let {
+                        Image(
+                            bitmap = it.asImageBitmap(),
+                            contentDescription = null,
+                        )
+                    }
+                }
             }
+
             // Progress indicator for when the record is being loaded.
             if(!loading) return
             CircularProgressIndicator(

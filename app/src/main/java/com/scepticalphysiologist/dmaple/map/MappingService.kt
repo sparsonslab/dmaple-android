@@ -355,7 +355,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
                 strftime(startTime, "YYMMdd_HHmmss_") + it
             )
             MappingRecord(loc, lastCapture, creators).write()
-            MappingRecord.read(loc)?.let {MappingRecord.records.add(it)}
+            MappingRecord.read(loc)?.let {MappingRecord.records.add(0, it)}
         }
         clearCreators()
     }

@@ -3,6 +3,7 @@ package com.scepticalphysiologist.dmaple.map.record
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Environment
+import androidx.camera.core.imagecapture.JpegBytes2Disk.In
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
@@ -14,6 +15,9 @@ import mil.nga.tiff.TIFFImage
 import mil.nga.tiff.TiffWriter
 import java.io.File
 import java.io.FileOutputStream
+import java.nio.file.Files
+import java.nio.file.attribute.BasicFileAttributes
+import java.time.Instant
 
 /** Input-output of a mapping recording.
  *
@@ -24,7 +28,9 @@ class MappingRecord(
     /** An image of the mapping field (i.e. a camera frame). */
     val field: Bitmap?,
     /** Map creators. */
-    val creators: List<MapCreator>
+    val creators: List<MapCreator>,
+    /** The time the record was created. */
+    val creationTime: Instant = Instant.now()
 ) {
 
     /** The name (folder name) of the record. */
@@ -37,9 +43,8 @@ class MappingRecord(
         fun loadRecords() {
             if(records.isNotEmpty()) return // Don't load twice during the lifetime of the app.
             val root = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
-            root.listFiles()?.sortedBy { it.name }?.let { files ->
-                records.addAll(files.map{read(it)}.filterNotNull())
-            }
+            root.listFiles()?.let { files -> records.addAll(files.map{read(it)}.filterNotNull()) }
+            records.sortByDescending { it.creationTime }
         }
 
         /** Read a record from the [location] folder.*/
@@ -74,7 +79,11 @@ class MappingRecord(
                 creators.add(MapCreator(roi, params))
             }
 
-            return MappingRecord(location, field, creators)
+            // Creation time.
+            val attrs = Files.readAttributes(location.toPath(), BasicFileAttributes::class.java)
+            val creationTime = attrs.creationTime().toInstant()
+
+            return MappingRecord(location, field, creators, creationTime)
         }
 
     }
