@@ -1,6 +1,6 @@
 # DMapLE for Android
 
-<picture><img src="images/dmaple_icon.png" width="150" align="right"/></picture>
+<picture><img src="images/dmaple_icon.png" width="150" align="left" style="margin:10px; border:1px solid black"/></picture>
 
 A common experimental technique in gastrointestinal motility is to remove a length of the gastrointestinal
 tract ("gut") of an animal to a warmed and oxygenated "organ bath" of saline. Such an *[ex vivo](https://en.wikipedia.org/wiki/Ex_vivo)* preparation
