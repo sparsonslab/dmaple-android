@@ -11,7 +11,7 @@ as a function of distance along the gut and time. This data could be displayed a
 an image with dimensions of space (distance along the gut) and time and pixel intensity (grey or color
 scale) showing gut width ("diameter").
 
-<picture><p align="center"><img src="images/hanman_map.jpg" height="300"/></p></picture>
+<picture><p align="center"><img src="images/hanman_map.jpg" width="500"/></p></picture>
 
 > Contractile (motility) patterns of a rabbit colon, in two diameter maps. Time runs from left to right. From Hanman A, Chen JH, Parsons SP, Huizinga JD. (2019) 
 Noradrenaline inhibits neurogenic propulsive motor patterns but not neurogenic segmenting haustral 
