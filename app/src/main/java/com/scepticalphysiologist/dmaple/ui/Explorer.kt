@@ -132,7 +132,7 @@ class Explorer: Fragment() {
                     Row(modifier = Modifier.padding(bottom = 5.dp).fillMaxSize()) {
                         val fSize = dimensionResource(R.dimen.small_text_size).value.sp
                         Text(
-                            text = strftime(record.metadata.startTime, "dd/MM/YYYY, HH:mm"),
+                            text = strftime(record.metadata.recordingPeriod.first(), "dd/MM/YYYY, HH:mm"),
                             fontSize = fSize,
                             fontWeight = FontWeight.Light,
                             modifier = Modifier.padding(end=10.dp)
