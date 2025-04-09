@@ -2,10 +2,13 @@ package com.scepticalphysiologist.dmaple.ui.dialog
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Checkbox
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
+import androidx.compose.material.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -13,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.map.creator.MapType
 import com.scepticalphysiologist.dmaple.map.creator.FieldParams
@@ -27,7 +31,7 @@ import kotlin.math.abs
  * */
 class RoiInfo(
     val roi: FieldRoi,
-    val onSetRoi: (List<MapType>) -> Unit
+    val onSetRoi: (String, List<MapType>) -> Unit
 ): ComposeDialog() {
 
     /** The current map selection. */
@@ -62,6 +66,7 @@ class RoiInfo(
     override fun MakeDialog() {
         // State.
         val openDialog = remember { mutableStateOf(true) }
+        val roiUid = remember { mutableStateOf(roi.uid) }
         val description = remember { mutableStateOf( makeDescription() ) }
         fun setDescription() { description.value = makeDescription() }
 
@@ -73,6 +78,18 @@ class RoiInfo(
                         Text(
                             text = "Set the maps to be created and see information about the recording.",
                             fontSize = mainFontSize
+                        )
+                        TextField(
+                            value = roiUid.value,
+                            readOnly = false,
+                            keyboardOptions = KeyboardOptions.Default.copy(
+                                keyboardType = KeyboardType.Ascii,
+                                autoCorrectEnabled = false,
+                            ),
+                            maxLines = 1,
+                            onValueChange = { roiUid.value = it },
+                            visualTransformation = NonAlphaNumericToUnderscore(),
+                            modifier = Modifier.fillMaxWidth()
                         )
                         Row {
                             Column(modifier = Modifier.weight(0.5f)) {
@@ -92,7 +109,7 @@ class RoiInfo(
                 confirmButton = {
                     TextButton(
                         onClick = {
-                            onSetRoi(selections.filter{it.value}.keys.toList())
+                            onSetRoi(roiUid.value, selections.filter{it.value}.keys.toList())
                             openDialog.value = false
                         }
                     ) { Text("Set") }

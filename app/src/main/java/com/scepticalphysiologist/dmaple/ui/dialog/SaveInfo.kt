@@ -11,11 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.OffsetMapping
-import androidx.compose.ui.text.input.TransformedText
-import androidx.compose.ui.text.input.VisualTransformation
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 
 /** Options for saving maps at the end of a recording.
@@ -54,7 +50,7 @@ class SaveInfo(
                             ),
                             maxLines = 1,
                             onValueChange = { recordFolder.value = it },
-                            visualTransformation = ValidDirectory(),
+                            visualTransformation = NonAlphaNumericToUnderscore(),
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -81,15 +77,4 @@ class SaveInfo(
 
     }
 
-}
-
-/** As the user inputs a record folder, replace all non-alphanumeric characters with an underscore. */
-class ValidDirectory: VisualTransformation {
-    override fun filter(text: AnnotatedString): TransformedText {
-        val trans = text.text.map{char ->  if(char.isLetterOrDigit()) char else '_'}.joinToString("")
-        return TransformedText(
-            text = AnnotatedString(trans),
-            offsetMapping = OffsetMapping.Identity
-        )
-    }
 }

@@ -242,8 +242,8 @@ class RoiOverlay(context: Context?, attributeSet: AttributeSet?):
             if((ap.x < ft) && (ap.y < ft)) {
                 // ... double-click: add ROI to list.
                 if(isDoubleClick) saveActiveRoi()
-                // ... long-press: select map type(s).
-                else if(isLongPress) requestMapTypes()
+                // ... long-press: set ROI UID and map type(s).
+                else if(isLongPress) setUidAndMapTypes()
                 // ... otherwise: translate.
                 else translate(event)
             }
@@ -263,15 +263,24 @@ class RoiOverlay(context: Context?, attributeSet: AttributeSet?):
     }
 
     /** Open a dialog for the user to set the map types for the active ROI. */
-    private fun requestMapTypes() {
+    private fun setUidAndMapTypes() {
         activeRoi?.let { roi ->
             val roiInfo = RoiInfo(roi, this::setMapTypes)
             roiInfo.show(context as Activity)
         }
     }
 
-    /** Callback for setting the active ROI's map types. */
-    private fun setMapTypes(selected: List<MapType>) { activeRoi?.let { roi -> roi.maps = selected } }
+    /** Callback for setting the active ROI's UID and map types.
+     *
+     * @param uid The ROI's UID the user has typed.
+     * @param selected The map types the user has selected.
+     * */
+    private fun setMapTypes(uid: String, selected: List<MapType>) {
+        activeRoi?.let { roi ->
+            roi.uid = uniqueUID(candidateUid = uid)
+            roi.maps = selected
+        }
+    }
 
     /** Save the active ROI. */
     private fun saveActiveRoi() {
@@ -369,22 +378,24 @@ class RoiOverlay(context: Context?, attributeSet: AttributeSet?):
     /** Initiate an active ROI de novo. */
     private fun initiate(event: MotionEvent) {
         if(event.action != MotionEvent.ACTION_DOWN) return
-        // Get a unique name for the ROI.
-        val uid = CountedPath.fromString("ROI")
-        uid.setValidCount(savedRois.map{it.uid})
-        // Create the ROI.
         changeActiveRoi(FieldRoi(
             frame=Frame.fromView(this, display),
             c0 = Point(event.x - 50f, event.y - 50f),
             c1 = Point(event.x + 50f, event.y + 50f),
             maps= listOf(MapType.DIAMETER),
-            uid = uid.path
+            uid = uniqueUID()
         ))
-        // Adjust drag.
         activeRoi?.let {
             drag = Point(event.x, event.y)
             invalidate()
         }
+    }
+
+    /** Given a candidate ROI identifier, make that unique given the IDs of the saved ROIs. */
+    private fun uniqueUID(candidateUid: String = ""): String {
+        val uid = CountedPath.fromString(candidateUid.ifEmpty { "ROI" })
+        uid.setValidCount(savedRois.map{it.uid})
+        return uid.path
     }
 
     // ---------------------------------------------------------------------------------------------
