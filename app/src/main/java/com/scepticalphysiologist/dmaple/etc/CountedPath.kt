@@ -30,10 +30,10 @@ class CountedPath(
             val j = path.lastIndexOf("_")
             val k = path.lastIndexOf(".")
 
-            // Get name, extension and number.
+            // Parse name, extension and count.
             var body = path
-            var count = 0
             var ext = ""
+            var count = 0
             if(i < k) {
                 body = path.slice(0 until k)
                 ext = path.slice(k until n)
