@@ -38,7 +38,7 @@ class SaveInfo(
                     Column {
                         Text(
                             text =  "Do you wish to save the maps?\n" +
-                                    "Set a name for the folder containing the maps:",
+                                    "Set the name of the folder containing the maps:",
                             fontSize = mainFontSize
                         )
                         TextField(

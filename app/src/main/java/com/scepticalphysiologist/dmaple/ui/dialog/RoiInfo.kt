@@ -75,10 +75,7 @@ class RoiInfo(
                 title = { Text("ROI", fontSize = titleFontSize, fontWeight = titleFontWeight) },
                 text = {
                     Column {
-                        Text(
-                            text = "Set the maps to be created and see information about the recording.",
-                            fontSize = mainFontSize
-                        )
+                        Text(text = "Set the name of the ROI:", fontSize = mainFontSize)
                         TextField(
                             value = roiUid.value,
                             readOnly = false,
@@ -91,6 +88,7 @@ class RoiInfo(
                             visualTransformation = NonAlphaNumericToUnderscore(),
                             modifier = Modifier.fillMaxWidth()
                         )
+                        Text(text = "Set the maps to be created:", fontSize = mainFontSize)
                         Row {
                             Column(modifier = Modifier.weight(0.5f)) {
                                 for((map, selected) in selections) MapTypeRow(map, selected, ::setDescription)
