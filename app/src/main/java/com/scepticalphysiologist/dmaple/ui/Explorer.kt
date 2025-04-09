@@ -128,12 +128,8 @@ class Explorer: Fragment() {
                 .clip(itemShape)
         ) {
             Row {
-                Column(
-                    modifier = Modifier.weight(0.8f).padding(end=10.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(bottom = 5.dp).fillMaxSize(),
-                    ) {
+                Column(modifier = Modifier.weight(0.8f).padding(end=10.dp)) {
+                    Row(modifier = Modifier.padding(bottom = 5.dp).fillMaxSize()) {
                         val fSize = dimensionResource(R.dimen.small_text_size).value.sp
                         Text(
                             text = strftime(record.metadata.startTime, "dd/MM/YYYY, HH:mm"),
