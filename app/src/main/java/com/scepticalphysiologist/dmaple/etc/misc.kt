@@ -23,7 +23,7 @@ fun strptime(time: String, format: String): Instant? {
     val formatter = DateTimeFormatter.ofPattern(format).withZone(ZoneId.systemDefault())
     try {
         return LocalDateTime.parse(time, formatter).atZone(ZoneId.systemDefault()).toInstant()
-    } catch(_: DateTimeParseException) { println("strp time error!")}
+    } catch(_: DateTimeParseException) {}
     return null
 }
 
