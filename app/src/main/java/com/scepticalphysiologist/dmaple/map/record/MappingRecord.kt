@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Environment
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.google.gson.JsonSyntaxException
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
@@ -14,6 +15,9 @@ import mil.nga.tiff.TIFFImage
 import mil.nga.tiff.TiffWriter
 import java.io.File
 import java.io.FileOutputStream
+import java.nio.file.Files
+import java.nio.file.attribute.BasicFileAttributes
+import java.time.Instant
 
 /** Input-output of a mapping recording.
  *
@@ -24,22 +28,40 @@ class MappingRecord(
     /** An image of the mapping field (i.e. a camera frame). */
     val field: Bitmap?,
     /** Map creators. */
-    val creators: List<MapCreator>
+    val creators: List<MapCreator>,
+    /** Metadata. */
+    val metadata: RecordMetadata,
 ) {
-
-    /** The name (folder name) of the record. */
-    val name: String = location.name
 
     companion object {
 
+        // Recordings
+        // ----------
+        /** The default root folder for mapping record folders.*/
+        val DEFAULT_ROOT: File = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+        /** The default name for mapping record folders. */
+        const val DEFAULT_RECORD_FOLDER: String = "Maps"
+        /** All the loaded mapping records. */
         val records = mutableListOf<MappingRecord>()
 
-        fun loadRecords() {
+        // File names
+        // ----------
+        /** The file name for the field image. */
+        const val fieldFile = "field.jpg"
+        /** The file name for the mapping parameters. */
+        const val paramFile = "params.json"
+        /** The file name for the recording metadata. */
+        const val metadataFile = "metadata.json"
+        /** GSON (de)serialization object for JSON files. */
+        val gson: Gson = GsonBuilder().registerTypeAdapter(Instant::class.java, InstantTypeAdapter()).create()
+
+        /** Load all records. */
+        fun loadRecords(root: File = DEFAULT_ROOT) {
             if(records.isNotEmpty()) return // Don't load twice during the lifetime of the app.
-            val root = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
-            root.listFiles()?.sortedBy { it.name }?.let { files ->
-                records.addAll(files.map{read(it)}.filterNotNull())
+            root.listFiles()?.filter{it.isDirectory}?.map { folder ->
+                read(folder)?.let{ record -> records.add(record) }
             }
+            records.sortByDescending { it.metadata.startTime }
         }
 
         /** Read a record from the [location] folder.*/
@@ -48,22 +70,29 @@ class MappingRecord(
 
             fun <T> deserialize(file: File, cls: Class<T>): T? {
                 if(!file.exists()) return null
-                try { return Gson().fromJson(file.readText(), cls) }
+                try { return gson.fromJson(file.readText(), cls) }
                 catch (_: JsonSyntaxException) { }
                 catch(_: java.io.FileNotFoundException) {} // Can happen from access-denied, when file is there.
                 return null
             }
             // Field parameters.
-            val params = deserialize(File(location, "params.json"), FieldParams::class.java) ?: return null
+            val params = deserialize(File(location, paramFile), FieldParams::class.java) ?: return null
+
+            // Metadata.
+            val fileAttrs = Files.readAttributes(location.toPath(), BasicFileAttributes::class.java)
+            val fileCreationTime = fileAttrs.creationTime().toInstant()
+            val metadata = deserialize(File(location, metadataFile), RecordMetadata::class.java) ?:
+                           RecordMetadata(startTime = fileCreationTime, endTime = fileCreationTime)
 
             // Field of view
-            var field: Bitmap?= null
-            val fieldFile = File(location, "field.jpg")
-            if(fieldFile.exists()) field = BitmapFactory.decodeFile(fieldFile.absolutePath)
+            val fieldFile = File(location, fieldFile)
+            val field = if(fieldFile.exists()) BitmapFactory.decodeFile(fieldFile.absolutePath) else null
 
             // ROI JSON files.
             val roiFiles = location.listFiles()?.filter{
-                it.name.endsWith(".json")  && !it.name.endsWith("params.json")
+                it.name.endsWith(".json")  &&
+                !it.name.endsWith(paramFile) &&
+                !it.name.endsWith(metadataFile)
             } ?: listOf()
             if(roiFiles.isEmpty()) return null
 
@@ -74,7 +103,12 @@ class MappingRecord(
                 creators.add(MapCreator(roi, params))
             }
 
-            return MappingRecord(location, field, creators)
+            return MappingRecord(
+                location = location,
+                field = field,
+                creators = creators,
+                metadata = metadata
+            )
         }
 
     }
@@ -98,7 +132,7 @@ class MappingRecord(
         for(creator in creators) {
             // ... ROI: serialize to JSON
             val roiFile = File(location, "${creator.roi.uid}.json")
-            roiFile.writeText(Gson().toJson(creator.roi))
+            roiFile.writeText(gson.toJson(creator.roi))
 
             // ... maps: to separate TIFF images.
             // Considered making each map a slice/directory of a single TIFF file and
@@ -111,15 +145,10 @@ class MappingRecord(
             }
         }
 
-        // Field parameters.
-        val paramsFile = File(location, "params.json")
-        paramsFile.writeText(Gson().toJson(creators[0].params))
-
-        // Mapping field.
-        field?.compress(
-            Bitmap.CompressFormat.JPEG, 90,
-            FileOutputStream(File(location, "field.jpg"))
-        )
+        // Parameters, metadata, field bitmap
+        File(location, paramFile).writeText(gson.toJson(creators[0].params))
+        File(location, metadataFile).writeText(gson.toJson(metadata))
+        field?.compress(Bitmap.CompressFormat.JPEG, 90, FileOutputStream(File(location, fieldFile)))
     }
 
 }

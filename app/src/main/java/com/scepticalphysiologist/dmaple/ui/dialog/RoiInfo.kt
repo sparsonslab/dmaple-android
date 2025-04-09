@@ -23,11 +23,11 @@ import kotlin.math.abs
  *
  * @param roi The ROI to show information about.
  * @param onSetRoi A function to call when the dialog "Set" button is pressed, that takes as
- * argument a list of selected map types.
+ * argument the typed UID and list of selected map types.
  * */
 class RoiInfo(
     val roi: FieldRoi,
-    val onSetRoi: (List<MapType>) -> Unit
+    val onSetRoi: (String, List<MapType>) -> Unit
 ): ComposeDialog() {
 
     /** The current map selection. */
@@ -62,21 +62,21 @@ class RoiInfo(
     override fun MakeDialog() {
         // State.
         val openDialog = remember { mutableStateOf(true) }
+        val roiUid = remember { mutableStateOf(roi.uid) }
         val description = remember { mutableStateOf( makeDescription() ) }
-        fun setDescription() { description.value = makeDescription() }
 
         if(openDialog.value) {
             AlertDialog(
                 title = { Text("ROI", fontSize = titleFontSize, fontWeight = titleFontWeight) },
                 text = {
                     Column {
-                        Text(
-                            text = "Set the maps to be created and see information about the recording.",
-                            fontSize = mainFontSize
-                        )
+                        Text(text = "Set the name of the ROI:", fontSize = mainFontSize)
+                        AlphaNumericOnlyTextEdit(roiUid.value, { roiUid.value = it })
+                        Text(text = "Set the maps to be created:", fontSize = mainFontSize)
                         Row {
                             Column(modifier = Modifier.weight(0.5f)) {
-                                for((map, selected) in selections) MapTypeRow(map, selected, ::setDescription)
+                                for((map, selected) in selections)
+                                    MapTypeRow(map, selected, { description.value = makeDescription() })
                             }
                             Column(modifier = Modifier.weight(0.5f)) {
                                 val items = description.value.split("\n").map{it.split("\t")}
@@ -92,7 +92,7 @@ class RoiInfo(
                 confirmButton = {
                     TextButton(
                         onClick = {
-                            onSetRoi(selections.filter{it.value}.keys.toList())
+                            onSetRoi(roiUid.value, selections.filter{it.value}.keys.toList())
                             openDialog.value = false
                         }
                     ) { Text("Set") }

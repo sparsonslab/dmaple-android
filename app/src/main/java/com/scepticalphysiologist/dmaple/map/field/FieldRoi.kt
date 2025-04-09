@@ -26,7 +26,7 @@ class FieldRoi(
     var threshold: Int = 0,
     var seedingEdge: Edge = Edge.BOTTOM,
     var maps: List<MapType> = listOf(),
-    var uid: String = randomAlphaString(20),
+    var uid: String = "ROI_${randomAlphaString(20)}",
 ): Rectangle(c0, c1) {
 
     /** Change the ROI's reference frame. */
