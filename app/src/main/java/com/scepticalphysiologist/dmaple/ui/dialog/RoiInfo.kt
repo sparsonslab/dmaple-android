@@ -64,7 +64,6 @@ class RoiInfo(
         val openDialog = remember { mutableStateOf(true) }
         val roiUid = remember { mutableStateOf(roi.uid) }
         val description = remember { mutableStateOf( makeDescription() ) }
-        fun setDescription() { description.value = makeDescription() }
 
         if(openDialog.value) {
             AlertDialog(
@@ -76,7 +75,8 @@ class RoiInfo(
                         Text(text = "Set the maps to be created:", fontSize = mainFontSize)
                         Row {
                             Column(modifier = Modifier.weight(0.5f)) {
-                                for((map, selected) in selections) MapTypeRow(map, selected, ::setDescription)
+                                for((map, selected) in selections)
+                                    MapTypeRow(map, selected, { description.value = makeDescription() })
                             }
                             Column(modifier = Modifier.weight(0.5f)) {
                                 val items = description.value.split("\n").map{it.split("\t")}
