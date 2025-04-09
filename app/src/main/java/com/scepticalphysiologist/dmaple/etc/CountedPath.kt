@@ -18,6 +18,7 @@ class CountedPath(
     var count: Int
 ) {
 
+    /** The full path. */
     val path: File get() = File(if(count > 0) "${body}_$count$extension" else "$body$extension")
 
     companion object {
@@ -27,8 +28,8 @@ class CountedPath(
             // Indexes.
             val n = path.length
             val i = path.lastIndexOf(sep)
-            val j = path.lastIndexOf("_")
-            val k = path.lastIndexOf(".")
+            val j = path.lastIndexOf('_')
+            val k = path.lastIndexOf('.')
 
             // Parse name, extension and count.
             var body = path

@@ -41,9 +41,13 @@ class MappingRecord(
         /** The default root folder for mapping record folders.*/
         val DEFAULT_ROOT: File = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
 
+        /** The default name for mapping record folders. */
+        const val DEFAULT_RECORD_FOLDER: String = "Maps"
+
         /** All the loaded mapping records. */
         val records = mutableListOf<MappingRecord>()
 
+        /** Load all records. */
         fun loadRecords(root: File = DEFAULT_ROOT) {
             if(records.isNotEmpty()) return // Don't load twice during the lifetime of the app.
             root.listFiles()?.filter{it.isDirectory}?.map { folder ->

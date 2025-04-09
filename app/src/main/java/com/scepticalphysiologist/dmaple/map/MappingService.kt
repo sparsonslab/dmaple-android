@@ -350,7 +350,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         if(creating) return@launch
         folderName?.let {
             // Find a valid (not already existing) folder for the record.
-            val file = File(MappingRecord.DEFAULT_ROOT, folderName.ifEmpty { "Maps" })
+            val file = File(MappingRecord.DEFAULT_ROOT, folderName.ifEmpty { MappingRecord.DEFAULT_RECORD_FOLDER })
             val folder = CountedPath.fromFile(file = file)
             folder.setValidCount(existingPaths = MappingRecord.records.map{it.location.path})
             // Write the record and add it to the record collection.
