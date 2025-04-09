@@ -10,7 +10,6 @@ import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CaptureRequest
 import android.os.Binder
 import android.os.IBinder
-import android.text.format.DateUtils
 import android.util.Range
 import android.view.Display
 import android.view.WindowManager
@@ -44,7 +43,6 @@ import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.field.FieldRuler
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import com.scepticalphysiologist.dmaple.map.field.RoisAndRuler
-import com.scepticalphysiologist.dmaple.map.record.RecordMetadata
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -363,7 +361,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
                 location = path.file,
                 field = lastCapture,
                 creators = creators,
-                metadata = RecordMetadata(startTime, endTime)
+                recordingPeriod = listOf(startTime, endTime)
             )
             record.write()
             MappingRecord.read(path.file)?.let {MappingRecord.records.add(0, it)}

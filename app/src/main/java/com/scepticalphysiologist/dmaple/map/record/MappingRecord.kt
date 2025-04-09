@@ -3,20 +3,13 @@ package com.scepticalphysiologist.dmaple.map.record
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Environment
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
-import com.google.gson.JsonSyntaxException
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
-import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
-import com.scepticalphysiologist.dmaple.map.creator.FieldParams
 import mil.nga.tiff.FieldTagType
 import mil.nga.tiff.TIFFImage
 import mil.nga.tiff.TiffWriter
 import java.io.File
 import java.io.FileOutputStream
-import java.nio.file.Files
-import java.nio.file.attribute.BasicFileAttributes
 import java.time.Instant
 
 /** Input-output of a mapping recording.
@@ -29,9 +22,16 @@ class MappingRecord(
     val field: Bitmap?,
     /** Map creators. */
     val creators: List<MapCreator>,
-    /** Metadata. */
-    val metadata: RecordMetadata,
+    /** The period (start and end time) of the recording. */
+    recordingPeriod: List<Instant>,
 ) {
+
+    /** Metadata for serialisation. */
+    val metadata =  RecordMetadata(
+        recordingPeriod = recordingPeriod,
+        rois = creators.map{it.roi},
+        params = creators[0].params
+    )
 
     companion object {
 
@@ -44,16 +44,12 @@ class MappingRecord(
         /** All the loaded mapping records. */
         val records = mutableListOf<MappingRecord>()
 
-        // File names
-        // ----------
+        // Files
+        // -----
         /** The file name for the field image. */
-        const val fieldFile = "field.jpg"
-        /** The file name for the mapping parameters. */
-        const val paramFile = "params.json"
+        const val FIELD_FILE = "field.jpg"
         /** The file name for the recording metadata. */
-        const val metadataFile = "metadata.json"
-        /** GSON (de)serialization object for JSON files. */
-        val gson: Gson = GsonBuilder().registerTypeAdapter(Instant::class.java, InstantTypeAdapter()).create()
+        const val METADATA_FILE = "metadata.json"
 
         /** Load all records. */
         fun loadRecords(root: File = DEFAULT_ROOT) {
@@ -61,53 +57,28 @@ class MappingRecord(
             root.listFiles()?.filter{it.isDirectory}?.map { folder ->
                 read(folder)?.let{ record -> records.add(record) }
             }
-            records.sortByDescending { it.metadata.startTime }
+            records.sortByDescending { it.metadata.recordingPeriod[0] }
         }
 
         /** Read a record from the [location] folder.*/
         fun read(location: File): MappingRecord? {
             if(!location.exists() || !location.isDirectory) return null
 
-            fun <T> deserialize(file: File, cls: Class<T>): T? {
-                if(!file.exists()) return null
-                try { return gson.fromJson(file.readText(), cls) }
-                catch (_: JsonSyntaxException) { }
-                catch(_: java.io.FileNotFoundException) {} // Can happen from access-denied, when file is there.
-                return null
-            }
-            // Field parameters.
-            val params = deserialize(File(location, paramFile), FieldParams::class.java) ?: return null
-
             // Metadata.
-            val fileAttrs = Files.readAttributes(location.toPath(), BasicFileAttributes::class.java)
-            val fileCreationTime = fileAttrs.creationTime().toInstant()
-            val metadata = deserialize(File(location, metadataFile), RecordMetadata::class.java) ?:
-                           RecordMetadata(startTime = fileCreationTime, endTime = fileCreationTime)
+            val metadata = RecordMetadata.deserialize(File(location, METADATA_FILE)) ?: return null
+
+            // Recreate creators from metadata.
+            val creators = metadata.rois.map { roi -> MapCreator(roi, metadata.params) }
 
             // Field of view
-            val fieldFile = File(location, fieldFile)
+            val fieldFile = File(location, FIELD_FILE)
             val field = if(fieldFile.exists()) BitmapFactory.decodeFile(fieldFile.absolutePath) else null
-
-            // ROI JSON files.
-            val roiFiles = location.listFiles()?.filter{
-                it.name.endsWith(".json")  &&
-                !it.name.endsWith(paramFile) &&
-                !it.name.endsWith(metadataFile)
-            } ?: listOf()
-            if(roiFiles.isEmpty()) return null
-
-            // Instantiate map creators from ROIs.
-            val creators = mutableListOf<MapCreator>()
-            for(roiFile in roiFiles) {
-                val roi = deserialize(roiFile, FieldRoi::class.java) ?: continue
-                creators.add(MapCreator(roi, params))
-            }
 
             return MappingRecord(
                 location = location,
                 field = field,
                 creators = creators,
-                metadata = metadata
+                recordingPeriod = metadata.recordingPeriod
             )
         }
 
@@ -128,27 +99,23 @@ class MappingRecord(
         // Directory to save map
         if(!location.exists()) location.mkdir()
 
-        // For each creator ....
-        for(creator in creators) {
-            // ... ROI: serialize to JSON
-            val roiFile = File(location, "${creator.roi.uid}.json")
-            roiFile.writeText(gson.toJson(creator.roi))
+        // Metadata.
+        metadata.serialise(File(location, METADATA_FILE))
 
-            // ... maps: to separate TIFF images.
-            // Considered making each map a slice/directory of a single TIFF file and
-            // though this works, many third-party readers (e.g. ImageJ) cannot read multiple
-            // directories with different pixel types (e.g. a mix of short and RBG).
+        // Field bitmap
+        field?.compress(Bitmap.CompressFormat.JPEG, 90, FileOutputStream(File(location, FIELD_FILE)))
+
+        // Maps to separate TIFF images.
+        // Considered making each map a slice/directory of a single TIFF file and
+        // though this works, many third-party readers (e.g. ImageJ) cannot read multiple
+        // directories with different pixel types (e.g. a mix of short and RBG).
+        for(creator in creators) {
             for(tiff in creator.toTiff()) {
                 val img = TIFFImage().also{it.add(tiff)}
                 val des = tiff.getStringEntryValue(FieldTagType.ImageUniqueID)
                 TiffWriter.writeTiff(File(location, "${creator.roi.uid}_$des.tiff"), img)
             }
         }
-
-        // Parameters, metadata, field bitmap
-        File(location, paramFile).writeText(gson.toJson(creators[0].params))
-        File(location, metadataFile).writeText(gson.toJson(metadata))
-        field?.compress(Bitmap.CompressFormat.JPEG, 90, FileOutputStream(File(location, fieldFile)))
     }
 
 }
