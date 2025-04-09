@@ -38,12 +38,17 @@ class MappingRecord(
 
     companion object {
 
+        /** The default root folder for mapping record folders.*/
+        val DEFAULT_ROOT: File = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+
+        /** All the loaded mapping records. */
         val records = mutableListOf<MappingRecord>()
 
-        fun loadRecords() {
+        fun loadRecords(root: File = DEFAULT_ROOT) {
             if(records.isNotEmpty()) return // Don't load twice during the lifetime of the app.
-            val root = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
-            root.listFiles()?.let { files -> records.addAll(files.map{read(it)}.filterNotNull()) }
+            root.listFiles()?.filter{it.isDirectory}?.map { folder ->
+                read(folder)?.let{ record -> records.add(record) }
+            }
             records.sortByDescending { it.creationTime }
         }
 

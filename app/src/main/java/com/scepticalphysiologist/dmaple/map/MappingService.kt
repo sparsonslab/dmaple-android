@@ -9,7 +9,6 @@ import android.graphics.Bitmap
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CaptureRequest
 import android.os.Binder
-import android.os.Environment
 import android.os.IBinder
 import android.util.Range
 import android.view.Display
@@ -31,11 +30,11 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.lifecycle.LifecycleService
 import com.scepticalphysiologist.dmaple.MainActivity
+import com.scepticalphysiologist.dmaple.etc.CountedPath
 import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.geom.surfaceRotationDegrees
 import com.scepticalphysiologist.dmaple.ui.dialog.Warnings
-import com.scepticalphysiologist.dmaple.etc.strftime
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
@@ -344,18 +343,19 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     /** If maps are not being created, save the maps, clear the creators and free-up resources.
      *
-     * @param folderSuffix A suffix given to the folder containing all maps from a recording. The
-     * folder begins with the date and time.
+     * @param folderName A user defined name for the folder containing all maps from a recording or
+     * null if the maps are not to be saved.
      * */
-    fun saveAndClear(folderSuffix: String?) = scope.launch(Dispatchers.Default) {
+    fun saveAndClear(folderName: String?) = scope.launch(Dispatchers.Default) {
         if(creating) return@launch
-        folderSuffix?.let {
-            val loc = File(
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
-                strftime(startTime, "YYMMdd_HHmmss_") + it
-            )
-            MappingRecord(loc, lastCapture, creators).write()
-            MappingRecord.read(loc)?.let {MappingRecord.records.add(0, it)}
+        folderName?.let {
+            // Find a valid (not already existing) folder for the record.
+            val file = File(MappingRecord.DEFAULT_ROOT, folderName.ifEmpty { "Maps" })
+            val folder = CountedPath.fromFile(file = file)
+            folder.setValidCount(existingPaths = MappingRecord.records.map{it.location.path})
+            // Write the record and add it to the record collection.
+            MappingRecord(folder.path, lastCapture, creators).write()
+            MappingRecord.read(folder.path)?.let {MappingRecord.records.add(0, it)}
         }
         clearCreators()
     }

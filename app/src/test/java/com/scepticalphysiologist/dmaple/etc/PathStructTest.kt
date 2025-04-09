@@ -12,29 +12,29 @@ class PathStructTest {
 
         @JvmStatic
         fun samplePaths() = Stream.of(
-            Arguments.of("directory", PathStruct("directory",  "", 0)),
-            Arguments.of("some/directory", PathStruct("some/directory",  "", 0)),
-            Arguments.of("direct_ory", PathStruct("direct_ory",  "", 0)),
-            Arguments.of("direct_45ory", PathStruct("direct_45ory",  "", 0)),
-            Arguments.of("directory_12", PathStruct("directory",  "", 12)),
-            Arguments.of("some/directory_9", PathStruct("some/directory",  "", 9)),
-            Arguments.of("directory/somefile.dat", PathStruct("directory/somefile",  ".dat", 0)),
-            Arguments.of("directory/some_file.dat", PathStruct("directory/some_file",  ".dat", 0)),
-            Arguments.of("directory/some_file_.dat", PathStruct("directory/some_file_",  ".dat", 0)),
-            Arguments.of("directory/some_file_16.jpeg", PathStruct("directory/some_file",  ".jpeg", 16)),
-            Arguments.of("directory/somefile_5.tiff", PathStruct("directory/somefile",  ".tiff", 5)),
+            Arguments.of("directory", CountedPath("directory",  "", 0)),
+            Arguments.of("some/directory", CountedPath("some/directory",  "", 0)),
+            Arguments.of("direct_ory", CountedPath("direct_ory",  "", 0)),
+            Arguments.of("direct_45ory", CountedPath("direct_45ory",  "", 0)),
+            Arguments.of("directory_12", CountedPath("directory",  "", 12)),
+            Arguments.of("some/directory_9", CountedPath("some/directory",  "", 9)),
+            Arguments.of("directory/somefile.dat", CountedPath("directory/somefile",  ".dat", 0)),
+            Arguments.of("directory/some_file.dat", CountedPath("directory/some_file",  ".dat", 0)),
+            Arguments.of("directory/some_file_.dat", CountedPath("directory/some_file_",  ".dat", 0)),
+            Arguments.of("directory/some_file_16.jpeg", CountedPath("directory/some_file",  ".jpeg", 16)),
+            Arguments.of("directory/somefile_5.tiff", CountedPath("directory/somefile",  ".tiff", 5)),
         )
 
     }
 
     @ParameterizedTest(name = "case #{index} ==> {0} = {1}")
     @MethodSource("samplePaths")
-    fun `correct structure`(path: String, expectedStruct: PathStruct) {
+    fun `correct structure`(path: String, expectedStruct: CountedPath) {
         // Given: A path and an expected structure.
         // ....
 
         // When: The the path structure is calculated.
-        val struct = PathStruct.fromString(path, "/")
+        val struct = CountedPath.fromString(path, "/")
 
         // Then: The returned structure is as expected.
         assertSerializedObjectsEqual(expectedStruct, struct)
