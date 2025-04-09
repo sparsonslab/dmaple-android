@@ -2,7 +2,7 @@ package com.scepticalphysiologist.dmaple.etc
 
 import java.io.File
 
-/** A path (file or directory) that includes a count to indicate the number of
+/** A path (file, directory or any string) that includes a count to indicate the number of
  * existing paths that are otherwise the same.
  *
  * Used for creating unique paths. e.g. If there is an existing path "some/path" and we want to
