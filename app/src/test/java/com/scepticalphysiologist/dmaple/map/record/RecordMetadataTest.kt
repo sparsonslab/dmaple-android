@@ -1,8 +1,15 @@
 package com.scepticalphysiologist.dmaple.map.record
 
-import com.google.gson.GsonBuilder
+import com.scepticalphysiologist.dmaple.geom.Edge
+import com.scepticalphysiologist.dmaple.geom.Frame
+import com.scepticalphysiologist.dmaple.geom.Point
+import com.scepticalphysiologist.dmaple.map.creator.FieldParams
+import com.scepticalphysiologist.dmaple.map.creator.MapType
+import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.robolectric.util.TempDirectory
+import java.io.File
 import java.time.Instant
 
 class RecordMetadataTest {
@@ -11,18 +18,47 @@ class RecordMetadataTest {
     fun `serialize and deserialize round trip`(){
         // Given: Some metadata.
         val metadata = RecordMetadata(
-            startTime = Instant.now().minusSeconds(100L),
-            endTime = Instant.now().plusSeconds(1098L)
+            recordingPeriod = listOf(
+                Instant.now().minusSeconds(100L),
+                Instant.now().plusSeconds(1098L)
+            ),
+            rois = listOf(
+                FieldRoi(
+                    frame = Frame(size = Point(1000f, 200f), orientation = 90),
+                    c0 = Point(40f, 100.89f), c1 = Point(700f, 150.56f),
+                    threshold = 124, seedingEdge = Edge.RIGHT,
+                    maps = listOf(MapType.RADIUS, MapType.SPINE),
+                    uid = "colon_proximal"
+                ),
+                FieldRoi(
+                    frame = Frame(size = Point(1000f, 200f), orientation = 90),
+                    c0 = Point(129.76f,10f), c1 = Point(950f, 120.56f),
+                    threshold = 124, seedingEdge = Edge.LEFT,
+                    maps = listOf(MapType.DIAMETER),
+                    uid = "colon_distal"
+                ),
+            ),
+            params = FieldParams(
+                gutsAreAboveThreshold = false,
+                maxGap = 5,
+                spineSmoothPixels = 14
+            )
         )
 
         // When: The metadata is serialised and then serialised.
-        val gson = GsonBuilder().registerTypeAdapter(Instant::class.java, InstantTypeAdapter()).create()
-        val serialised = gson.toJson(metadata)
-        val deserialised = gson.fromJson(serialised, RecordMetadata::class.java)
+        val recordFolder = TempDirectory().create("record").toFile()
+        val metadataFile = File(recordFolder, "metadata.json")
+        metadata.serialise(metadataFile)
+        val deserialised = RecordMetadata.deserialize(metadataFile)
 
         // Then: The deserialised metadata is as the original.
-        assertEquals(metadata.startTime.epochSecond, deserialised.startTime.epochSecond)
-        assertEquals(metadata.endTime.epochSecond, deserialised.endTime.epochSecond)
+        assert(deserialised != null)
+        assertEquals(metadata.recordingPeriod[0].epochSecond, deserialised!!.recordingPeriod[0].epochSecond)
+        assertEquals(metadata.recordingPeriod[1].epochSecond, deserialised.recordingPeriod[1].epochSecond)
+        assertEquals(metadata.rois[1].maps[0], deserialised.rois[1].maps[0])
+        assertEquals(metadata.rois[1].uid, deserialised.rois[1].uid)
+        assertEquals(metadata.rois[0].c0.y, deserialised.rois[0].c0.y)
+        assertEquals(metadata.params.maxGap, deserialised.params.maxGap)
     }
 
 }
