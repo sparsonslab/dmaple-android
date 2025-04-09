@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Environment
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.google.gson.JsonSyntaxException
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
@@ -16,6 +17,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.nio.file.Files
 import java.nio.file.attribute.BasicFileAttributes
+import java.time.Instant
 
 /** Input-output of a mapping recording.
  *
@@ -50,6 +52,8 @@ class MappingRecord(
         const val paramFile = "params.json"
         /** The file name for the recording metadata. */
         const val metadataFile = "metadata.json"
+        /** GSON (de)serialization object for JSON files. */
+        val gson: Gson = GsonBuilder().registerTypeAdapter(Instant::class.java, InstantTypeAdapter()).create()
 
         /** Load all records. */
         fun loadRecords(root: File = DEFAULT_ROOT) {
@@ -57,7 +61,7 @@ class MappingRecord(
             root.listFiles()?.filter{it.isDirectory}?.map { folder ->
                 read(folder)?.let{ record -> records.add(record) }
             }
-            records.sortByDescending { it.metadata.startDateTime }
+            records.sortByDescending { it.metadata.startTime }
         }
 
         /** Read a record from the [location] folder.*/
@@ -66,7 +70,7 @@ class MappingRecord(
 
             fun <T> deserialize(file: File, cls: Class<T>): T? {
                 if(!file.exists()) return null
-                try { return Gson().fromJson(file.readText(), cls) }
+                try { return gson.fromJson(file.readText(), cls) }
                 catch (_: JsonSyntaxException) { }
                 catch(_: java.io.FileNotFoundException) {} // Can happen from access-denied, when file is there.
                 return null
@@ -129,7 +133,7 @@ class MappingRecord(
         for(creator in creators) {
             // ... ROI: serialize to JSON
             val roiFile = File(location, "${creator.roi.uid}.json")
-            roiFile.writeText(Gson().toJson(creator.roi))
+            roiFile.writeText(gson.toJson(creator.roi))
 
             // ... maps: to separate TIFF images.
             // Considered making each map a slice/directory of a single TIFF file and
@@ -143,8 +147,8 @@ class MappingRecord(
         }
 
         // Parameters, metadata, field bitmap
-        File(location, paramFile).writeText(Gson().toJson(creators[0].params))
-        File(location, metadataFile).writeText(Gson().toJson(metadata))
+        File(location, paramFile).writeText(gson.toJson(creators[0].params))
+        File(location, metadataFile).writeText(gson.toJson(metadata))
         field?.compress(Bitmap.CompressFormat.JPEG, 90, FileOutputStream(File(location, fieldFile)))
     }
 

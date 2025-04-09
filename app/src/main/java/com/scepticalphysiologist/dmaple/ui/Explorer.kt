@@ -42,6 +42,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import com.scepticalphysiologist.dmaple.R
+import com.scepticalphysiologist.dmaple.etc.strftime
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -88,8 +89,7 @@ class Explorer: Fragment() {
     }
 
     private fun recordDescription(record: MappingRecord): String {
-
-        var description = "duration: ${record.metadata.duration}\n"
+        var description = "duration: ${record.metadata.durationString()}\n"
         for(creator in record.creators) description +=
             "${creator.roi.uid}: ${creator.roi.maps.joinToString(", ").lowercase()}\n"
         return description
@@ -136,7 +136,7 @@ class Explorer: Fragment() {
                     ) {
                         val fSize = dimensionResource(R.dimen.small_text_size).value.sp
                         Text(
-                            text = record.metadata.startDateTime,
+                            text = strftime(record.metadata.startTime, "dd/MM/YYYY, HH:mm"),
                             fontSize = fSize,
                             fontWeight = FontWeight.Light,
                             modifier = Modifier.padding(end=10.dp)

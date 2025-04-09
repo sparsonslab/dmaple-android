@@ -13,11 +13,17 @@ fun randomAlphaString(n: Int): String {
     return (0 until n).map{alphas[Random.nextInt(alphas.size)]}.joinToString("")
 }
 
+/** Time to formatted string, much like Python's strftime. */
+fun strftime(time: Instant, format: String): String {
+    val formatter = DateTimeFormatter.ofPattern(format).withZone(ZoneId.systemDefault())
+    return formatter.format(time)
+}
+
 fun strptime(time: String, format: String): Instant? {
     val formatter = DateTimeFormatter.ofPattern(format).withZone(ZoneId.systemDefault())
     try {
         return LocalDateTime.parse(time, formatter).atZone(ZoneId.systemDefault()).toInstant()
-    } catch(_: DateTimeParseException) {}
+    } catch(_: DateTimeParseException) { println("strp time error!")}
     return null
 }
 

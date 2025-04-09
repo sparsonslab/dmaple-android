@@ -1,16 +1,31 @@
 package com.scepticalphysiologist.dmaple
 
 
+import com.google.gson.Gson
 import mil.nga.tiff.TiffReader
 import org.junit.Test
 import java.io.File
 import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
+import java.time.Instant
 import kotlin.random.Random
 import kotlin.system.measureTimeMillis
 
+class SomeData(val time: Instant, val name: String) {}
+
 class Scrap {
+
+    @Test
+    fun `serialize instant`() {
+
+        val obj = SomeData(Instant.now(), "blabla")
+
+        // Doesn't work - cannot serialize Instant!
+        val ser = Gson().toJson(obj)
+        print(ser)
+
+    }
 
     @Test
     fun `short map`() {

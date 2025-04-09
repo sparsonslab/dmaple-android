@@ -1,26 +1,42 @@
 package com.scepticalphysiologist.dmaple.map.record
 
+import com.google.gson.TypeAdapter
+import com.google.gson.stream.JsonReader
+import com.google.gson.stream.JsonWriter
 import java.time.Duration
 import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
+
 
 /** Some metadata about a recording. */
 class RecordMetadata(
-    startTime: Instant,
-    endTime: Instant
+    val startTime: Instant,
+    val endTime: Instant
 ){
-    var startDateTime: String = strftime(startTime, "dd/MM/YYYY, HH:mm")
-    var duration: String = strfduration(Duration.between(startTime, endTime), "%02d:%02d:%02d")
+
+    /** The recording duration as HH:MM:SS. */
+    fun durationString(): String {
+        val d = Duration.between(startTime, endTime)
+        return String.format("%02d:%02d:%02d", d.toHours(), d.toMinutesPart(), d.toSecondsPart())
+    }
+
 }
 
-/** Time to formatted string, much like Python's strftime. */
-fun strftime(time: Instant, format: String): String {
-    val formatter = DateTimeFormatter.ofPattern(format).withZone(ZoneId.systemDefault())
-    return formatter.format(time)
-}
+/** GSON type adaptor for [Instant]. */
+class InstantTypeAdapter: TypeAdapter<Instant>() {
+    override fun write(writer: JsonWriter?, value: Instant?) {
+        if(value == null) {
+            writer?.nullValue()
+            return
+        }
+        writer?.value(value.toString())
+    }
 
-/** Duration to formatted string. */
-fun strfduration(duration: Duration, format: String): String {
-    return String.format(format , duration.toHours(), duration.toMinutesPart(), duration.toSecondsPart())
+    override fun read(reader: JsonReader?): Instant {
+        reader?.nextString()?.let {
+            try { return Instant.parse(it) }
+            catch (_: DateTimeParseException) {}
+        }
+        return Instant.now()
+    }
 }
