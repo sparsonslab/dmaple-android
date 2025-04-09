@@ -1,5 +1,6 @@
 package com.scepticalphysiologist.dmaple.etc
 
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -18,6 +19,12 @@ fun randomAlphaString(n: Int): String {
 fun strftime(time: Instant, format: String): String {
     val formatter = DateTimeFormatter.ofPattern(format).withZone(ZoneId.systemDefault())
     return formatter.format(time)
+}
+
+fun strfduration(duration: Duration): String {
+    return String.format(
+        "%02d:%02d:%02d", duration.toHours(), duration.toMinutesPart(), duration.toSecondsPart()
+    )
 }
 
 fun strptime(time: String, format: String): Instant? {
