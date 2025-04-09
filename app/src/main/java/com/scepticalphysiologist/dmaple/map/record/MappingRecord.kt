@@ -3,7 +3,6 @@ package com.scepticalphysiologist.dmaple.map.record
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Environment
-import androidx.camera.core.imagecapture.JpegBytes2Disk.In
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
@@ -17,7 +16,6 @@ import java.io.File
 import java.io.FileOutputStream
 import java.nio.file.Files
 import java.nio.file.attribute.BasicFileAttributes
-import java.time.Instant
 
 /** Input-output of a mapping recording.
  *
@@ -29,23 +27,29 @@ class MappingRecord(
     val field: Bitmap?,
     /** Map creators. */
     val creators: List<MapCreator>,
-    /** The time the record was created. */
-    val creationTime: Instant = Instant.now()
+    /** Metadata. */
+    val metadata: RecordMetadata,
 ) {
-
-    /** The name (folder name) of the record. */
-    val name: String = location.name
 
     companion object {
 
+        // Recordings
+        // ----------
         /** The default root folder for mapping record folders.*/
         val DEFAULT_ROOT: File = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
-
         /** The default name for mapping record folders. */
         const val DEFAULT_RECORD_FOLDER: String = "Maps"
-
         /** All the loaded mapping records. */
         val records = mutableListOf<MappingRecord>()
+
+        // File names
+        // ----------
+        /** The file name for the field image. */
+        const val fieldFile = "field.jpg"
+        /** The file name for the mapping parameters. */
+        const val paramFile = "params.json"
+        /** The file name for the recording metadata. */
+        const val metadataFile = "metadata.json"
 
         /** Load all records. */
         fun loadRecords(root: File = DEFAULT_ROOT) {
@@ -53,7 +57,7 @@ class MappingRecord(
             root.listFiles()?.filter{it.isDirectory}?.map { folder ->
                 read(folder)?.let{ record -> records.add(record) }
             }
-            records.sortByDescending { it.creationTime }
+            records.sortByDescending { it.metadata.startDateTime }
         }
 
         /** Read a record from the [location] folder.*/
@@ -68,16 +72,24 @@ class MappingRecord(
                 return null
             }
             // Field parameters.
-            val params = deserialize(File(location, "params.json"), FieldParams::class.java) ?: return null
+            val params = deserialize(File(location, paramFile), FieldParams::class.java) ?: return null
+
+            // Metadata.
+            val fileAttrs = Files.readAttributes(location.toPath(), BasicFileAttributes::class.java)
+            val fileCreationTime = fileAttrs.creationTime().toInstant()
+            val metadata = deserialize(File(location, metadataFile), RecordMetadata::class.java) ?:
+                           RecordMetadata(startTime = fileCreationTime, endTime = fileCreationTime)
 
             // Field of view
             var field: Bitmap?= null
-            val fieldFile = File(location, "field.jpg")
+            val fieldFile = File(location, fieldFile)
             if(fieldFile.exists()) field = BitmapFactory.decodeFile(fieldFile.absolutePath)
 
             // ROI JSON files.
             val roiFiles = location.listFiles()?.filter{
-                it.name.endsWith(".json")  && !it.name.endsWith("params.json")
+                it.name.endsWith(".json")  &&
+                !it.name.endsWith(paramFile) &&
+                !it.name.endsWith(metadataFile)
             } ?: listOf()
             if(roiFiles.isEmpty()) return null
 
@@ -88,11 +100,12 @@ class MappingRecord(
                 creators.add(MapCreator(roi, params))
             }
 
-            // Creation time.
-            val attrs = Files.readAttributes(location.toPath(), BasicFileAttributes::class.java)
-            val creationTime = attrs.creationTime().toInstant()
-
-            return MappingRecord(location, field, creators, creationTime)
+            return MappingRecord(
+                location = location,
+                field = field,
+                creators = creators,
+                metadata = metadata
+            )
         }
 
     }
@@ -129,15 +142,10 @@ class MappingRecord(
             }
         }
 
-        // Field parameters.
-        val paramsFile = File(location, "params.json")
-        paramsFile.writeText(Gson().toJson(creators[0].params))
-
-        // Mapping field.
-        field?.compress(
-            Bitmap.CompressFormat.JPEG, 90,
-            FileOutputStream(File(location, "field.jpg"))
-        )
+        // Parameters, metadata, field bitmap
+        File(location, paramFile).writeText(Gson().toJson(creators[0].params))
+        File(location, metadataFile).writeText(Gson().toJson(metadata))
+        field?.compress(Bitmap.CompressFormat.JPEG, 90, FileOutputStream(File(location, fieldFile)))
     }
 
 }

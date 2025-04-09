@@ -1,6 +1,5 @@
 package com.scepticalphysiologist.dmaple.ui
 
-import android.content.res.Configuration
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -34,7 +33,6 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -44,7 +42,6 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import com.scepticalphysiologist.dmaple.R
-import com.scepticalphysiologist.dmaple.etc.strftime
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -90,6 +87,14 @@ class Explorer: Fragment() {
         return view
     }
 
+    private fun recordDescription(record: MappingRecord): String {
+
+        var description = "duration: ${record.metadata.duration}\n"
+        for(creator in record.creators) description +=
+            "${creator.roi.uid}: ${creator.roi.maps.joinToString(", ").lowercase()}\n"
+        return description
+    }
+
     /** A composable that shows a single recording. */
     @Composable
     fun RecordItem(recordIndex: Int) {
@@ -99,10 +104,7 @@ class Explorer: Fragment() {
 
         // The record being shown.
         val record = MappingRecord.records[recordIndex]
-        val roiDescription = record.creators.joinToString("\n") {
-            "${it.roi.uid} (${it.roi.maps.joinToString(", ").lowercase()})"
-        }
-        val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+        val description = recordDescription(record)
 
         // UI
         Box (
@@ -134,20 +136,20 @@ class Explorer: Fragment() {
                     ) {
                         val fSize = dimensionResource(R.dimen.small_text_size).value.sp
                         Text(
-                            text = strftime(record.creationTime, "dd/MM/YYYY, HH:mm"),
+                            text = record.metadata.startDateTime,
                             fontSize = fSize,
                             fontWeight = FontWeight.Light,
                             modifier = Modifier.padding(end=10.dp)
                         )
                         Text(
-                            text = record.name.replace('_', ' '),
+                            text = record.location.name.replace('_', ' '),
                             fontSize = fSize,
                             fontWeight = FontWeight.Bold
                         )
                     }
                     Row {
                         Text(
-                            text = roiDescription.replace('_', ' '),
+                            text = description.replace('_', ' '),
                             fontSize = dimensionResource(R.dimen.extra_small_text_size).value.sp,
                             modifier = Modifier.padding(bottom = 5.dp)
                         )

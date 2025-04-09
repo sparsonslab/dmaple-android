@@ -10,6 +10,7 @@ import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CaptureRequest
 import android.os.Binder
 import android.os.IBinder
+import android.text.format.DateUtils
 import android.util.Range
 import android.view.Display
 import android.view.WindowManager
@@ -43,6 +44,7 @@ import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.field.FieldRuler
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import com.scepticalphysiologist.dmaple.map.field.RoisAndRuler
+import com.scepticalphysiologist.dmaple.map.record.RecordMetadata
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -125,6 +127,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     )
     /** The instant that creation of maps started. */
     private var startTime: Instant = Instant.now()
+    /** The instant that creation of maps stopped. */
+    private var endTime: Instant = Instant.now()
     /** The last bitmap captured from the camera. */
     private var lastCapture: Bitmap? = null
     /** The coroutine scope for recording maps. */
@@ -348,13 +352,20 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
      * */
     fun saveAndClear(folderName: String?) = scope.launch(Dispatchers.Default) {
         if(creating) return@launch
+
         folderName?.let {
             // Find a valid (not already existing) folder for the record.
             val file = File(MappingRecord.DEFAULT_ROOT, folderName.ifEmpty { MappingRecord.DEFAULT_RECORD_FOLDER })
             val path = CountedPath.fromFile(file = file)
             path.setValidCount(existingPaths = MappingRecord.records.map{it.location.path})
             // Write the record and add it to the record collection.
-            MappingRecord(path.file, lastCapture, creators).write()
+            val record = MappingRecord(
+                location = path.file,
+                field = lastCapture,
+                creators = creators,
+                metadata = RecordMetadata(startTime, endTime)
+            )
+            record.write()
             MappingRecord.read(path.file)?.let {MappingRecord.records.add(0, it)}
         }
         clearCreators()
@@ -410,6 +421,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** Stop creating maps. */
     private fun stop(): Warnings {
         // State
+        endTime = Instant.now()
         creating = false
         autosOn = true
         setCreatorTemporalRes()
