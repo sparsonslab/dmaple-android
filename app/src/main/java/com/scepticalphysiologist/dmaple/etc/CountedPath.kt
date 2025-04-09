@@ -5,21 +5,20 @@ import java.io.File
 /** A path (file or directory) that includes a count to indicate the number of
  * existing paths that are otherwise the same.
  *
- * Used for creating unique paths. e.g. If there is an existing path "some/path" and it is
- * wanted to create another path of the same name, instead create "some/path_1", then
- * "some/path_2", ... etc.
+ * Used for creating unique paths. e.g. If there is an existing path "some/path" and we want to
+ * create another path of the same, instead create "some/path_1", then "some/path_2", ... etc.
  *
- * @property name The path up to any count indicator or (for files) its extension.
+ * @property body The path up to any count indicator or (for files) its extension.
  * @property extension The file extension (empty for a directory).
  * @property count The number of paths with the same name and extension.
  */
 class CountedPath(
-    val name: String,
+    val body: String,
     val extension: String,
     var count: Int
 ) {
 
-    val path: File get() = File(if(count > 0) "${name}_$count$extension" else "$name$extension")
+    val path: File get() = File(if(count > 0) "${body}_$count$extension" else "$body$extension")
 
     companion object {
 
@@ -32,20 +31,20 @@ class CountedPath(
             val k = path.lastIndexOf(".")
 
             // Get name, extension and number.
-            var name = path
-            var numb = 0
+            var body = path
+            var count = 0
             var ext = ""
             if(i < k) {
-                name = path.slice(0 until k)
+                body = path.slice(0 until k)
                 ext = path.slice(k until n)
             }
             if(i < j) {
                 val p = j + 1
-                if(p < k) numb = path.slice(p until k).toIntOrNull() ?: 0
-                else if(p < n) numb = path.slice(p until n).toIntOrNull() ?: 0
-                if(numb != 0) name = path.slice(0 until j)
+                if(p < k) count = path.slice(p until k).toIntOrNull() ?: 0
+                else if(p < n) count = path.slice(p until n).toIntOrNull() ?: 0
+                if(count != 0) body = path.slice(0 until j)
             }
-            return CountedPath(name = name, extension = ext, count = numb)
+            return CountedPath(body = body, extension = ext, count = count)
         }
 
         /** Parse a path into its [CountedPath]. */
@@ -59,7 +58,7 @@ class CountedPath(
     fun setValidCount(existingPaths: List<String>) {
         // The largest count for all paths that match this one.
         val existingCount = existingPaths.map{fromString(it)}.filter{
-            it.name == this.name && it.extension == this.extension
+            it.body == this.body && it.extension == this.extension
         }.maxOfOrNull { it.count } ?: -1
         // Make the count for this path one more.
         count = existingCount + 1
