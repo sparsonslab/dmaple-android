@@ -23,7 +23,7 @@ import kotlin.math.abs
  *
  * @param roi The ROI to show information about.
  * @param onSetRoi A function to call when the dialog "Set" button is pressed, that takes as
- * argument a list of selected map types.
+ * argument the typed UID and list of selected map types.
  * */
 class RoiInfo(
     val roi: FieldRoi,
@@ -72,7 +72,7 @@ class RoiInfo(
                 text = {
                     Column {
                         Text(text = "Set the name of the ROI:", fontSize = mainFontSize)
-                        AlphaNumericOnlyTextEdit(roiUid.value, { roiUid.value = it})
+                        AlphaNumericOnlyTextEdit(roiUid.value, { roiUid.value = it })
                         Text(text = "Set the maps to be created:", fontSize = mainFontSize)
                         Row {
                             Column(modifier = Modifier.weight(0.5f)) {
