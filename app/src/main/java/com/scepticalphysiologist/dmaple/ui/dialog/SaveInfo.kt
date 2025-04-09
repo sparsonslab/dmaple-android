@@ -1,17 +1,12 @@
 package com.scepticalphysiologist.dmaple.ui.dialog
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
-import androidx.compose.material.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 
 /** Options for saving maps at the end of a recording.
@@ -28,7 +23,6 @@ class SaveInfo(
     @Composable
     override fun MakeDialog() {
         val openDialog = remember { mutableStateOf(true) }
-
         val recordFolder = remember { mutableStateOf(MappingRecord.DEFAULT_RECORD_FOLDER) }
 
         if(openDialog.value) {
@@ -41,18 +35,7 @@ class SaveInfo(
                                     "Set the name of the folder containing the maps:",
                             fontSize = mainFontSize
                         )
-                        TextField(
-                            value = recordFolder.value,
-                            readOnly = false,
-                            keyboardOptions = KeyboardOptions.Default.copy(
-                                keyboardType = KeyboardType.Ascii,
-                                autoCorrectEnabled = false,
-                            ),
-                            maxLines = 1,
-                            onValueChange = { recordFolder.value = it },
-                            visualTransformation = NonAlphaNumericToUnderscore(),
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        AlphaNumericOnlyTextEdit(recordFolder.value, {recordFolder.value = it})
                     }
                 },
                 onDismissRequest = {},

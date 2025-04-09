@@ -2,13 +2,10 @@ package com.scepticalphysiologist.dmaple.ui.dialog
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Checkbox
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
-import androidx.compose.material.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -16,7 +13,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.map.creator.MapType
 import com.scepticalphysiologist.dmaple.map.creator.FieldParams
@@ -76,18 +72,7 @@ class RoiInfo(
                 text = {
                     Column {
                         Text(text = "Set the name of the ROI:", fontSize = mainFontSize)
-                        TextField(
-                            value = roiUid.value,
-                            readOnly = false,
-                            keyboardOptions = KeyboardOptions.Default.copy(
-                                keyboardType = KeyboardType.Ascii,
-                                autoCorrectEnabled = false,
-                            ),
-                            maxLines = 1,
-                            onValueChange = { roiUid.value = it },
-                            visualTransformation = NonAlphaNumericToUnderscore(),
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        AlphaNumericOnlyTextEdit(roiUid.value, { roiUid.value = it})
                         Text(text = "Set the maps to be created:", fontSize = mainFontSize)
                         Row {
                             Column(modifier = Modifier.weight(0.5f)) {
