@@ -19,7 +19,10 @@ class CountedPath(
 ) {
 
     /** The full path. */
-    val path: File get() = File(if(count > 0) "${body}_$count$extension" else "$body$extension")
+    val path: String get() = if(count > 0) "${body}_$count$extension" else "$body$extension"
+
+    /** The full path as a file object. */
+    val file: File get() = File(path)
 
     companion object {
 

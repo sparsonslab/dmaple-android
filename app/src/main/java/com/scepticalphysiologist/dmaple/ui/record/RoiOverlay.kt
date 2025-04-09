@@ -15,6 +15,7 @@ import android.view.View
 import android.view.WindowManager
 import androidx.lifecycle.MutableLiveData
 import com.scepticalphysiologist.dmaple.R
+import com.scepticalphysiologist.dmaple.etc.CountedPath
 import com.scepticalphysiologist.dmaple.geom.Edge
 import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
@@ -368,12 +369,18 @@ class RoiOverlay(context: Context?, attributeSet: AttributeSet?):
     /** Initiate an active ROI de novo. */
     private fun initiate(event: MotionEvent) {
         if(event.action != MotionEvent.ACTION_DOWN) return
+        // Get a unique name for the ROI.
+        val uid = CountedPath.fromString("ROI")
+        uid.setValidCount(savedRois.map{it.uid})
+        // Create the ROI.
         changeActiveRoi(FieldRoi(
             frame=Frame.fromView(this, display),
             c0 = Point(event.x - 50f, event.y - 50f),
             c1 = Point(event.x + 50f, event.y + 50f),
-            maps= listOf(MapType.DIAMETER)
+            maps= listOf(MapType.DIAMETER),
+            uid = uid.path
         ))
+        // Adjust drag.
         activeRoi?.let {
             drag = Point(event.x, event.y)
             invalidate()

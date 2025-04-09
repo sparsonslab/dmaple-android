@@ -351,11 +351,11 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         folderName?.let {
             // Find a valid (not already existing) folder for the record.
             val file = File(MappingRecord.DEFAULT_ROOT, folderName.ifEmpty { MappingRecord.DEFAULT_RECORD_FOLDER })
-            val folder = CountedPath.fromFile(file = file)
-            folder.setValidCount(existingPaths = MappingRecord.records.map{it.location.path})
+            val path = CountedPath.fromFile(file = file)
+            path.setValidCount(existingPaths = MappingRecord.records.map{it.location.path})
             // Write the record and add it to the record collection.
-            MappingRecord(folder.path, lastCapture, creators).write()
-            MappingRecord.read(folder.path)?.let {MappingRecord.records.add(0, it)}
+            MappingRecord(path.file, lastCapture, creators).write()
+            MappingRecord.read(path.file)?.let {MappingRecord.records.add(0, it)}
         }
         clearCreators()
     }
