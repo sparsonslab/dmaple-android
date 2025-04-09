@@ -85,9 +85,8 @@ class MappingRecord(
                            RecordMetadata(startTime = fileCreationTime, endTime = fileCreationTime)
 
             // Field of view
-            var field: Bitmap?= null
             val fieldFile = File(location, fieldFile)
-            if(fieldFile.exists()) field = BitmapFactory.decodeFile(fieldFile.absolutePath)
+            val field = if(fieldFile.exists()) BitmapFactory.decodeFile(fieldFile.absolutePath) else null
 
             // ROI JSON files.
             val roiFiles = location.listFiles()?.filter{
