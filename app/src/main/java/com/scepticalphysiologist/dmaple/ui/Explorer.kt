@@ -100,7 +100,7 @@ class Explorer: Fragment() {
         // The record being shown.
         val record = MappingRecord.records[recordIndex]
         val roiDescription = record.creators.joinToString("\n") {
-            "${it.roi.uid} (${it.roi.maps.joinToString(", ").lowercase()})"
+            "${it.roi.uid.replace('_', ' ')} (${it.roi.maps.joinToString(", ").lowercase()})"
         }
         val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
@@ -140,7 +140,7 @@ class Explorer: Fragment() {
                             modifier = Modifier.padding(end=10.dp)
                         )
                         Text(
-                            text = record.name,
+                            text = record.name.replace('_', ' '),
                             fontSize = fSize,
                             fontWeight = FontWeight.Bold
                         )
