@@ -34,13 +34,12 @@ spatio-temporal maps. *J Physiol.* 517, 575–590. [PubMed](https://pmc.ncbi.nlm
 
 https://www.scepticalphysiologist.com/code/DMapLE/DMapLE.pdf
 
+## User Guide
+
+A PDF guide to using the app can be found [here](dmaple_user_guide.pdf).
+
 ## Architecture
 
 Each source code package includes a read-me that summarises the classes and their interconnection,
 starting at the root, [here](app/src/main/java/com/scepticalphysiologist/dmaple).
-
-## User Guide
-
-
-
 
