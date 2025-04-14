@@ -7,6 +7,7 @@ import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
+import com.scepticalphysiologist.dmaple.map.image.BitmapImage
 import org.junit.Test
 import org.junit.jupiter.api.BeforeEach
 import org.junit.runner.RunWith
@@ -85,7 +86,7 @@ class GutSegmentorTest {
 
         // When: The gut is segmented.
         val segmentor = GutSegmentor(roi, params)
-        segmentor.setFieldImage(image.bitmap)
+        segmentor.setFieldImage(BitmapImage(image.bitmap))
         segmentor.detectGutAndSeedSpine()
 
         // Then: The bounds and diameters are as expected.
@@ -103,7 +104,7 @@ class GutSegmentorTest {
 
         // When: The gut is segmented.
         val segmentor = GutSegmentor(roi, params)
-        segmentor.setFieldImage(image.bitmap)
+        segmentor.setFieldImage(BitmapImage(image.bitmap))
         segmentor.detectGutAndSeedSpine()
 
         // Then: The bounds and diameters are as expected.
@@ -120,7 +121,7 @@ class GutSegmentorTest {
 
         // When: The gut is segmented.
         val segmentor = GutSegmentor(roi, params)
-        segmentor.setFieldImage(image.bitmap)
+        segmentor.setFieldImage(BitmapImage(image.bitmap))
         segmentor.detectGutAndSeedSpine()
 
         // Then: The bounds and diameters are as expected.
@@ -136,7 +137,7 @@ class GutSegmentorTest {
 
         // When: The gut is segmented.
         val segmentor = GutSegmentor(roi, params)
-        segmentor.setFieldImage(image.bitmap)
+        segmentor.setFieldImage(BitmapImage(image.bitmap))
         segmentor.detectGutAndSeedSpine()
 
         // Then: The lower and upper bounds are where expected.
@@ -152,7 +153,7 @@ class GutSegmentorTest {
 
         // When: The gut is segmented.
         val segmentor = GutSegmentor(roi, params)
-        segmentor.setFieldImage(image.bitmap)
+        segmentor.setFieldImage(BitmapImage(image.bitmap))
         segmentor.detectGutAndSeedSpine()
 
         // Then: The gut has a diameter of 1 at the right.
@@ -175,7 +176,7 @@ class GutSegmentorTest {
         }
 
         // When: The gut is segmented.
-        segmentor.setFieldImage(image.bitmap)
+        segmentor.setFieldImage(BitmapImage(image.bitmap))
         segmentor.detectGutAndSeedSpine()
 
         // Then: The lower and upper bounds are where expected.

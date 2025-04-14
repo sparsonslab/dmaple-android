@@ -1,16 +1,16 @@
 package com.scepticalphysiologist.dmaple.map.creator
 
 import android.graphics.Bitmap
-import android.graphics.Color
 import android.graphics.Rect
 import android.util.Size
 import com.scepticalphysiologist.dmaple.map.buffer.ByteMap
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferView
-import com.scepticalphysiologist.dmaple.map.buffer.RGBMap
 import com.scepticalphysiologist.dmaple.map.buffer.ShortMap
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.field.FieldRuler
+import com.scepticalphysiologist.dmaple.map.image.GreyScaleImage
+import com.scepticalphysiologist.dmaple.map.image.LumaImage
 import mil.nga.tiff.FileDirectory
 import mil.nga.tiff.TiffReader
 import java.io.File
@@ -119,7 +119,7 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
     // ---------------------------------------------------------------------------------------------
 
     /** Update the maps from a new camera bitmap. */
-    fun updateWithCameraBitmap(image: LumaImage) {
+    fun updateWithCameraBitmap(image: GreyScaleImage) {
         if(reachedEnd) return
         try {
             // Analyse the bitmap.

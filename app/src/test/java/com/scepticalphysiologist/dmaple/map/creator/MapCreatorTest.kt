@@ -1,11 +1,12 @@
 package com.scepticalphysiologist.dmaple.map.creator
 
-import android.graphics.Bitmap
 import com.scepticalphysiologist.dmaple.geom.Edge
 import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.geom.Rectangle
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
+import com.scepticalphysiologist.dmaple.map.image.BitmapImage
+import com.scepticalphysiologist.dmaple.map.image.GreyScaleImage
 import com.scepticalphysiologist.dmaple.ui.record.ThresholdBitmap
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -23,7 +24,7 @@ class MapCreatorTest {
 
      lateinit var diameters: List<Int>
 
-     lateinit var frames: List<Bitmap>
+     lateinit var frames: List<GreyScaleImage>
 
      lateinit var roi: FieldRoi
 
@@ -39,7 +40,7 @@ class MapCreatorTest {
 
           // a series of camera frames of a gut positioned horizontally across the whole frame.
           diameters = listOf(50, 55, 60, 65, 60, 55, 50)
-          frames = horizontalGutSeries(diameters = diameters, fieldWidth = 100)
+          frames = horizontalGutSeries(diameters = diameters, fieldWidth = 100).map{BitmapImage(it)}
 
           // An ROI over that gut.
           val (iw, ih) = Pair(frames[0].width, frames[0].height)
