@@ -1,4 +1,4 @@
-package com.scepticalphysiologist.dmaple.map.image
+package com.scepticalphysiologist.dmaple.map.creator
 
 import android.graphics.Bitmap
 import androidx.camera.core.ImageProxy
@@ -9,22 +9,22 @@ import androidx.camera.core.ImageProxy
  *
  * https://en.wikipedia.org/wiki/Y%E2%80%B2UV
  */
-class LumaImage: GreyScaleImage {
+open class LumaImage {
 
     /** The image proxy object. */
     private var proxy: ImageProxy? = null
 
     /** The width of the image. */
-    override var width: Int = 0
+    var width: Int = 0
 
     /** The height of the image. */
-    override var height: Int = 0
+    var height: Int = 0
 
     /** A bitmap of the first image from the proxy. */
     var firstBitmap: Bitmap? = null
 
     /** Set the current image. */
-    fun setImage(proxy: ImageProxy) {
+    open fun setImage(proxy: ImageProxy) {
         this.proxy = proxy
         if((proxy.width != this.width) || (proxy.height != this.height)) {
             this.width = proxy.width
@@ -34,7 +34,7 @@ class LumaImage: GreyScaleImage {
     }
 
     /** Get the luma value (Y in YUV) of the (i, j)th pixel. */
-    override fun getPixel(i: Int, j: Int): Int {
+    open fun getPixel(i: Int, j: Int): Int {
         val k = j * width + i
         // Need for "and 0xff":
         // https://stackoverflow.com/questions/42097861/android-camera2-yuv-420-888-y-channel-interpretation

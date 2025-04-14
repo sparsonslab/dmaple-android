@@ -1,8 +1,6 @@
 package com.scepticalphysiologist.dmaple.map.creator
 
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
-import com.scepticalphysiologist.dmaple.map.image.GreyScaleImage
-import com.scepticalphysiologist.dmaple.map.image.LumaImage
 import kotlin.math.ceil
 
 /** Segments a gut in an camera field.
@@ -15,7 +13,7 @@ class GutSegmentor(roi: FieldRoi, val params: FieldParams) {
     // The gut and its field
     // ----------------------
     /** The field */
-    private lateinit var image: GreyScaleImage
+    private lateinit var image: LumaImage
     /** The gut is horizontal within the field of view. */
     val gutIsHorizontal: Boolean = roi.seedingEdge.isVertical()
     /** The grey-scale threshold at the gut boundary. */
@@ -66,7 +64,7 @@ class GutSegmentor(roi: FieldRoi, val params: FieldParams) {
     }
 
     /** Set the current field frame/image to be analysed. */
-    fun setFieldImage(image: GreyScaleImage) { this.image = image }
+    fun setFieldImage(image: LumaImage) { this.image = image }
 
     /** Seed the gut an initiate (seed) its spine.
      *

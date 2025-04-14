@@ -9,8 +9,6 @@ import com.scepticalphysiologist.dmaple.map.buffer.MapBufferView
 import com.scepticalphysiologist.dmaple.map.buffer.ShortMap
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.field.FieldRuler
-import com.scepticalphysiologist.dmaple.map.image.GreyScaleImage
-import com.scepticalphysiologist.dmaple.map.image.LumaImage
 import mil.nga.tiff.FileDirectory
 import mil.nga.tiff.TiffReader
 import java.io.File
@@ -119,7 +117,7 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
     // ---------------------------------------------------------------------------------------------
 
     /** Update the maps from a new camera bitmap. */
-    fun updateWithCameraBitmap(image: GreyScaleImage) {
+    fun updateWithCameraBitmap(image: LumaImage) {
         if(reachedEnd) return
         try {
             // Analyse the bitmap.
