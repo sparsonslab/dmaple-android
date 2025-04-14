@@ -69,7 +69,7 @@ class MapCreatorTest {
         val bytesRequired = frames.size * creator.spaceSamples() * roi.maps.maxOf { it.bytesPerSample }
         var buffers = (0..2).map{ ByteBuffer.allocate(bytesRequired) }
         creator.provideBuffers(buffers)
-        for(frame in frames) creator.updateWithCameraBitmap(frame)
+        for(frame in frames) creator.updateWithCameraImage(frame)
 
         // Then: The buffer limits are not reached and all frames are in the map.
         assert(!creator.hasReachedBufferLimit())
@@ -79,7 +79,7 @@ class MapCreatorTest {
         creator = MapCreator(roi, params)
         buffers = (0..2).map{ ByteBuffer.allocate(bytesRequired - 100) }
         creator.provideBuffers(buffers)
-        for(frame in frames) creator.updateWithCameraBitmap(frame)
+        for(frame in frames) creator.updateWithCameraImage(frame)
 
         // Then: The buffer limits have been recorded as reached and the last frame is missing from the map.
         assert(creator.hasReachedBufferLimit())
@@ -95,7 +95,7 @@ class MapCreatorTest {
         val bytesRequired = frames.size * creator.spaceSamples() * roi.maps.maxOf { it.bytesPerSample }
         val buffers = (0..2).map{ ByteBuffer.allocate(bytesRequired + 1000) }
         creator.provideBuffers(buffers)
-        for(frame in frames) creator.updateWithCameraBitmap(frame)
+        for(frame in frames) creator.updateWithCameraImage(frame)
         // ... and is then the diameter map is converted to a TIFF.
         val dmap = creator.toTiff().first().writeRasters
 

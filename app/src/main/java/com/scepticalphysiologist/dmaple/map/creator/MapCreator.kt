@@ -116,8 +116,8 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
     // Calculation
     // ---------------------------------------------------------------------------------------------
 
-    /** Update the maps from a new camera bitmap. */
-    fun updateWithCameraBitmap(image: LumaImage) {
+    /** Update the maps from a new luminance image from the camera. */
+    fun updateWithCameraImage(image: LumaImage) {
         if(reachedEnd) return
         try {
             // Analyse the bitmap.
@@ -160,7 +160,7 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
     }
 
     /** At least one buffer has reached capacity and no more samples will be added to the maps,
-     * irrespective of calls to [updateWithCameraBitmap]. */
+     * irrespective of calls to [updateWithCameraImage]. */
     fun hasReachedBufferLimit(): Boolean { return reachedEnd }
 
     // ---------------------------------------------------------------------------------------------

@@ -51,7 +51,6 @@ import java.io.File
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.Executors
-import kotlin.math.abs
 import kotlin.time.TimeSource
 
 /** A foreground service that will run the camera, record spatio-temporal maps and keep ROI state.
@@ -489,7 +488,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
             // Pass the image to each map creator to analyse.
             lastCapture.setImage(image)
-            for(creator in creators) creator.updateWithCameraBitmap(lastCapture)
+            for(creator in creators) creator.updateWithCameraImage(lastCapture)
         }
 
         // Not sure why adding 2 ms here works but it does.
