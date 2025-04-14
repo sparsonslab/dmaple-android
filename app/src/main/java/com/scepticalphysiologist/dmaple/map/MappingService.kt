@@ -51,6 +51,7 @@ import java.io.File
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.Executors
+import kotlin.math.abs
 import kotlin.time.TimeSource
 
 /** A foreground service that will run the camera, record spatio-temporal maps and keep ROI state.
@@ -491,8 +492,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             for(creator in creators) creator.updateWithCameraBitmap(lastCapture)
         }
 
+        // Not sure why adding 2 ms here works but it does.
         val elapsed = tMark.elapsedNow().inWholeMilliseconds + 2
-        //if(creating)println("\t\t$elapsed")
         if(elapsed < frameIntervalMs) Thread.sleep(frameIntervalMs - elapsed)
         image.close()
     }

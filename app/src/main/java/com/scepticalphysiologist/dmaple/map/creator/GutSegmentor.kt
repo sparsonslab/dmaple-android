@@ -12,8 +12,8 @@ class GutSegmentor(roi: FieldRoi, val params: FieldParams) {
 
     // The gut and its field
     // ----------------------
-    /** The field */
-    private lateinit var image: LumaImage
+    /** The image of the guts to be segmented. */
+    private var image =  LumaImage()
     /** The gut is horizontal within the field of view. */
     val gutIsHorizontal: Boolean = roi.seedingEdge.isVertical()
     /** The grey-scale threshold at the gut boundary. */
