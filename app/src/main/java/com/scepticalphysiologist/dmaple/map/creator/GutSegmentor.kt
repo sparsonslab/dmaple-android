@@ -15,7 +15,7 @@ class GutSegmentor(roi: FieldRoi, val params: FieldParams) {
     // The gut and its field
     // ----------------------
     /** The field */
-    private lateinit var bitmap: Bitmap
+    private lateinit var image: LumaImage
     /** The gut is horizontal within the field of view. */
     val gutIsHorizontal: Boolean = roi.seedingEdge.isVertical()
     /** The grey-scale threshold at the gut boundary. */
@@ -66,10 +66,10 @@ class GutSegmentor(roi: FieldRoi, val params: FieldParams) {
     }
 
     /** Set the current field frame/image to be analysed. */
-    fun setFieldImage(image: Bitmap) { bitmap = image }
+    fun setFieldImage(image: LumaImage) { this.image = image }
 
     /** Get the NTSC grey-scale value of the (i, j) bitmap pixel. */
-    private fun getPixel(i: Int, j: Int): Float { return ntscGrey(bitmap.getPixel(i, j)) }
+    private fun getPixel(i: Int, j: Int): Float { return image.getPixel(i, j).toFloat() }
 
     /** Seed the gut an initiate (seed) its spine.
      *
@@ -145,7 +145,7 @@ class GutSegmentor(roi: FieldRoi, val params: FieldParams) {
             t0 = rTrans.second
             t1 = rTrans.first
         }
-        val tmax = if(gutIsHorizontal) bitmap.height else bitmap.width
+        val tmax = if(gutIsHorizontal) image.height else image.width
         if(t0 !in 0 until tmax) t0 = 0
         if(t1 !in 0 until tmax) t1 = tmax - 1
         return Pair(t0, t1)
@@ -191,21 +191,21 @@ class GutSegmentor(roi: FieldRoi, val params: FieldParams) {
         var i = iTrans
         var g = 0
         if(gutIsHorizontal){
-            if(findAbove) while((i >= 0) && (i < bitmap.height) && (g <= params.maxGap)) {
+            if(findAbove) while((i >= 0) && (i < image.height) && (g <= params.maxGap)) {
                 if(getPixel(iLong, i) > threshold) g = 0 else g += 1
                 i += d
             }
-            else while((i >= 0) && (i < bitmap.height) && (g <= params.maxGap)){
+            else while((i >= 0) && (i < image.height) && (g <= params.maxGap)){
                 if(getPixel(iLong, i) < threshold) g = 0 else g += 1
                 i += d
             }
         }
         else {
-            if (findAbove) while ((i >= 0) && (i < bitmap.width) && (g <= params.maxGap)) {
+            if (findAbove) while ((i >= 0) && (i < image.width) && (g <= params.maxGap)) {
                 if (getPixel(i, iLong) > threshold) g = 0 else g += 1
                 i += d
             }
-            else while ((i >= 0) && (i < bitmap.width) && (g <= params.maxGap)) {
+            else while ((i >= 0) && (i < image.width) && (g <= params.maxGap)) {
                 if (getPixel(i, iLong) < threshold) g = 0 else g += 1
                 i += d
             }

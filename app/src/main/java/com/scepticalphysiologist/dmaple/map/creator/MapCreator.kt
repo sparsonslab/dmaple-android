@@ -1,6 +1,7 @@
 package com.scepticalphysiologist.dmaple.map.creator
 
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.graphics.Rect
 import android.util.Size
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
@@ -117,11 +118,11 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
     // ---------------------------------------------------------------------------------------------
 
     /** Update the maps from a new camera bitmap. */
-    fun updateWithCameraBitmap(bitmap: Bitmap) {
+    fun updateWithCameraBitmap(image: LumaImage) {
         if(reachedEnd) return
         try {
             // Analyse the bitmap.
-            segmentor.setFieldImage(bitmap)
+            segmentor.setFieldImage(image)
             if(nt == 0) segmentor.detectGutAndSeedSpine()
             else segmentor.updateBoundaries()
 
@@ -136,8 +137,8 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
                 spineMap?.let { map ->
                     j = segmentor.getSpine(i)
                     k = segmentor.longIdx[i]
-                    p = if(segmentor.gutIsHorizontal) bitmap.getPixel(k, j) else bitmap.getPixel(j, k)
-                    map.addSample(p)
+                    p = if(segmentor.gutIsHorizontal) image.getPixel(k, j) else image.getPixel(j, k)
+                    map.addSample(Color.rgb(p, p, p))
                 }
             }
             nt += 1
