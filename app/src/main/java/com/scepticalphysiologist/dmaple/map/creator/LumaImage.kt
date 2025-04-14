@@ -3,7 +3,9 @@ package com.scepticalphysiologist.dmaple.map.creator
 import android.graphics.Bitmap
 import androidx.camera.core.ImageProxy
 
-/** A wrapper for an YUV formatted [ImageProxy] produced by a CameraX ImageAnalysis use case.
+/** A wrapper for extracting the luminance ("luma" or Y channel) of a BT.470/PAL-standard YUV [ImageProxy].
+ *
+ *  The "luma" (luminance) is the same as the NTSC grey-scale value of an RGB image.
  *
  * https://en.wikipedia.org/wiki/Y%E2%80%B2UV
  */
