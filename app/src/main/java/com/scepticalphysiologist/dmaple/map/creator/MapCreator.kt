@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Rect
 import android.util.Size
+import com.scepticalphysiologist.dmaple.map.buffer.ByteMap
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferView
 import com.scepticalphysiologist.dmaple.map.buffer.RGBMap
@@ -51,7 +52,7 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
     /** The right-radius map. */
     private var radiusMapRight: ShortMap? = null
     /** The spine intensity map. */
-    private var spineMap: RGBMap? = null
+    private var spineMap: ByteMap? = null
     /** The maps and their descriptions.
      * The description is used both as the prefix to the map's file name (and so must be valid as
      * part of a file name) and as a TIFF tag to identify the map's creator.
@@ -97,7 +98,7 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
                 i += 2
             }
             MapType.SPINE -> {
-                spineMap = RGBMap(buffers[i], ns)
+                spineMap = ByteMap(buffers[i], ns)
                 i += 1
             }
         }
@@ -138,7 +139,7 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
                     j = segmentor.getSpine(i)
                     k = segmentor.longIdx[i]
                     p = if(segmentor.gutIsHorizontal) image.getPixel(k, j) else image.getPixel(j, k)
-                    map.addSample(Color.rgb(p, p, p))
+                    map.addSample(p.toByte())
                 }
             }
             nt += 1
