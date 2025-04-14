@@ -161,7 +161,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             inop.setCaptureRequestOption(
                 CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, Range(frameRateFps, frameRateFps)
             )
-            println("SET PREVIEW: frame rate to $frameRateFps")
             // Auto exposure and white-balance.
             if(!autosOn) {
                 inop.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_LOCK, true)
