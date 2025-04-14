@@ -325,7 +325,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     /** Get the last image of the mapping field. */
     fun getLastFieldImage(): FieldImage? {
-        return lastCapture.getFirstBitmap()?.let { bitmap ->
+        return lastCapture.firstBitmap?.let { bitmap ->
             // We can assume that the last captured bitmap is in the same frame as a current creator.
             creators.firstOrNull()?.roi?.frame?.let { frame -> FieldImage(frame, bitmap) }
         }
@@ -366,7 +366,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             // Write the record and add it to the record collection.
             val record = MappingRecord(
                 location = path.file,
-                field = lastCapture.getFirstBitmap(),
+                field = lastCapture.firstBitmap,
                 creators = creators,
                 recordingPeriod = listOf(startTime, endTime)
             )
