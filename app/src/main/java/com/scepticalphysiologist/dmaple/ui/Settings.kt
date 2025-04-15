@@ -60,7 +60,7 @@ class Settings: PreferenceFragmentCompat() {
             val inverted = if(entry is Boolean) entry else entry.toString().toBoolean()
             FieldParams.preference.gutsAreAboveThreshold = !inverted
             // todo - get the below from the above.
-            BackgroundHighlight.highlightAbove = inverted
+            BackgroundHighlight.backgroundIsAboveThreshold = inverted
             SpineOverlay.spinePaint.color = if(inverted) Color.WHITE else Color.BLACK
         }
 

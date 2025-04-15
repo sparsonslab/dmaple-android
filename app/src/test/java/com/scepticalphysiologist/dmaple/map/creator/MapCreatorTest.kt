@@ -34,7 +34,7 @@ class MapCreatorTest {
      @BeforeEach
      fun setUp() {
           // The gut is not inverted.
-          BackgroundHighlight.highlightAbove = false
+          BackgroundHighlight.backgroundIsAboveThreshold = false
 
           // a series of camera frames of a gut positioned horizontally across the whole frame.
           diameters = listOf(50, 55, 60, 65, 60, 55, 50)

@@ -37,8 +37,9 @@ class BackgroundHighlight(val input: Bitmap, val drawRoi: Rect) {
     /** Update the threshold between background and foreground. */
     fun updateThreshold(threshold: Float) {
         for(j in 0 until input.height)
-            for(i in 0 until input.width)
-                overlay[i, j] = if((luma[i][j] < threshold) xor highlightAbove) highlight else transparent
+            for(i in 0 until input.width) overlay[i, j] =
+                if((luma[i][j] < threshold) xor backgroundIsAboveThreshold)
+                    highlight else transparent
     }
 
     /** Draw the overlay. */
@@ -49,7 +50,7 @@ class BackgroundHighlight(val input: Bitmap, val drawRoi: Rect) {
     companion object {
 
         /** Whether background is above threshold. */
-        var highlightAbove: Boolean = true
+        var backgroundIsAboveThreshold: Boolean = true
 
         /** Create an overlay from an image and a region of that image to overlay. */
         fun fromImage(image: Bitmap, r: Rect): BackgroundHighlight? {
