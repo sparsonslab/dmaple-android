@@ -2,10 +2,6 @@ package com.scepticalphysiologist.dmaple.etc
 
 import android.graphics.Bitmap
 import android.graphics.Matrix
-import androidx.core.graphics.blue
-import androidx.core.graphics.green
-import androidx.core.graphics.red
-
 
 /** Transform a bitmap with a matrix. */
 fun transformBitmap(bitmap: Bitmap, transform: Matrix): Bitmap {
