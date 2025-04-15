@@ -4,15 +4,39 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Rect
-import androidx.core.graphics.get
 import androidx.core.graphics.set
 import com.scepticalphysiologist.dmaple.etc.ntscGrey
 
 class ThresholdBitmap(val input: Bitmap, val drawRoi: Rect) {
 
-    private val output: Bitmap = input.copy(input.config, true)
-    private val neutral = Color.argb(0, 0, 0, 0)
+    // Overlay colors
+    // --------------
+    /** The transparent color for overlaying non-background pixels. */
+    private val transparent = Color.argb(0, 0, 0, 0)
+    /** The green highlight for overlaying background pixels. */
     private val highlight = Color.argb(125, 0, 255, 0)
+
+    // Images
+    // ------
+    /***/
+    private var luma = Array(input.width){FloatArray(input.height){ 0f } }
+    private val overlay: Bitmap = input.copy(input.config, true)
+
+    init {
+        for(j in 0 until input.height)
+            for(i in 0 until input.width)
+                luma[i][j] = ntscGrey(input.getPixel(i, j))
+    }
+
+    fun updateThreshold(threshold: Float) {
+        for(j in 0 until input.height)
+            for(i in 0 until input.width)
+                overlay[i, j] = if((luma[i][j] < threshold) xor highlightAbove) highlight else transparent
+    }
+
+    fun draw(canvas: Canvas) {
+        canvas.drawBitmap(overlay, null, drawRoi, null)
+    }
 
     companion object {
 
@@ -29,16 +53,6 @@ class ThresholdBitmap(val input: Bitmap, val drawRoi: Rect) {
             }catch(_: IllegalArgumentException) {}
             return null
         }
-    }
-
-    fun updateThreshold(threshold: Float) {
-        for(i in 0 until input.width)
-            for(j in 0 until input.height)
-                output[i, j] = if((ntscGrey(input[i, j]) < threshold) xor highlightAbove) highlight else neutral
-    }
-
-    fun draw(canvas: Canvas) {
-        canvas.drawBitmap(output, null, drawRoi, null)
     }
 
 }
