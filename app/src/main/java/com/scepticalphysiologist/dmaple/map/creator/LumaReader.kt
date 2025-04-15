@@ -40,6 +40,7 @@ class LumaReader {
 
     /** Read from a BT.470/PAL YUV formatted [ImageProxy]. */
     fun readYUVImage(proxy: ImageProxy) {
+        // Luminance (Y) is the first image plane.
         buffer = proxy.planes[0].buffer
         rs = proxy.planes[0].rowStride
         ps = proxy.planes[0].pixelStride
@@ -67,7 +68,7 @@ class LumaReader {
             for(i in 0 until width) {
                 val color = bitmap.getPixel(i, j)
                 val luma = 0.299f * color.red + 0.587f * color.green + 0.114f * color.blue
-                buffer.put(j * width  + i, luma.toInt().toByte())
+                buffer.put(j * width + i, luma.toInt().toByte())
             }
     }
 
