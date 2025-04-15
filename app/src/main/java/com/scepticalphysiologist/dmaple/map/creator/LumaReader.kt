@@ -9,7 +9,8 @@ import java.nio.ByteBuffer
 
 /** A wrapper for reading the luma ("luminance") from images.
  *
- * The luma is the same as the NTSC grey-scale value of an RGB image.
+ * The luma is the same as the NTSC grey-scale value of an RGB image and is what is thresholded
+ * when segmenting gut images to calculate their diameter, etc.
  *
  * https://en.wikipedia.org/wiki/Y%E2%80%B2UV
  */
