@@ -3,6 +3,7 @@ package com.scepticalphysiologist.dmaple.geom
 import android.graphics.Matrix
 import android.view.Display
 import android.view.View
+import androidx.camera.core.ImageAnalysis
 
 
 /** A geometric "frame" within which there may be some points.
@@ -77,8 +78,30 @@ class Frame(val size: Point, val orientation: Int = 0) {
         /**  Get a view's frame. */
         fun fromView(view: View, display: Display): Frame {
             return Frame(
-                Point(view.width.toFloat(), view.height.toFloat()),
+                size = Point(view.width.toFloat(), view.height.toFloat()),
                 orientation = surfaceRotationDegrees(display.rotation)
+            )
+        }
+
+        /** Get an image analyser's frame. */
+        fun fromImageAnalyser(analyser: ImageAnalysis, display: Display): Frame? {
+            // The frame orientation is the sum of the ImageInfo and analyser target.
+            // From the definition of ImageAnalysis.targetRotation:
+            // "The rotation value of ImageInfo will be the rotation, which if applied to the output
+            //  image [of the analyser], will make the image match [the] target rotation specified here."
+            // https://developer.android.com/reference/androidx/camera/core/ImageAnalysis.Builder#setTargetRotation(int)
+            // The values for the Samsung SM-X110 are:
+            // target = display    image info      sum
+            // -----------------------------------------
+            //  0                   90              90
+            //  90                  0               90
+            //  180                 270             450
+            //  270                 180             450
+            analyser.targetRotation = display.rotation
+            val imageInfo = analyser.resolutionInfo ?: return null
+            return Frame(
+                size = Point(imageInfo.resolution.width.toFloat(), imageInfo.resolution.height.toFloat()),
+                orientation = imageInfo.rotationDegrees + surfaceRotationDegrees(analyser.targetRotation)
             )
         }
 

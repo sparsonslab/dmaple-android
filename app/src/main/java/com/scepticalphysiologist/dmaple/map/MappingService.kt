@@ -402,7 +402,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         if(warning.shouldStop()) return warning
 
         // Create map creators.
-        val imageFrame = imageAnalysisFrame() ?: return warning
+        val imageFrame = analyser?.let{Frame.fromImageAnalyser(it, display)} ?: return warning
         if(!enoughBuffersForMaps()) {
             warning.add(message =
                 "There are not enough buffers to process all maps.\n" +
@@ -461,31 +461,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         currentMap = Pair(0, 0)
         bufferProvider.freeAllBuffers()
         System.gc()
-    }
-
-    /** Get the frame of the image analyser. */
-    private fun imageAnalysisFrame(): Frame? {
-        // The frame orientation is the sum of the ImageInfo and analyser target.
-        // From the definition of ImageAnalysis.targetRotation:
-        // "The rotation value of ImageInfo will be the rotation, which if applied to the output
-        //  image [of the analyser], will make the image match [the] target rotation specified here."
-        // https://developer.android.com/reference/androidx/camera/core/ImageAnalysis.Builder#setTargetRotation(int)
-        // The values for the Samsung SM-X110 are:
-        // target = display    image info      sum
-        // -----------------------------------------
-        //  0                   90              90
-        //  90                  0               90
-        //  180                 270             450
-        //  270                 180             450
-        analyser?.let {
-            it.targetRotation = display.rotation
-            val imageInfo = it.resolutionInfo ?: return null
-            val or = imageInfo.rotationDegrees + surfaceRotationDegrees(it.targetRotation)
-            return Frame(
-                Point(imageInfo.resolution.width.toFloat(), imageInfo.resolution.height.toFloat()),
-                orientation = or
-            )
-        } ?: return null
     }
 
     //var t0 = tSource.markNow()
