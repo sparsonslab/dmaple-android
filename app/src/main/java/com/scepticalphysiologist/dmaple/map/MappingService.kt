@@ -477,24 +477,22 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         } ?: return null
     }
 
-    var t0 = tSource.markNow()
-
-    /** Analyse each image from the camera feed. Called continuously during the life of the service. */
+    //var t0 = tSource.markNow()
+    /** Analyse each frame from the camera feed. Called continuously during the life of the service. */
     override fun analyze(image: ImageProxy) {
         tMark = tSource.markNow()
+        // Pass the image to each map creator to analyse.
         if(creating) {
-
-            println(t0.elapsedNow().inWholeMilliseconds)
-            t0 = tSource.markNow()
-
-            // Pass the image to each map creator to analyse.
+            //println(t0.elapsedNow().inWholeMilliseconds)
+            //t0 = tSource.markNow()
             imageReader.readYUVImage(image)
             for(creator in creators) creator.updateWithCameraImage(imageReader)
         }
-
+        // Sleep the thread to get an actual frame rate close to that wanted.
         // Not sure why adding 2 ms here works but it does.
         val elapsed = tMark.elapsedNow().inWholeMilliseconds + 2
         if(elapsed < frameIntervalMs) Thread.sleep(frameIntervalMs - elapsed)
+        // Close the image to allow analyze to be called for the next frame.
         image.close()
     }
 
