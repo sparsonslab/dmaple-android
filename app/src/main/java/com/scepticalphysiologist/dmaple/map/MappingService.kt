@@ -38,7 +38,7 @@ import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
 import com.scepticalphysiologist.dmaple.map.creator.FieldParams
-import com.scepticalphysiologist.dmaple.map.creator.LumaImage
+import com.scepticalphysiologist.dmaple.map.creator.LumaReader
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.field.FieldRuler
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
@@ -127,8 +127,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     private var startTime: Instant = Instant.now()
     /** The instant that creation of maps stopped. */
     private var endTime: Instant = Instant.now()
-    /** The last bitmap captured from the camera. */
-    private var lastCapture: LumaImage = LumaImage()
+    /** Read luminance values from the camera. */
+    private var imageReader: LumaReader = LumaReader()
     /** The coroutine scope for recording maps. */
     private var scope: CoroutineScope = MainScope()
     /** Timer for regularising frame rate. */
@@ -324,7 +324,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     /** Get the last image of the mapping field. */
     fun getLastFieldImage(): FieldImage? {
-        return lastCapture.firstBitmap?.let { bitmap ->
+        return imageReader.colorBitmap?.let { bitmap ->
             // We can assume that the last captured bitmap is in the same frame as a current creator.
             creators.firstOrNull()?.roi?.frame?.let { frame -> FieldImage(frame, bitmap) }
         }
@@ -365,7 +365,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             // Write the record and add it to the record collection.
             val record = MappingRecord(
                 location = path.file,
-                field = lastCapture.firstBitmap,
+                field = imageReader.colorBitmap,
                 creators = creators,
                 recordingPeriod = listOf(startTime, endTime)
             )
@@ -419,6 +419,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         setPreview()
         creating = true
         startTime = Instant.now()
+        imageReader.reset()
         return warning
     }
 
@@ -487,8 +488,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             t0 = tSource.markNow()
 
             // Pass the image to each map creator to analyse.
-            lastCapture.setImage(image)
-            for(creator in creators) creator.updateWithCameraImage(lastCapture)
+            imageReader.setYUVImage(image)
+            for(creator in creators) creator.updateWithCameraImage(imageReader)
         }
 
         // Not sure why adding 2 ms here works but it does.

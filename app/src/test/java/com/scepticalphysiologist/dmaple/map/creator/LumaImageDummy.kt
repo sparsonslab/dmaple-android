@@ -6,18 +6,18 @@ import com.scepticalphysiologist.dmaple.etc.ntscGrey
 
 
 /** For testing. */
-class LumaImageDummy(bitmap: Bitmap): LumaImage() {
+class LumaImageDummy(bitmap: Bitmap): LumaReader() {
 
     init {
-        firstBitmap = bitmap
+        colorBitmap = bitmap
         width = bitmap.width
         height = bitmap.height
     }
 
-    override fun getPixel(i: Int, j: Int): Int {
-        return ntscGrey(firstBitmap?.getPixel(i, j) ?: 0).toInt()
+    override fun getPixelLuminance(i: Int, j: Int): Int {
+        return ntscGrey(colorBitmap?.getPixel(i, j) ?: 0).toInt()
     }
 
-    override fun setImage(proxy: ImageProxy) {}
+    override fun setYUVImage(proxy: ImageProxy) {}
 
 }

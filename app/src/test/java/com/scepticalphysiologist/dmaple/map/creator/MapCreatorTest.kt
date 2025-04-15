@@ -22,7 +22,7 @@ class MapCreatorTest {
 
      lateinit var diameters: List<Int>
 
-     lateinit var frames: List<LumaImage>
+     lateinit var frames: List<LumaReader>
 
      lateinit var roi: FieldRoi
 

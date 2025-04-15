@@ -117,7 +117,7 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
     // ---------------------------------------------------------------------------------------------
 
     /** Update the maps from a new luminance image from the camera. */
-    fun updateWithCameraImage(image: LumaImage) {
+    fun updateWithCameraImage(image: LumaReader) {
         if(reachedEnd) return
         try {
             // Analyse the bitmap.
@@ -136,7 +136,7 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
                 spineMap?.let { map ->
                     j = segmentor.getSpine(i)
                     k = segmentor.longIdx[i]
-                    p = if(segmentor.gutIsHorizontal) image.getPixel(k, j) else image.getPixel(j, k)
+                    p = if(segmentor.gutIsHorizontal) image.getPixelLuminance(k, j) else image.getPixelLuminance(j, k)
                     map.addSample(p.toByte())
                 }
             }
