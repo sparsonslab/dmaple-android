@@ -95,8 +95,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** Approximate frame rate (frames/second). */
     private var frameRateFps: Int = getAvailableFps().max()
     /** Approximate interval between frames (milliseconds). */
-    private val frameIntervalMs: Long
-        get() = (1000f / frameRateFps.toFloat()).toLong()
+    private val frameIntervalMs: Long get() = (1000f / frameRateFps.toFloat()).toLong()
     /** Auto exposure, white-balance and focus are on. */
     private var autosOn: Boolean = true
 
@@ -343,11 +342,15 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
      * */
     fun loadRecord(record: MappingRecord): Boolean {
         if(creating) return false
-        setRoisAndRuler(RoisAndRuler(record.creators.map { it.roi }, null))
+        // Check there are enough buffers.
+        val rois = record.creators.map { it.roi }
+        if(!enoughBuffersForMaps(rois)) return false
+        // Load the ROIs and creators.
+        setRoisAndRuler(RoisAndRuler(rois, null))
         clearCreators()
         record.loadMapTiffs(bufferProvider)
         creators.addAll(record.creators)
-        //lastCapture = record.field
+        record.field?.let{imageReader.readBitmap(it)}
         currentMap = Pair(0, 0)
         return true
     }
@@ -400,8 +403,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
         // Create map creators.
         val imageFrame = imageAnalysisFrame() ?: return warning
-        val nBuffersRequired = rois.sumOf { roi -> roi.maps.sumOf { map -> map.nMaps } }
-        if(nBuffersRequired > bufferProvider.nFreeBuffers()) {
+        if(!enoughBuffersForMaps()) {
             warning.add(message =
                 "There are not enough buffers to process all maps.\n" +
                 "Please reduce the number of ROIs or map types selected.",
@@ -435,6 +437,12 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         setCreatorTemporalRes()
         setPreview()
         return Warnings("Stop Recording")
+    }
+
+    /** Check that there are enough buffers for all the maps specified by a set of ROIs.*/
+    private fun enoughBuffersForMaps(mapRois: List<FieldRoi> = this.rois): Boolean {
+        val nMaps = mapRois.sumOf { roi -> roi.maps.sumOf { map -> map.nMaps } }
+        return bufferProvider.nFreeBuffers() >= nMaps
     }
 
     /** Set the temporal resolution of the creators based upon

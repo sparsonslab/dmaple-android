@@ -19,7 +19,6 @@ import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import com.scepticalphysiologist.dmaple.ui.Recorder
 import com.scepticalphysiologist.dmaple.ui.Settings
-import java.io.File
 
 
 class MainActivity : AppCompatActivity(), ServiceConnection {
