@@ -13,7 +13,7 @@ import java.nio.ByteBuffer
  *
  * https://en.wikipedia.org/wiki/Y%E2%80%B2UV
  */
-open class LumaReader {
+class LumaReader {
 
     /** The width of the image. */
     var width: Int = 0
@@ -39,7 +39,7 @@ open class LumaReader {
     }
 
     /** Read from a BT.470/PAL YUV formatted [ImageProxy]. */
-    open fun readYUVImage(proxy: ImageProxy) {
+    fun readYUVImage(proxy: ImageProxy) {
         buffer = proxy.planes[0].buffer
         rs = proxy.planes[0].rowStride
         ps = proxy.planes[0].pixelStride
@@ -72,7 +72,7 @@ open class LumaReader {
     }
 
     /** Get the luma value (Y in YUV) of the (i, j)th pixel. */
-    open fun getPixelLuminance(i: Int, j: Int): Int {
+    fun getPixelLuminance(i: Int, j: Int): Int {
         val k = (j * rs) + (i * ps)
         // Need for "and 0xff":
         // https://stackoverflow.com/questions/42097861/android-camera2-yuv-420-888-y-channel-interpretation
