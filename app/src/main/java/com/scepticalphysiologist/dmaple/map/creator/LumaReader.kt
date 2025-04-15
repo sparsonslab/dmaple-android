@@ -40,16 +40,16 @@ class LumaReader {
 
     /** Read from a BT.470/PAL YUV formatted [ImageProxy]. */
     fun readYUVImage(proxy: ImageProxy) {
-        // Luminance (Y) is the first image plane.
-        buffer = proxy.planes[0].buffer
-        rs = proxy.planes[0].rowStride
-        ps = proxy.planes[0].pixelStride
         if((proxy.width != this.width) || (proxy.height != this.height)) {
             this.width = proxy.width
             this.height = proxy.height
             colorBitmap = null
         }
         if(colorBitmap == null) colorBitmap = proxy.toBitmap()
+        // Luminance (Y) is the first image plane.
+        buffer = proxy.planes[0].buffer
+        rs = proxy.planes[0].rowStride
+        ps = proxy.planes[0].pixelStride
     }
 
     /** Read from a bitmap. */
@@ -63,7 +63,7 @@ class LumaReader {
             colorBitmap = null
         }
         if(colorBitmap == null) colorBitmap = bitmap
-
+        // Luminance from RGB channels of the bitmap (NTSC/BT.470/PAL formula).
         for(j in 0 until height)
             for(i in 0 until width) {
                 val color = bitmap.getPixel(i, j)
@@ -72,7 +72,7 @@ class LumaReader {
             }
     }
 
-    /** Get the luma value (Y in YUV) of the (i, j)th pixel. */
+    /** Get the luma of the (i, j)th pixel. */
     fun getPixelLuminance(i: Int, j: Int): Int {
         val k = (j * rs) + (i * ps)
         // Need for "and 0xff":
