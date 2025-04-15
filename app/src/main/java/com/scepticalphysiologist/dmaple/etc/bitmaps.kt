@@ -16,9 +16,3 @@ fun transformBitmap(bitmap: Bitmap, transform: Matrix): Bitmap {
 fun rotateBitmap(bitmap: Bitmap, degrees: Int): Bitmap {
     return transformBitmap(bitmap, Matrix().also{it.setRotate(degrees.toFloat())})
 }
-
-/** Convert a color to its NTSC greyscale ('luminance') value.
- */
-fun ntscGrey(color: Int): Float {
-    return 0.299f * color.red + 0.587f * color.green + 0.114f * color.blue
-}

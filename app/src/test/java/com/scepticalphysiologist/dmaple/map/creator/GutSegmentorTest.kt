@@ -85,7 +85,7 @@ class GutSegmentorTest {
 
         // When: The gut is segmented.
         val segmentor = GutSegmentor(roi, params)
-        segmentor.setFieldImage(LumaImageDummy(image.bitmap))
+        segmentor.setFieldImage(LumaReader().also{it.setBitmap(image.bitmap)})
         segmentor.detectGutAndSeedSpine()
 
         // Then: The bounds and diameters are as expected.
@@ -103,7 +103,7 @@ class GutSegmentorTest {
 
         // When: The gut is segmented.
         val segmentor = GutSegmentor(roi, params)
-        segmentor.setFieldImage(LumaImageDummy(image.bitmap))
+        segmentor.setFieldImage(LumaReader().also{it.setBitmap(image.bitmap)})
         segmentor.detectGutAndSeedSpine()
 
         // Then: The bounds and diameters are as expected.
@@ -120,7 +120,7 @@ class GutSegmentorTest {
 
         // When: The gut is segmented.
         val segmentor = GutSegmentor(roi, params)
-        segmentor.setFieldImage(LumaImageDummy(image.bitmap))
+        segmentor.setFieldImage(LumaReader().also{it.setBitmap(image.bitmap)})
         segmentor.detectGutAndSeedSpine()
 
         // Then: The bounds and diameters are as expected.
@@ -136,7 +136,7 @@ class GutSegmentorTest {
 
         // When: The gut is segmented.
         val segmentor = GutSegmentor(roi, params)
-        segmentor.setFieldImage(LumaImageDummy(image.bitmap))
+        segmentor.setFieldImage(LumaReader().also{it.setBitmap(image.bitmap)})
         segmentor.detectGutAndSeedSpine()
 
         // Then: The lower and upper bounds are where expected.
@@ -152,7 +152,7 @@ class GutSegmentorTest {
 
         // When: The gut is segmented.
         val segmentor = GutSegmentor(roi, params)
-        segmentor.setFieldImage(LumaImageDummy(image.bitmap))
+        segmentor.setFieldImage(LumaReader().also{it.setBitmap(image.bitmap)})
         segmentor.detectGutAndSeedSpine()
 
         // Then: The gut has a diameter of 1 at the right.
@@ -175,7 +175,7 @@ class GutSegmentorTest {
         }
 
         // When: The gut is segmented.
-        segmentor.setFieldImage(LumaImageDummy(image.bitmap))
+        segmentor.setFieldImage(LumaReader().also{it.setBitmap(image.bitmap)})
         segmentor.detectGutAndSeedSpine()
 
         // Then: The lower and upper bounds are where expected.

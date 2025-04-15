@@ -5,7 +5,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Rect
 import androidx.core.graphics.set
-import com.scepticalphysiologist.dmaple.etc.ntscGrey
+import com.scepticalphysiologist.dmaple.map.creator.LumaReader
 
 /** Draws an overlay onto a canvas to highlight background (above or below threshold) pixels.
  *
@@ -24,21 +24,15 @@ class BackgroundHighlight(val input: Bitmap, val drawRoi: Rect) {
     // Images
     // ------
     /** Luminance values. */
-    private var luma = Array(input.width){FloatArray(input.height){ 0f } }
+    private var luma = LumaReader().also{it.setBitmap(input)}
     /** Overlay image to highlight background pixels. */
     private val overlay: Bitmap = input.copy(input.config, true)
-
-    init {
-        for(j in 0 until input.height)
-            for(i in 0 until input.width)
-                luma[i][j] = ntscGrey(input.getPixel(i, j))
-    }
 
     /** Update the threshold between background and foreground. */
     fun updateThreshold(threshold: Float) {
         for(j in 0 until input.height)
             for(i in 0 until input.width) overlay[i, j] =
-                if((luma[i][j] < threshold) xor backgroundIsAboveThreshold)
+                if((luma.getPixelLuminance(i, j) < threshold) xor backgroundIsAboveThreshold)
                     highlight else transparent
     }
 
