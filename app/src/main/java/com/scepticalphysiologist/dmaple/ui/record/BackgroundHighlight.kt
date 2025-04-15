@@ -24,7 +24,7 @@ class BackgroundHighlight(val input: Bitmap, val drawRoi: Rect) {
     // Images
     // ------
     /** Luminance values. */
-    private var luma = LumaReader().also{it.setBitmap(input)}
+    private var luma = LumaReader().also{it.readBitmap(input)}
     /** Overlay image to highlight background pixels. */
     private val overlay: Bitmap = input.copy(input.config, true)
 

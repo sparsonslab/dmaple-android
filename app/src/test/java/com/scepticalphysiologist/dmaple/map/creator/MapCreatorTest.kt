@@ -39,7 +39,7 @@ class MapCreatorTest {
           // a series of camera frames of a gut positioned horizontally across the whole frame.
           diameters = listOf(50, 55, 60, 65, 60, 55, 50)
           frames = horizontalGutSeries(diameters = diameters, fieldWidth = 100).map{ bitmap ->
-              LumaReader().also{it.setBitmap(bitmap)}
+              LumaReader().also{it.readBitmap(bitmap)}
           }
 
           // An ROI over that gut.

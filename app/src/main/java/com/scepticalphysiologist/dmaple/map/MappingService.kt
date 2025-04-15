@@ -488,7 +488,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             t0 = tSource.markNow()
 
             // Pass the image to each map creator to analyse.
-            imageReader.setYUVImage(image)
+            imageReader.readYUVImage(image)
             for(creator in creators) creator.updateWithCameraImage(imageReader)
         }
 
