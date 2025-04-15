@@ -6,6 +6,7 @@ import com.google.gson.JsonSyntaxException
 import com.google.gson.TypeAdapter
 import com.google.gson.stream.JsonReader
 import com.google.gson.stream.JsonWriter
+import com.scepticalphysiologist.dmaple.BuildConfig
 import com.scepticalphysiologist.dmaple.map.creator.FieldParams
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import java.io.File
@@ -26,8 +27,8 @@ class RecordMetadata(
     val params: FieldParams
 ){
 
-    /** A version number for serialisation versioning. */
-    val version: String = "1.0"
+    /** The app version for serialisation versioning. */
+    val version: String = BuildConfig.VERSION_NAME
 
     companion object {
 
