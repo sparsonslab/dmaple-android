@@ -15,6 +15,7 @@ import androidx.lifecycle.MutableLiveData
 import com.scepticalphysiologist.dmaple.etc.PermissionSets
 import com.scepticalphysiologist.dmaple.ui.dialog.Warnings
 import com.scepticalphysiologist.dmaple.map.MappingService
+import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import com.scepticalphysiologist.dmaple.ui.Recorder
 import com.scepticalphysiologist.dmaple.ui.Settings
@@ -24,9 +25,6 @@ import java.io.File
 class MainActivity : AppCompatActivity(), ServiceConnection {
 
     companion object {
-
-        /** The system-created storage directory specific for this app. */
-        var storageDirectory: File? = null
 
         /** The foreground service to record maps and save state.
          *
@@ -62,9 +60,6 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        // Storage
-        storageDirectory = applicationContext.getExternalFilesDir(null)
 
         // Load records
         MappingRecord.loadRecords()
@@ -125,9 +120,20 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
 
     /** Once the service is connected, get an instance of it set its surface. */
     override fun onServiceConnected(p0: ComponentName?, binder: IBinder?) {
+        // Get the service object.
         mapService = (binder as MappingService.MappingBinder).getService()
-        // Set the preview surface.
-        surface?.let { mapService!!.setSurface(it) }
+        mapService?.let { service ->
+            // Set the service's surface to the provided preview surface.
+            surface?.let { service.setSurface(it) }
+            // Set the service's buffer provider to the device's public documents folder.
+            applicationContext.getExternalFilesDir(null)?.let { documentsFolder ->
+                service.setBufferProvider(MapBufferProvider(
+                    sourceDirectory = documentsFolder,
+                    nBuffers = 10,
+                    bufferByteSize = 100_000_000L
+                ))
+            }
+        }
     }
 
     override fun onServiceDisconnected(p0: ComponentName?) { }

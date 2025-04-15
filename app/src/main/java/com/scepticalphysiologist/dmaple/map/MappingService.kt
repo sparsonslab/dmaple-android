@@ -28,7 +28,6 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.lifecycle.LifecycleService
-import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.etc.CountedPath
 import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
@@ -117,12 +116,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
      * 10 buffers gives 10 spatio-temporal maps.
      * 100 MB ~= 60 min x 60 sec/min x 30 frame/sec x 1000 bytes/frame.
      * */
-    val bufferProvider = MapBufferProvider(
-        // todo - IMPORTANT occasional null pointer exception on this at saving record or starting app.
-        sourceDirectory = MainActivity.storageDirectory!!,
-        nBuffers = 10,
-        bufferByteSize = 100_000_000L
-    )
+    private var bufferProvider = MapBufferProvider(File(""), 0, 0)
     /** The instant that creation of maps started. */
     private var startTime: Instant = Instant.now()
     /** The instant that creation of maps stopped. */
@@ -144,7 +138,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     override fun onCreate() {
         super.onCreate()
         display = (this.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay
-        bufferProvider.initialiseBuffers()
         cameraProvider = ProcessCameraProvider.getInstance(this).get()
         cameraProvider.unbindAll()
         setPreview()
@@ -246,7 +239,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     }
 
     // ---------------------------------------------------------------------------------------------
-    // Public interface
+    // Public interface: Methods to be called after service initiation.
     // ---------------------------------------------------------------------------------------------
 
     /** Set the surface provider (physical view) for the camera preview. */
@@ -254,6 +247,16 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         surface = provider
         preview?.surfaceProvider = provider
     }
+
+    /** Set the map buffer provider. */
+    fun setBufferProvider(provider: MapBufferProvider) {
+        provider.initialiseBuffers()
+        bufferProvider = provider
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Public interface: other
+    // ---------------------------------------------------------------------------------------------
 
     /** Set the camera exposure (as a fraction of the available range). */
     fun setExposure(fraction: Float) {
@@ -273,7 +276,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     fun getFps(): Int { return frameRateFps }
 
     /** Get the allocated buffer size for each map. */
-    fun getBufferSize(): Long { return bufferProvider.bufferSize() }
+    fun getBufferSize(): Long { return bufferProvider?.bufferSize() ?: 0 }
 
     /** Get the available frame rates (frames per second). */
     fun getAvailableFps(): List<Int> {
