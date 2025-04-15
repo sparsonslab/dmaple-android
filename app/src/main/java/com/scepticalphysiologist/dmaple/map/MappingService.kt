@@ -31,7 +31,6 @@ import androidx.lifecycle.LifecycleService
 import com.scepticalphysiologist.dmaple.etc.CountedPath
 import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
-import com.scepticalphysiologist.dmaple.geom.surfaceRotationDegrees
 import com.scepticalphysiologist.dmaple.ui.dialog.Warnings
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
@@ -402,7 +401,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         if(warning.shouldStop()) return warning
 
         // Create map creators.
-        val imageFrame = analyser?.let{Frame.fromImageAnalyser(it, display)} ?: return warning
+        val imageFrame = analyser?.let{Frame.ofImageAnalyser(it, display)} ?: return warning
         if(!enoughBuffersForMaps()) {
             warning.add(message =
                 "There are not enough buffers to process all maps.\n" +

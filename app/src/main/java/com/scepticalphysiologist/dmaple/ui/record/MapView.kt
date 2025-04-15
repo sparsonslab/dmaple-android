@@ -20,7 +20,6 @@ import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.etc.transformBitmap
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
-import kotlin.system.measureTimeMillis
 
 /** A view for live display of a spatio-temporal map.
  *

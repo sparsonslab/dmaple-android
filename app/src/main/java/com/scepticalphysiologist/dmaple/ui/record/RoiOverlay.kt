@@ -180,7 +180,7 @@ class RoiOverlay(context: Context?, attributeSet: AttributeSet?):
     /** Start thresholding the active ROI using the bitmap. */
     fun startThresholding(cameraShot: Bitmap) {
         activeRoi?.let { roi ->
-            setBackgroundFromField(FieldImage(Frame.fromView(this, display), cameraShot))
+            setBackgroundFromField(FieldImage(Frame.ofView(this, display), cameraShot))
             thresholdBitmap = BackgroundHighlight.fromImage(cameraShot, roi.toRect())
             invalidate()
         }
@@ -379,10 +379,10 @@ class RoiOverlay(context: Context?, attributeSet: AttributeSet?):
     private fun initiate(event: MotionEvent) {
         if(event.action != MotionEvent.ACTION_DOWN) return
         changeActiveRoi(FieldRoi(
-            frame=Frame.fromView(this, display),
+            frame = Frame.ofView(this, display),
             c0 = Point(event.x - 50f, event.y - 50f),
             c1 = Point(event.x + 50f, event.y + 50f),
-            maps= listOf(MapType.DIAMETER),
+            maps = listOf(MapType.DIAMETER),
             uid = uniqueUID()
         ))
         activeRoi?.let {
@@ -413,7 +413,7 @@ class RoiOverlay(context: Context?, attributeSet: AttributeSet?):
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
         if(!changed) return
-        val newFrame = Frame.fromView(this, display)
+        val newFrame = Frame.ofView(this, display)
         // Create the ruler upon the first layout.
         if(ruler == null) initiateRuler(newFrame)
         // Transform the ROIs and ruler to any new orientation.
@@ -431,7 +431,7 @@ class RoiOverlay(context: Context?, attributeSet: AttributeSet?):
     /** Set the background from a mapping field. */
     private fun setBackgroundFromField(field: FieldImage? = backgroundField) {
         backgroundField = field
-        backgroundField?.changeFrame(Frame.fromView(this, display))
+        backgroundField?.changeFrame(Frame.ofView(this, display))
         background = backgroundField?.let{ BitmapDrawable(it.bitmap) }
     }
 

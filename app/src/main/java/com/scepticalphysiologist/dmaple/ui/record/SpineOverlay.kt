@@ -94,7 +94,7 @@ class SpineOverlay(context: Context, attributeSet: AttributeSet?): View(context,
 
     private fun updateCanvasTransform() {
         creator?.let { mapCreator ->
-            val canvasFrame = Frame.fromView(this, display)
+            val canvasFrame = Frame.ofView(this, display)
             canvasTransform = mapCreator.roi.frame.transformMatrix(canvasFrame, resize = true)
         }
     }
