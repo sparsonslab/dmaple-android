@@ -1,7 +1,5 @@
 package com.scepticalphysiologist.dmaple.map.creator
 
-import android.graphics.Bitmap
-import com.scepticalphysiologist.dmaple.etc.ntscGrey
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import kotlin.math.ceil
 
@@ -14,8 +12,8 @@ class GutSegmentor(roi: FieldRoi, val params: FieldParams) {
 
     // The gut and its field
     // ----------------------
-    /** The field */
-    private lateinit var bitmap: Bitmap
+    /** The image of the guts to be segmented. */
+    private var image =  LumaReader()
     /** The gut is horizontal within the field of view. */
     val gutIsHorizontal: Boolean = roi.seedingEdge.isVertical()
     /** The grey-scale threshold at the gut boundary. */
@@ -66,10 +64,7 @@ class GutSegmentor(roi: FieldRoi, val params: FieldParams) {
     }
 
     /** Set the current field frame/image to be analysed. */
-    fun setFieldImage(image: Bitmap) { bitmap = image }
-
-    /** Get the NTSC grey-scale value of the (i, j) bitmap pixel. */
-    private fun getPixel(i: Int, j: Int): Float { return ntscGrey(bitmap.getPixel(i, j)) }
+    fun setFieldImage(image: LumaReader) { this.image = image }
 
     /** Seed the gut an initiate (seed) its spine.
      *
@@ -133,8 +128,8 @@ class GutSegmentor(roi: FieldRoi, val params: FieldParams) {
     private fun transverseSection(iLong: Int, rTrans: Pair<Int, Int>): BooleanArray {
         val range = (rTrans.first..rTrans.second)
         return (if(gutIsHorizontal)
-                 range.map{ (getPixel(iLong, it) > threshold) xor !(params.gutsAreAboveThreshold) }
-            else range.map{ (getPixel(it, iLong) > threshold) xor !(params.gutsAreAboveThreshold) }
+                 range.map{ (image.getPixelLuminance(iLong, it) > threshold) xor !(params.gutsAreAboveThreshold) }
+            else range.map{ (image.getPixelLuminance(it, iLong) > threshold) xor !(params.gutsAreAboveThreshold) }
         ).toBooleanArray()
     }
 
@@ -145,7 +140,7 @@ class GutSegmentor(roi: FieldRoi, val params: FieldParams) {
             t0 = rTrans.second
             t1 = rTrans.first
         }
-        val tmax = if(gutIsHorizontal) bitmap.height else bitmap.width
+        val tmax = if(gutIsHorizontal) image.height else image.width
         if(t0 !in 0 until tmax) t0 = 0
         if(t1 !in 0 until tmax) t1 = tmax - 1
         return Pair(t0, t1)
@@ -191,22 +186,22 @@ class GutSegmentor(roi: FieldRoi, val params: FieldParams) {
         var i = iTrans
         var g = 0
         if(gutIsHorizontal){
-            if(findAbove) while((i >= 0) && (i < bitmap.height) && (g <= params.maxGap)) {
-                if(getPixel(iLong, i) > threshold) g = 0 else g += 1
+            if(findAbove) while((i >= 0) && (i < image.height) && (g <= params.maxGap)) {
+                if(image.getPixelLuminance(iLong, i) > threshold) g = 0 else g += 1
                 i += d
             }
-            else while((i >= 0) && (i < bitmap.height) && (g <= params.maxGap)){
-                if(getPixel(iLong, i) < threshold) g = 0 else g += 1
+            else while((i >= 0) && (i < image.height) && (g <= params.maxGap)){
+                if(image.getPixelLuminance(iLong, i) < threshold) g = 0 else g += 1
                 i += d
             }
         }
         else {
-            if (findAbove) while ((i >= 0) && (i < bitmap.width) && (g <= params.maxGap)) {
-                if (getPixel(i, iLong) > threshold) g = 0 else g += 1
+            if (findAbove) while ((i >= 0) && (i < image.width) && (g <= params.maxGap)) {
+                if (image.getPixelLuminance(i, iLong) > threshold) g = 0 else g += 1
                 i += d
             }
-            else while ((i >= 0) && (i < bitmap.width) && (g <= params.maxGap)) {
-                if (getPixel(i, iLong) < threshold) g = 0 else g += 1
+            else while ((i >= 0) && (i < image.width) && (g <= params.maxGap)) {
+                if (image.getPixelLuminance(i, iLong) < threshold) g = 0 else g += 1
                 i += d
             }
         }

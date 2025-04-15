@@ -3,9 +3,9 @@ package com.scepticalphysiologist.dmaple.map.creator
 import android.graphics.Bitmap
 import android.graphics.Rect
 import android.util.Size
+import com.scepticalphysiologist.dmaple.map.buffer.ByteMap
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferView
-import com.scepticalphysiologist.dmaple.map.buffer.RGBMap
 import com.scepticalphysiologist.dmaple.map.buffer.ShortMap
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.field.FieldRuler
@@ -50,7 +50,7 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
     /** The right-radius map. */
     private var radiusMapRight: ShortMap? = null
     /** The spine intensity map. */
-    private var spineMap: RGBMap? = null
+    private var spineMap: ByteMap? = null
     /** The maps and their descriptions.
      * The description is used both as the prefix to the map's file name (and so must be valid as
      * part of a file name) and as a TIFF tag to identify the map's creator.
@@ -96,7 +96,7 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
                 i += 2
             }
             MapType.SPINE -> {
-                spineMap = RGBMap(buffers[i], ns)
+                spineMap = ByteMap(buffers[i], ns)
                 i += 1
             }
         }
@@ -116,12 +116,12 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
     // Calculation
     // ---------------------------------------------------------------------------------------------
 
-    /** Update the maps from a new camera bitmap. */
-    fun updateWithCameraBitmap(bitmap: Bitmap) {
+    /** Update the maps from a new luminance image from the camera. */
+    fun updateWithCameraImage(image: LumaReader) {
         if(reachedEnd) return
         try {
             // Analyse the bitmap.
-            segmentor.setFieldImage(bitmap)
+            segmentor.setFieldImage(image)
             if(nt == 0) segmentor.detectGutAndSeedSpine()
             else segmentor.updateBoundaries()
 
@@ -136,8 +136,8 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
                 spineMap?.let { map ->
                     j = segmentor.getSpine(i)
                     k = segmentor.longIdx[i]
-                    p = if(segmentor.gutIsHorizontal) bitmap.getPixel(k, j) else bitmap.getPixel(j, k)
-                    map.addSample(p)
+                    p = if(segmentor.gutIsHorizontal) image.getPixelLuminance(k, j) else image.getPixelLuminance(j, k)
+                    map.addSample(p.toByte())
                 }
             }
             nt += 1
@@ -160,7 +160,7 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
     }
 
     /** At least one buffer has reached capacity and no more samples will be added to the maps,
-     * irrespective of calls to [updateWithCameraBitmap]. */
+     * irrespective of calls to [updateWithCameraImage]. */
     fun hasReachedBufferLimit(): Boolean { return reachedEnd }
 
     // ---------------------------------------------------------------------------------------------

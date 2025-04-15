@@ -1,10 +1,28 @@
 package com.scepticalphysiologist.dmaple
 
 
+import com.scepticalphysiologist.dmaple.map.creator.rationalToFloat
+import org.junit.Test
 import java.nio.ByteBuffer
 
 
 class Scrap {
+
+    @Test
+    fun `yuv back forward`(){
+
+        val x = listOf<Byte>(-120, -54, -10, 23, 88, 112)
+
+        val y = x.map{it.toInt() and 0xff}
+
+        val z = y.map{it.toFloat().toInt().toByte()}
+
+        for(i in 0 until x.size)
+            println("${x[i]} > ${y[i]} > ${z[i]}")
+
+
+
+    }
 
 }
 

@@ -1,12 +1,11 @@
 package com.scepticalphysiologist.dmaple.map.creator
 
-import android.graphics.Bitmap
 import com.scepticalphysiologist.dmaple.geom.Edge
 import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.geom.Rectangle
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
-import com.scepticalphysiologist.dmaple.ui.record.ThresholdBitmap
+import com.scepticalphysiologist.dmaple.ui.record.BackgroundHighlight
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.jupiter.api.BeforeEach
@@ -23,7 +22,7 @@ class MapCreatorTest {
 
      lateinit var diameters: List<Int>
 
-     lateinit var frames: List<Bitmap>
+     lateinit var frames: List<LumaReader>
 
      lateinit var roi: FieldRoi
 
@@ -35,11 +34,13 @@ class MapCreatorTest {
      @BeforeEach
      fun setUp() {
           // The gut is not inverted.
-          ThresholdBitmap.highlightAbove = false
+          BackgroundHighlight.backgroundIsAboveThreshold = false
 
           // a series of camera frames of a gut positioned horizontally across the whole frame.
           diameters = listOf(50, 55, 60, 65, 60, 55, 50)
-          frames = horizontalGutSeries(diameters = diameters, fieldWidth = 100)
+          frames = horizontalGutSeries(diameters = diameters, fieldWidth = 100).map{ bitmap ->
+              LumaReader().also{it.readBitmap(bitmap)}
+          }
 
           // An ROI over that gut.
           val (iw, ih) = Pair(frames[0].width, frames[0].height)
@@ -70,7 +71,7 @@ class MapCreatorTest {
         val bytesRequired = frames.size * creator.spaceSamples() * roi.maps.maxOf { it.bytesPerSample }
         var buffers = (0..2).map{ ByteBuffer.allocate(bytesRequired) }
         creator.provideBuffers(buffers)
-        for(frame in frames) creator.updateWithCameraBitmap(frame)
+        for(frame in frames) creator.updateWithCameraImage(frame)
 
         // Then: The buffer limits are not reached and all frames are in the map.
         assert(!creator.hasReachedBufferLimit())
@@ -80,7 +81,7 @@ class MapCreatorTest {
         creator = MapCreator(roi, params)
         buffers = (0..2).map{ ByteBuffer.allocate(bytesRequired - 100) }
         creator.provideBuffers(buffers)
-        for(frame in frames) creator.updateWithCameraBitmap(frame)
+        for(frame in frames) creator.updateWithCameraImage(frame)
 
         // Then: The buffer limits have been recorded as reached and the last frame is missing from the map.
         assert(creator.hasReachedBufferLimit())
@@ -96,7 +97,7 @@ class MapCreatorTest {
         val bytesRequired = frames.size * creator.spaceSamples() * roi.maps.maxOf { it.bytesPerSample }
         val buffers = (0..2).map{ ByteBuffer.allocate(bytesRequired + 1000) }
         creator.provideBuffers(buffers)
-        for(frame in frames) creator.updateWithCameraBitmap(frame)
+        for(frame in frames) creator.updateWithCameraImage(frame)
         // ... and is then the diameter map is converted to a TIFF.
         val dmap = creator.toTiff().first().writeRasters
 

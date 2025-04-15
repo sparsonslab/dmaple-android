@@ -5,7 +5,6 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.graphics.Bitmap
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CaptureRequest
 import android.os.Binder
@@ -39,6 +38,7 @@ import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
 import com.scepticalphysiologist.dmaple.map.creator.FieldParams
+import com.scepticalphysiologist.dmaple.map.creator.LumaReader
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.field.FieldRuler
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
@@ -51,7 +51,7 @@ import java.io.File
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.Executors
-import kotlin.system.measureTimeMillis
+import kotlin.time.TimeSource
 
 /** A foreground service that will run the camera, record spatio-temporal maps and keep ROI state.
  *
@@ -127,10 +127,14 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     private var startTime: Instant = Instant.now()
     /** The instant that creation of maps stopped. */
     private var endTime: Instant = Instant.now()
-    /** The last bitmap captured from the camera. */
-    private var lastCapture: Bitmap? = null
+    /** Read luminance values from the camera. */
+    private var imageReader: LumaReader = LumaReader()
     /** The coroutine scope for recording maps. */
     private var scope: CoroutineScope = MainScope()
+    /** Timer for regularising frame rate. */
+    private val tSource = TimeSource.Monotonic
+    /** Time marker for regularising frame rate. */
+    private var tMark = tSource.markNow()
 
     // ---------------------------------------------------------------------------------------------
     // Initiation
@@ -176,10 +180,12 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             builder.setTargetAspectRatio(CAMERA_ASPECT_RATIO)
             builder.setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             builder.setImageQueueDepth(5)
+            builder.setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
         }.build().also { use ->
             use.setAnalyzer(Executors.newFixedThreadPool(5), this)
             bindUse(use)
         }
+
     }
 
     /** Bind a CameraX use case. */
@@ -318,7 +324,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     /** Get the last image of the mapping field. */
     fun getLastFieldImage(): FieldImage? {
-        return lastCapture?.let { bitmap ->
+        return imageReader.colorBitmap?.let { bitmap ->
             // We can assume that the last captured bitmap is in the same frame as a current creator.
             creators.firstOrNull()?.roi?.frame?.let { frame -> FieldImage(frame, bitmap) }
         }
@@ -338,7 +344,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         clearCreators()
         record.loadMapTiffs(bufferProvider)
         creators.addAll(record.creators)
-        lastCapture = record.field
+        //lastCapture = record.field
         currentMap = Pair(0, 0)
         return true
     }
@@ -359,7 +365,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             // Write the record and add it to the record collection.
             val record = MappingRecord(
                 location = path.file,
-                field = lastCapture,
+                field = imageReader.colorBitmap,
                 creators = creators,
                 recordingPeriod = listOf(startTime, endTime)
             )
@@ -413,6 +419,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         setPreview()
         creating = true
         startTime = Instant.now()
+        imageReader.reset()
         return warning
     }
 
@@ -470,24 +477,23 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         } ?: return null
     }
 
-    /** Analyse each image from the camera feed. Called continuously during the life of the service. */
+    //var t0 = tSource.markNow()
+    /** Analyse each frame from the camera feed. Called continuously during the life of the service. */
     override fun analyze(image: ImageProxy) {
-        // Uses the pattern given in
-        // https://stackoverflow.com/questions/61252975/how-to-decrease-frame-rate-of-android-camerax-imageanalysis
-        // to keep the frame-rate fairly constant.
-        val elapsed = measureTimeMillis {
-            if(creating) {
-                // Pass the image to each map creator to analyse.
-                lastCapture = image.toBitmap()
-                // todo - would be faster to have creators access image pixels directly rather
-                //    than convert the whole image to a bitmap. But getting pixels out of image
-                //    is a pain (decoding, planes, etc) -  I did try!
-                for(creator in creators) creator.updateWithCameraBitmap(lastCapture!!)
-            }
+        tMark = tSource.markNow()
+        // Pass the image to each map creator to analyse.
+        if(creating) {
+            //println(t0.elapsedNow().inWholeMilliseconds)
+            //t0 = tSource.markNow()
+            imageReader.readYUVImage(image)
+            for(creator in creators) creator.updateWithCameraImage(imageReader)
         }
-        image.use {
-            if(elapsed < frameIntervalMs) Thread.sleep(frameIntervalMs - elapsed)
-        }
+        // Sleep the thread to get an actual frame rate close to that wanted.
+        // Not sure why adding 2 ms here works but it does.
+        val elapsed = tMark.elapsedNow().inWholeMilliseconds + 2
+        if(elapsed < frameIntervalMs) Thread.sleep(frameIntervalMs - elapsed)
+        // Close the image to allow analyze to be called for the next frame.
+        image.close()
     }
 
     // ---------------------------------------------------------------------------------------------
