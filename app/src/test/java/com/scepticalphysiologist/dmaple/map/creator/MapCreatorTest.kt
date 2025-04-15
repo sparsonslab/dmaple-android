@@ -5,7 +5,7 @@ import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.geom.Rectangle
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
-import com.scepticalphysiologist.dmaple.ui.record.ThresholdBitmap
+import com.scepticalphysiologist.dmaple.ui.record.BackgroundHighlight
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.jupiter.api.BeforeEach
@@ -34,7 +34,7 @@ class MapCreatorTest {
      @BeforeEach
      fun setUp() {
           // The gut is not inverted.
-          ThresholdBitmap.highlightAbove = false
+          BackgroundHighlight.highlightAbove = false
 
           // a series of camera frames of a gut positioned horizontally across the whole frame.
           diameters = listOf(50, 55, 60, 65, 60, 55, 50)

@@ -72,7 +72,7 @@ class RoiOverlay(context: Context?, attributeSet: AttributeSet?):
      * near the ROI (see [Point.relativeDistance]) */
     private val fe: Float = 1.3f
     /** A bitmap drawn during thresholding of the active ROI, to visualize the threshold. */
-    private var thresholdBitmap: ThresholdBitmap? = null
+    private var thresholdBitmap: BackgroundHighlight? = null
     /** Indicates that the active Roi has changed. The value is the threshold
      * of the active Roi (selected or newly created) or null is there is no active ROI. */
     val activeRoiChanged = MutableLiveData<Int?>(null)
@@ -181,7 +181,7 @@ class RoiOverlay(context: Context?, attributeSet: AttributeSet?):
     fun startThresholding(cameraShot: Bitmap) {
         activeRoi?.let { roi ->
             setBackgroundFromField(FieldImage(Frame.fromView(this, display), cameraShot))
-            thresholdBitmap = ThresholdBitmap.fromImage(cameraShot, roi.toRect())
+            thresholdBitmap = BackgroundHighlight.fromImage(cameraShot, roi.toRect())
             invalidate()
         }
     }

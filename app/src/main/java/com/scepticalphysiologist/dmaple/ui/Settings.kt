@@ -11,7 +11,7 @@ import androidx.preference.SeekBarPreference
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.map.creator.FieldParams
-import com.scepticalphysiologist.dmaple.ui.record.ThresholdBitmap
+import com.scepticalphysiologist.dmaple.ui.record.BackgroundHighlight
 import com.scepticalphysiologist.dmaple.ui.record.SpineOverlay
 
 class Settings: PreferenceFragmentCompat() {
@@ -60,7 +60,7 @@ class Settings: PreferenceFragmentCompat() {
             val inverted = if(entry is Boolean) entry else entry.toString().toBoolean()
             FieldParams.preference.gutsAreAboveThreshold = !inverted
             // todo - get the below from the above.
-            ThresholdBitmap.highlightAbove = inverted
+            BackgroundHighlight.highlightAbove = inverted
             SpineOverlay.spinePaint.color = if(inverted) Color.WHITE else Color.BLACK
         }
 
