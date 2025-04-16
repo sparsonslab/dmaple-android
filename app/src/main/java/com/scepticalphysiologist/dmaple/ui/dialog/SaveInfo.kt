@@ -53,7 +53,7 @@ class SaveInfo(
                             onDoNotSave()
                             openDialog.value = false
                         }
-                    ) { Text("Do Not") }
+                    ) { Text("Cancel") }
                 }
             )
         }

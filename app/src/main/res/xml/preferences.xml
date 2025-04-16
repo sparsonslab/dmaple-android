@@ -61,8 +61,8 @@
 
         <SeekBarPreference
             android:key="SPINE_MAX_GAP"
-            android:title="Spine Gap"
-            android:summary="The maximum number below-threshold pixel gap that can be ignored"
+            android:title="Gap Skip"
+            android:summary="The maximum gap of below-threshold pixels that can be ignored."
             app:showSeekBarValue="true"
             app:min="0"
             android:max="20"
