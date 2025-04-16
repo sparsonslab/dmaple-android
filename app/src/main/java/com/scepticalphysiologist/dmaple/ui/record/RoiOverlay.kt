@@ -229,7 +229,7 @@ class RoiOverlay(context: Context?, attributeSet: AttributeSet?):
 
         // No active ROI: create a new ROI.
         if(activeRoi == null) {
-            if(isDoubleClick) initiate(event)
+            if(isDoubleClick) initiateRoi(event)
             return true
         }
 
@@ -255,7 +255,7 @@ class RoiOverlay(context: Context?, attributeSet: AttributeSet?):
                 else expand(event, rp)
             }
             // ... double-click outside edge: de novo ROI.
-            else if (isDoubleClick) initiate(event)
+            else if (isDoubleClick) initiateRoi(event)
             // ... otherwise clear.
             else clearActiveRoi()
         }
@@ -376,13 +376,14 @@ class RoiOverlay(context: Context?, attributeSet: AttributeSet?):
     }
 
     /** Initiate an active ROI de novo. */
-    private fun initiate(event: MotionEvent) {
+    private fun initiateRoi(event: MotionEvent) {
         if(event.action != MotionEvent.ACTION_DOWN) return
         changeActiveRoi(FieldRoi(
             frame = Frame.ofView(this, display),
             c0 = Point(event.x - 50f, event.y - 50f),
             c1 = Point(event.x + 50f, event.y + 50f),
             maps = listOf(MapType.DIAMETER),
+            threshold = savedRois.maxOfOrNull { it.threshold } ?: 0,
             uid = uniqueUID()
         ))
         activeRoi?.let {
