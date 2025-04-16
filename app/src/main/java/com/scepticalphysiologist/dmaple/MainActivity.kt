@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.IBinder
+import android.util.Log
 import android.view.WindowManager
 import androidx.camera.core.Preview.SurfaceProvider
 import androidx.camera.view.PreviewView
@@ -58,6 +59,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.i("dmaple_lifetime", "main activity: onCreate")
         setContentView(R.layout.activity_main)
 
         // Load records
@@ -72,8 +74,14 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
 
     override fun onResume() {
         super.onResume()
+        Log.i("dmaple_lifetime", "main activity: onResume")
         // If we are resuming after going into settings, set the preferences.
         setPreferences()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.i("dmaple_lifetime", "main activity: onDestroy")
     }
 
     /** Set system-wide variables from preferences. */
@@ -112,6 +120,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
 
     /** Connect ("bind") the mapping service so that it can be called. */
     private fun connectMappingService(context: Context) {
+        Log.i("dmaple_lifetime", "main activity: connectMappingService")
         val intent = Intent(context, MappingService::class.java)
         context.startForegroundService(intent)
         context.bindService(intent, this, Context.BIND_AUTO_CREATE)
@@ -119,6 +128,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
 
     /** Once the service is connected, get an instance of it set its surface. */
     override fun onServiceConnected(p0: ComponentName?, binder: IBinder?) {
+        Log.i("dmaple_lifetime", "main activity: onServiceConnected")
         // Get the service object.
         mapService = (binder as MappingService.MappingBinder).getService()
         mapService?.let { service ->
@@ -135,6 +145,8 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         }
     }
 
-    override fun onServiceDisconnected(p0: ComponentName?) { }
+    override fun onServiceDisconnected(p0: ComponentName?) {
+        Log.i("dmaple_lifetime", "main activity: onServiceDisconnected")
+    }
 
 }

@@ -47,7 +47,8 @@
         <SwitchPreference
             android:key="THRESHOLD_INVERTED"
             android:title="Threshold Inversion"
-            android:summary="If the gut is dark against a light background,"/>
+            android:summary="If the gut is dark against a light background."
+            android:defaultValue="false"/>
 
         <SeekBarPreference
             android:key="SEED_MIN_WIDTH"
@@ -75,6 +76,18 @@
             app:min="1"
             android:max="50"
             android:defaultValue="1"/>
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="APP_CATEGORY"
+        android:title="Application">
+
+        <SwitchPreference
+            android:key="SAVE_ON_CLOSE"
+            android:title="Save On Close"
+            android:summary="Automatically save a live recording when the app is closed."
+            android:defaultValue="true"/>
 
     </PreferenceCategory>
 

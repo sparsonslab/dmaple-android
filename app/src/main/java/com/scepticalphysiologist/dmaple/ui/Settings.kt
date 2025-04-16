@@ -10,6 +10,7 @@ import androidx.preference.PreferenceManager
 import androidx.preference.SeekBarPreference
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.R
+import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.map.creator.FieldParams
 import com.scepticalphysiologist.dmaple.ui.record.BackgroundHighlight
 import com.scepticalphysiologist.dmaple.ui.record.SpineOverlay
@@ -41,6 +42,7 @@ class Settings: PreferenceFragmentCompat() {
             setSeedMinWidth(prefs.getInt("SEED_MIN_WIDTH", 10))
             setSpineSmooth(prefs.getInt("SPINE_SMOOTH", 1))
             setSpineMaxGap(prefs.getInt("SPINE_MAX_GAP", 2))
+            setAutoSaveOnClose(prefs.getBoolean("SAVE_ON_CLOSE", false))
         }
 
         fun setScreenRotation(entry: Any?, activity: Activity) {
@@ -78,6 +80,11 @@ class Settings: PreferenceFragmentCompat() {
 
         private fun setSpineMaxGap(entry: Any?) {
             entry.toString().toIntOrNull()?.let { FieldParams.preference.maxGap = it }
+        }
+
+        private fun setAutoSaveOnClose(entry: Any?) {
+            val autoSave = if(entry is Boolean) entry else entry.toString().toBoolean()
+            MappingService.AUTO_SAVE_ON_CLOSE = autoSave
         }
 
     }

@@ -65,12 +65,17 @@ class LumaReader {
         }
         if(colorBitmap == null) colorBitmap = bitmap
         // Luminance from RGB channels of the bitmap (NTSC/BT.470/PAL formula).
-        for(j in 0 until height)
-            for(i in 0 until width) {
-                val color = bitmap.getPixel(i, j)
-                val luma = 0.299f * color.red + 0.587f * color.green + 0.114f * color.blue
-                buffer.put(j * width + i, luma.toInt().toByte())
-            }
+        try {
+            for(j in 0 until height)
+                for(i in 0 until width) {
+                    val color = bitmap.getPixel(i, j)
+                    val luma = 0.299f * color.red + 0.587f * color.green + 0.114f * color.blue
+                    buffer.put(j * width + i, luma.toInt().toByte())
+                }
+        }
+        // This very occasionally gets thrown when the app has just started and the user opens
+        // the explorer activity.
+        catch (_: java.lang.IllegalStateException) { }
     }
 
     /** Get the luma of the (i, j)th pixel. */

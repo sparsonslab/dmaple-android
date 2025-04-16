@@ -9,6 +9,7 @@ import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CaptureRequest
 import android.os.Binder
 import android.os.IBinder
+import android.util.Log
 import android.util.Range
 import android.view.Display
 import android.view.WindowManager
@@ -45,6 +46,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.time.Duration
 import java.time.Instant
@@ -72,6 +74,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     companion object {
         /** The aspect ratio of the camera. */
         const val CAMERA_ASPECT_RATIO = AspectRatio.RATIO_16_9
+        /** Automatically save any live recording when the app is closed. */
+        var AUTO_SAVE_ON_CLOSE: Boolean = false
     }
 
     // Camera
@@ -135,6 +139,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** Set-up the camera. */
     override fun onCreate() {
         super.onCreate()
+        Log.i("dmaple_lifetime", "mapping service: onCreate")
         display = (this.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay
         cameraProvider = ProcessCameraProvider.getInstance(this).get()
         cameraProvider.unbindAll()
@@ -199,6 +204,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     override fun onBind(intent: Intent): IBinder {
         super.onBind(intent)
+        Log.i("dmaple_lifetime", "mapping service: onBind")
         return binder
     }
 
@@ -208,6 +214,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     // Called from context.startForegroundService()
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.i("dmaple_lifetime", "mapping service: onStartCommand")
         // Notification and channel.
         val channelId = "MAPPING_CHANNEL"
         val channel = NotificationChannel(channelId, "Mapping", NotificationManager.IMPORTANCE_HIGH)
@@ -229,10 +236,21 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         return super.onStartCommand(intent, flags, startId)
     }
 
-    /** Stop the service when the app is "closed" (task removed) by the user. */
+    /** Stop the service when the app is "closed" (task removed) by the user.
+     *
+     * This can also be achieved in the service's entry in the AndroidManifest.xml by
+     * android:stopWithTask="true"
+     * But here we can allow automated saving, clean-up, etc.
+     * */
     override fun onTaskRemoved(rootIntent: Intent?) {
-        this.stopService(rootIntent)
-        // TODO - save maps.
+        Log.i("dmaple_lifetime", "mapping service: onTaskRemoved")
+        if(creating) {
+            stop()
+            runBlocking { saveAndClear(if(AUTO_SAVE_ON_CLOSE) "Auto_Saved" else null) }
+            rois.clear()
+        }
+        stopForeground(true)
+        stopSelf()
         super.onTaskRemoved(rootIntent)
     }
 
@@ -361,7 +379,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
      * */
     fun saveAndClear(folderName: String?) = scope.launch(Dispatchers.Default) {
         if(creating) return@launch
-
         folderName?.let {
             // Find a valid (not already existing) folder for the record.
             val file = File(MappingRecord.DEFAULT_ROOT, folderName.ifEmpty { MappingRecord.DEFAULT_RECORD_FOLDER })
