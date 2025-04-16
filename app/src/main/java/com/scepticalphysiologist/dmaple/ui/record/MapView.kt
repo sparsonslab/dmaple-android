@@ -246,7 +246,9 @@ class MapView(context: Context, attributeSet: AttributeSet):
         bitmapMatrix = Matrix()
         bitmapMatrix.setRotate(if(width > height) 90f else 0f)
 
-        // Flip so that time goes from top>bottom or left>right and space matches ROI.
+        // Flip so that:
+        // - time goes from top>bottom (portrait) or left>right (landscape)
+        // - seeding-edge (start of space) is left (portrait) or top (landscape).
         // todo - Does this actually work on all tablets? Is this general??
         val s = screenPoint(zoom * pixelStep)
         when(display.rotation) {
