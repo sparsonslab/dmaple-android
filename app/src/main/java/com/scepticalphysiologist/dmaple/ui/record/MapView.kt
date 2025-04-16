@@ -206,9 +206,8 @@ class MapView(context: Context, attributeSet: AttributeSet):
         // Update dependent variables.
         updateViewSizeInBitmapPixels()
 
-        // Restrict offset. Cannot have an offset if full span of the bitmap is within the view.
+        // Time cannot have an offset if full span of the bitmap is within the view.
         if(bitmapSize.y < viewSizeInBitmapPixels.y) offset.y = 0f
-        if(bitmapSize.x < viewSizeInBitmapPixels.x) offset.x = 0f
     }
 
     /** Update the size of the view in terms of bitmap (st-map) pixels. */
