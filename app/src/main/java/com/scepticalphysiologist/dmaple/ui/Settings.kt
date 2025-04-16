@@ -83,8 +83,7 @@ class Settings: PreferenceFragmentCompat() {
         }
 
         private fun setAutoSaveOnClose(entry: Any?) {
-            val autoSave = if(entry is Boolean) entry else entry.toString().toBoolean()
-            MappingService.AUTO_SAVE_ON_CLOSE = autoSave
+            MappingService.AUTO_SAVE_ON_CLOSE = if(entry is Boolean) entry else entry.toString().toBoolean()
         }
 
     }
