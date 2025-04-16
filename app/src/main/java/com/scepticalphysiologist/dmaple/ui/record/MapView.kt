@@ -241,21 +241,19 @@ class MapView(context: Context, attributeSet: AttributeSet):
 
     /** Update the map's bitmap transformation matrix ([bitmapMatrix]). */
     private fun updateMatrix() {
-        // Rotate so that the time (height) axis of the a map's bitmap is shown
-        // along the long axis of the view.
-        bitmapMatrix = Matrix()
-        bitmapMatrix.setRotate(if(width > height) 90f else 0f)
-
-        // Sign the scale so that:
+        // Rotate and sign the scale so that:
         // - time goes from top>bottom (portrait) or left>right (landscape)
-        // - seeding-edge (start of space) is left (portrait) or top (landscape).
+        // - seeding-edge (start of space) is right (portrait) or bottom (landscape)
+        // .... i.e. the scale bar is at the leading-edge of time and the seeding edge of space.
         // todo - Does this actually work on all tablets? Is this general??
+        bitmapMatrix = Matrix()
+        bitmapMatrix.setRotate(if(width > height) -90f else 0f)
         val s = screenPoint(zoom * pixelStep)
         when(display.rotation) {
-            Surface.ROTATION_0 -> bitmapMatrix.postScale(s.x, s.y)  // portrait
-            Surface.ROTATION_90 -> bitmapMatrix.postScale(-s.x, s.y)  // landscape
-            Surface.ROTATION_180 -> bitmapMatrix.postScale(s.x, s.y)  // portrait-reverse
-            Surface.ROTATION_270 -> bitmapMatrix.postScale(-s.x, s.y) // landscape-reverse
+            Surface.ROTATION_0 -> bitmapMatrix.postScale(-s.x, s.y)  // portrait
+            Surface.ROTATION_90 -> bitmapMatrix.postScale(s.x, s.y)  // landscape
+            Surface.ROTATION_180 -> bitmapMatrix.postScale(-s.x, s.y)  // portrait-reverse
+            Surface.ROTATION_270 -> bitmapMatrix.postScale(s.x, s.y) // landscape-reverse
         }
     }
 
