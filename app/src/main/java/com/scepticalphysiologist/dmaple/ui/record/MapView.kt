@@ -19,6 +19,7 @@ import androidx.lifecycle.findViewTreeLifecycleOwner
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.etc.transformBitmap
+import com.scepticalphysiologist.dmaple.geom.surfaceRotationDegrees
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 
 /** A view for live display of a spatio-temporal map.
@@ -249,10 +250,10 @@ class MapView(context: Context, attributeSet: AttributeSet):
         // todo - Does this actually work on all tablets? Is this general??
         val s = screenPoint(zoom * pixelStep)
         when(display.rotation) {
-            Surface.ROTATION_0 -> bitmapMatrix.postScale(-s.x, s.y)
+            Surface.ROTATION_0 -> bitmapMatrix.postScale(s.x, s.y)
             Surface.ROTATION_90 -> bitmapMatrix.postScale(-s.x, s.y)
             Surface.ROTATION_180 -> bitmapMatrix.postScale(s.x, s.y)
-            Surface.ROTATION_270 -> bitmapMatrix.postScale(-s.x, -s.y)
+            Surface.ROTATION_270 -> bitmapMatrix.postScale(-s.x, s.y)
         }
     }
 

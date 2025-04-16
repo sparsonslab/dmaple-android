@@ -53,7 +53,7 @@ class GutSegmentor(roi: FieldRoi, val params: FieldParams) {
         // Longitudinal samples.
         val step = params.spineSkipPixels + 1
         longIdx = if(l0 < l1) (l0..l1 step step).toList().toIntArray()
-        else (l1..l0 step step).toList().toIntArray()
+        else (l0 downTo l1 step step).toList().toIntArray()
         val nl = longIdx.size
 
         // Holding arrays.
