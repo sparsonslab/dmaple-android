@@ -19,7 +19,6 @@ import androidx.lifecycle.findViewTreeLifecycleOwner
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.etc.transformBitmap
-import com.scepticalphysiologist.dmaple.geom.surfaceRotationDegrees
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 
 /** A view for live display of a spatio-temporal map.
@@ -207,9 +206,9 @@ class MapView(context: Context, attributeSet: AttributeSet):
         // Update dependent variables.
         updateViewSizeInBitmapPixels()
 
-        // Restrict time anchor point. Cannot have an time offset if full time span of the bitmap
-        // is within the view.
+        // Restrict offset. Cannot have an offset if full span of the bitmap is within the view.
         if(bitmapSize.y < viewSizeInBitmapPixels.y) offset.y = 0f
+        if(bitmapSize.x < viewSizeInBitmapPixels.x) offset.x = 0f
     }
 
     /** Update the size of the view in terms of bitmap (st-map) pixels. */
@@ -330,7 +329,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
      */
     private fun fingerScroll(ds: Point) {
         val bitmapShift = spaceTimePoint(ds) * scale / zoom
-        // todo - Direction of shift should depend on orientation
+        bitmapShift.y *= -1 // time runs opposite.
         offset = Point.maxOf(offset + bitmapShift, Point(0f, 0f))
         if(!updating) updateBitmap()
     }
