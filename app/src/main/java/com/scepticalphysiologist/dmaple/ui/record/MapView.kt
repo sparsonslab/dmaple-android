@@ -142,13 +142,13 @@ class MapView(context: Context, attributeSet: AttributeSet):
     // ---------------------------------------------------------------------------------------------
     private var viewExtent = Point()
     private val bitmapViewRatio = 0.6f
-    private val bitmapExtent: Point get() = viewExtent * bitmapViewRatio
+    private var bitmapExtent: Point = viewExtent * bitmapViewRatio
     private var mapExtent = Point()
     private var mapOrigin = Point(0f, 0f)
-    private val unitZoomMapBitmapRatio: Float get() = mapExtent.x / bitmapExtent.x
+    private var unitZoomMapBitmapRatio: Float = mapExtent.x / bitmapExtent.x
     private var zoom = Point(1f, 1f)
-    private val mapBitmapRatio: Point get() = (zoom / unitZoomMapBitmapRatio).inverse()
-    private val pixelStep: Point get() = Point.maxOf((mapBitmapRatio).ceil(), Point(1f, 1f))
+    private var mapBitmapRatio: Point = (zoom / unitZoomMapBitmapRatio).inverse()
+    private var pixelStep: Point = Point.maxOf((mapBitmapRatio).ceil(), Point(1f, 1f))
     private var bitmapMatrix = Matrix()
 
     /** Convert a screen point to a space-time coordinate.
@@ -170,28 +170,39 @@ class MapView(context: Context, attributeSet: AttributeSet):
     /** Update the view size [viewSize]. */
     private fun updateViewExtent(){
         viewExtent = spaceTimePoint(Point(width.toFloat(), height.toFloat()))
+        bitmapExtent = viewExtent * bitmapViewRatio
+        updateUnitZoom()
     }
 
     /** Update the size of the map's bitmap ([bitmapSize]). */
     private fun updateMapExtent(size: Size){
-        val ny = size.height.toFloat()
-        //mapOrigin.y += (ny - mapExtent.y)
-        mapExtent.y = ny
+        mapExtent.y = size.height.toFloat()
         val w = size.width.toFloat()
-        if(mapExtent.x != w) mapExtent.x = w
+        if(mapExtent.x != w) {
+            mapExtent.x = w
+            updateUnitZoom()
+        }
         updateMapOrigin()
     }
 
+    private fun updateUnitZoom(){
+        unitZoomMapBitmapRatio = mapExtent.x / bitmapExtent.x
+        updateMapBitmapRatio()
+    }
 
     /** Update the zoom ([zoom]). */
     private fun updateZoom(newZoom: Point) {
         // Restrict zoom ranges.
         // Space (x) cannot be zoomed out to less than the width of the screen (zoom >= 1).
         zoom = Point.maxOf(Point.minOf(newZoom, Point(4f, 5f)), Point(1f, 0.1f))
+        updateMapBitmapRatio()
+    }
 
-        // Adjust so that map is scrolled to end.
-        updateMapOrigin()
+    private fun updateMapBitmapRatio() {
+        mapBitmapRatio = (zoom / unitZoomMapBitmapRatio).inverse()
+        pixelStep = Point.maxOf((mapBitmapRatio).ceil(), Point(1f, 1f))
         updateBar()
+        updateMatrix()
     }
 
     private fun updateMapOrigin() {
@@ -236,8 +247,6 @@ class MapView(context: Context, attributeSet: AttributeSet):
             Surface.ROTATION_270 -> bitmapMatrix.postScale(s.x, s.y) // landscape-reverse
         }
     }
-
-
 
     // ---------------------------------------------------------------------------------------------
     // Map update
@@ -300,7 +309,6 @@ class MapView(context: Context, attributeSet: AttributeSet):
 
             val p0 = Point.maxOf(Point(0f, 0f), mapOrigin)
             val p1 = mapOrigin + mapBitmapRatio * bitmapExtent
-            updateMatrix()
 
             mapCreator.getMapBitmap(
                 idx = mapIdx,
