@@ -124,12 +124,6 @@ class MapView(context: Context, attributeSet: AttributeSet):
         }
     }
 
-
-
-    override fun onFinishInflate() {
-        super.onFinishInflate()
-    }
-
     /** Draw the scale bars over the map.. */
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
