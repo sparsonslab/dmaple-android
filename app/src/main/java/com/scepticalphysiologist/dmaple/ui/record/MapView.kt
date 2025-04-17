@@ -82,25 +82,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
 
     // Space(x)-Time(y) pairs.
     // -------------------------
-    /** The size of the view (x = space, y = time). */
-    private var viewSize = Point()
-    /** The size of the map's bitmap (x = space, y = time). */
-    private var bitmapSize = Point()
-    /** Zoom of the bitmap (x = space, y = time). */
-    private var zoom = Point(1f, 1f)
-    /** The ratio of bitmap pixels to view pixels, along the spatial axis at zoom = 1. */
-    private var scale  = 1f
-    /** The maximum number of map pixels that should be shown (x = space, y = time).
-     * This is important in maintaining the speed of map display. */
-    private val maxViewPixels = Point(200f, 900f)
-    /** Skipping of map pixels to display (x = space, y = time). */
-    private var pixelStep = Point(1f, 1f)
-    /** The size of the view in terms of bitmap pixels at the current zoom (x = space, y = time). */
-    private var viewSizeInBitmapPixels = Point()
-    /** A matrix used for rotating and scaling the map's bitmap. */
-    private var bitmapMatrix: Matrix = Matrix()
-    /** The offset of the end of shown map from the end of the view (x = space, y = time). */
-    private var offset = Point(0f, 0f)
+
 
     // Scale bars
     // ----------
@@ -131,7 +113,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
         if(changed) {
-            updateViewSize()
+            updateViewExtent()
             if(!updating) updateBitmap()
         }
     }
@@ -158,6 +140,16 @@ class MapView(context: Context, attributeSet: AttributeSet):
     // ---------------------------------------------------------------------------------------------
     // Map viewport calculations.
     // ---------------------------------------------------------------------------------------------
+    private var viewExtent = Point()
+    private val bitmapViewRatio = 0.6f
+    private val bitmapExtent: Point get() = viewExtent * bitmapViewRatio
+    private var mapExtent = Point()
+    private var mapOrigin = Point(0f, 0f)
+    private val unitZoomMapBitmapRatio: Float get() = mapExtent.x / bitmapExtent.x
+    private var zoom = Point(1f, 1f)
+    private val mapBitmapRatio: Point get() = (zoom / unitZoomMapBitmapRatio).inverse()
+    private val pixelStep: Point get() = Point.maxOf((mapBitmapRatio).ceil(), Point(1f, 1f))
+    private var bitmapMatrix = Matrix()
 
     /** Convert a screen point to a space-time coordinate.
      * Time is always the larger dimension of the view.
@@ -176,66 +168,56 @@ class MapView(context: Context, attributeSet: AttributeSet):
     }
 
     /** Update the view size [viewSize]. */
-    private fun updateViewSize(){
-        viewSize = spaceTimePoint(Point(width.toFloat(), height.toFloat()))
-        updateScale()
+    private fun updateViewExtent(){
+        viewExtent = spaceTimePoint(Point(width.toFloat(), height.toFloat()))
     }
 
     /** Update the size of the map's bitmap ([bitmapSize]). */
-    private fun updateBitmapSize(size: Size){
-        bitmapSize.y = size.height.toFloat()
+    private fun updateMapExtent(size: Size){
+        val ny = size.height.toFloat()
+        //mapOrigin.y += (ny - mapExtent.y)
+        mapExtent.y = ny
         val w = size.width.toFloat()
-        if(bitmapSize.x != w) {
-            bitmapSize.x = w
-            updateScale()
-        }
+        if(mapExtent.x != w) mapExtent.x = w
+        updateMapOrigin()
     }
 
-    /** Update the scale ([scale]). */
-    private fun updateScale(){
-        scale = bitmapSize.x / viewSize.x
-        updateViewSizeInBitmapPixels()
-    }
 
     /** Update the zoom ([zoom]). */
-    private fun updateZoom(z: Point) {
+    private fun updateZoom(newZoom: Point) {
         // Restrict zoom ranges.
         // Space (x) cannot be zoomed out to less than the width of the screen (zoom >= 1).
-        zoom = Point.maxOf(Point.minOf(z, Point(4f, 5f)), Point(1f, 0.1f))
+        zoom = Point.maxOf(Point.minOf(newZoom, Point(4f, 5f)), Point(1f, 0.1f))
 
-        // Update dependent variables.
-        updateViewSizeInBitmapPixels()
-
-        // Time cannot have an offset if full span of the bitmap is within the view.
-        if(bitmapSize.y < viewSizeInBitmapPixels.y) offset.y = 0f
-    }
-
-    /** Update the size of the view in terms of bitmap (st-map) pixels. */
-    private fun updateViewSizeInBitmapPixels() {
-        viewSizeInBitmapPixels = viewSize * scale / zoom
-        // Skip pixels so that the pixels displayed from the bitmap do not exceed the maximum.
-        // This keeps bitmap display fast.
-        pixelStep = Point.maxOf((viewSizeInBitmapPixels / maxViewPixels).ceil(), Point(1f, 1f))
+        // Adjust so that map is scrolled to end.
+        updateMapOrigin()
         updateBar()
-        updateMatrix()
     }
+
+    private fun updateMapOrigin() {
+        // Keep the map fully forward
+        if(updating) mapOrigin = mapExtent - mapBitmapRatio * bitmapExtent
+    }
+
 
     /** Update the scale bars. */
     private fun updateBar() {
         creator?.let { crt ->
-            val bitmapPixelsPerUnit = Point(crt.spatialRes.first, crt.temporalRes.first)
+            val mapPixelsPerUnit = Point(crt.spatialRes.first, crt.temporalRes.first)
             // rounded bar size in units for ~fifth of screen
-            val barUnits = (viewSizeInBitmapPixels * 0.2f / bitmapPixelsPerUnit).ceil()
-            val barPixels = barUnits * bitmapPixelsPerUnit * zoom / scale
+            val viewSizeInMapPixels = bitmapExtent * mapBitmapRatio
+            val barUnits = (viewSizeInMapPixels * 0.2f / mapPixelsPerUnit).ceil()
+            val barPixels = barUnits * mapPixelsPerUnit / (mapBitmapRatio * bitmapViewRatio)
             // Bar points (in screen coordinates) and text.
-            barStart = screenPoint(viewSize - barPixels - 10f)
-            barEnd = screenPoint(viewSize - 10f)
+            barStart = screenPoint(viewExtent - barPixels - 10f)
+            barEnd = screenPoint(viewExtent - 10f)
             barText = screenPair(Pair(
                 "${barUnits.x.toInt()} ${crt.spatialRes.second}",
                 "${barUnits.y.toInt()} ${crt.temporalRes.second}"
             ))
         }
     }
+
 
     /** Update the map's bitmap transformation matrix ([bitmapMatrix]). */
     private fun updateMatrix() {
@@ -254,6 +236,8 @@ class MapView(context: Context, attributeSet: AttributeSet):
             Surface.ROTATION_270 -> bitmapMatrix.postScale(s.x, s.y) // landscape-reverse
         }
     }
+
+
 
     // ---------------------------------------------------------------------------------------------
     // Map update
@@ -278,14 +262,46 @@ class MapView(context: Context, attributeSet: AttributeSet):
      * This is intended to be run within a coroutine. Therefore the bitmap of the section of map
      * to be shown is posted as live data so that it can be displayed in the main UI thread.
      * */
+    fun updateBitmap2() {
+        creator?.let { mapCreator ->
+            // Update size.
+            updateMapExtent(mapCreator.spaceTimeSampleSize())
+
+            val p0 = Point.maxOf(Point(0f, 0f), mapOrigin)
+            val p1 = mapOrigin + mapBitmapRatio * bitmapExtent
+            println("$p0, $p1")
+
+
+            val bitmapSize = p1 / mapBitmapRatio
+            val nx = bitmapSize.x.toInt()
+            val ny = bitmapSize.y.toInt()
+            val bitmapCoors = mutableListOf<IntArray>()
+            var mp = Point()
+            for(j in 0 until ny)
+                for(i in 0 until nx) {
+                    bitmapCoors.add(intArrayOf(nx * j + i, 1, 1))
+                }
+
+
+
+            newBitmap.postValue(Bitmap.createBitmap(bitmapBacking, nx, ny, Bitmap.Config.ARGB_8888))
+
+        }
+    }
+
     fun updateBitmap() {
         creator?.let { mapCreator ->
             // Update size.
-            updateBitmapSize(mapCreator.spaceTimeSampleSize())
+            updateMapExtent(mapCreator.spaceTimeSampleSize())
             // Extract section of the map as a bitmap.
-            val pE = Point.minOf(bitmapSize, viewSizeInBitmapPixels)
-            val p0 = Point.maxOf(bitmapSize - pE - offset, Point())
-            val p1 = p0 + pE
+            //val pE = Point.minOf(bitmapSize, viewSizeInBitmapPixels)
+            //val p0 = Point.maxOf(bitmapSize - pE - offset, Point())
+            //val p1 = p0 + pE
+
+            val p0 = Point.maxOf(Point(0f, 0f), mapOrigin)
+            val p1 = mapOrigin + mapBitmapRatio * bitmapExtent
+            updateMatrix()
+
             mapCreator.getMapBitmap(
                 idx = mapIdx,
                 crop = Rect(p0.x.toInt(), p0.y.toInt(), p1.x.toInt(), p1.y.toInt()),
@@ -296,9 +312,10 @@ class MapView(context: Context, attributeSet: AttributeSet):
                 // Rotate and scale the bitmap and post to the main thread for display.
                 // This transform takes most of the remaining time of the update loop (5 - 8 ms of 10 ms total).
                 newBitmap.postValue(transformBitmap(bm, bitmapMatrix)
-            )}
+                )}
         }
     }
+
 
     // ---------------------------------------------------------------------------------------------
     // Gesture reaction.
@@ -327,10 +344,10 @@ class MapView(context: Context, attributeSet: AttributeSet):
      * @param ds The change in finger position during a scroll.
      */
     private fun fingerScroll(ds: Point) {
-        val bitmapShift = spaceTimePoint(ds) * scale / zoom
-        bitmapShift.y *= -1 // time runs opposite.
-        offset = Point.maxOf(offset + bitmapShift, Point(0f, 0f))
-        if(!updating) updateBitmap()
+        //val bitmapShift = spaceTimePoint(ds) * scale / zoom
+        //bitmapShift.y *= -1 // time runs opposite.
+        //offset = Point.maxOf(offset + bitmapShift, Point(0f, 0f))
+        //if(!updating) updateBitmap()
     }
 
     // ---------------------------------------------------------------------------------------------
