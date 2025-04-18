@@ -42,8 +42,8 @@ $$ max((0, 0), M_{orig} - M_{off}) : M_{orig} - M_{off} + b_{ext} R_{mb}$$
 
 | symbol     | description                                          | `MapView` attribute      |
 |------------|------------------------------------------------------|--------------------------|
-| $x$        | space coordinate                                     |                          |
-| $y$        | time coordinate                                      |                          |
+| $x$        | space coordinate                                     | -                        |
+| $y$        | time coordinate                                      | -                        |
 | $b$        | bitmap $(x, y)$ coordinate                           | -                        |
 | $m$        | map $(x, y)$ coordinate                              | -                        |
 | $b_{ext}$  | the size of the bitmap if it takes up the whole view | `bitmapExtent`           |
