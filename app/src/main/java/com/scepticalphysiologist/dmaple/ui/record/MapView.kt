@@ -183,7 +183,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
             if(mapExtent.x != w) {
                 mapExtent.x = w
                 updateUnitZoom()
-            }
+            } else
             updateMapOrigin()
         }
     }
@@ -191,19 +191,6 @@ class MapView(context: Context, attributeSet: AttributeSet):
     private fun updateUnitZoom(){
         unitZoomMapBitmapRatio = mapExtent.x / bitmapExtent.x
         updateMapBitmapRatio()
-    }
-
-
-
-    private fun updateMapBitmapRatio() {
-        mapBitmapRatio = (zoom / unitZoomMapBitmapRatio).inverse()
-        pixelStep = Point.maxOf((mapBitmapRatio).ceil(), Point(1f, 1f))
-        updateBar()
-        updateMatrix()
-    }
-
-    private fun updateMapOrigin() {
-        mapOrigin = mapExtent - mapBitmapRatio * bitmapExtent
     }
 
     /** Update the zoom ([zoom]).
@@ -216,10 +203,23 @@ class MapView(context: Context, attributeSet: AttributeSet):
         updateMapBitmapRatio()
     }
 
+    private fun updateMapBitmapRatio() {
+        mapBitmapRatio = (zoom / unitZoomMapBitmapRatio).inverse()
+        pixelStep = Point.maxOf((mapBitmapRatio).ceil(), Point(1f, 1f))
+        updateBar()
+        updateMapOrigin()
+        updateMatrix()
+    }
+
+    private fun updateMapOrigin() {
+        mapOrigin = mapExtent - mapBitmapRatio * bitmapExtent
+        updateMapOffset()
+    }
+
     /** Update the map offset.
      * @param deltaMapOffset The amount to change the offset by.
      * */
-    private fun updateMapOffset(deltaMapOffset: Point) {
+    private fun updateMapOffset(deltaMapOffset: Point = Point(0f, 0f)) {
         // Must satisfy :  0 (offset to end of map) < offset < origin (offset to start of map)
         mapOffset = Point.minOf(
             Point.maxOf(Point(0f, 0f), mapOffset + deltaMapOffset),
@@ -327,9 +327,13 @@ class MapView(context: Context, attributeSet: AttributeSet):
     }
 
     fun updateBitmap() {
+
+
         creator?.let { mapCreator ->
+
             // Update size.
-            updateMapExtent()
+            //if(!scaleGestureDetector.isInProgress)
+            if(updating) updateMapExtent()
             // Extract section of the map as a bitmap.
             //val pE = Point.minOf(bitmapSize, viewSizeInBitmapPixels)
             //val p0 = Point.maxOf(bitmapSize - pE - offset, Point())
@@ -339,14 +343,15 @@ class MapView(context: Context, attributeSet: AttributeSet):
             val p0 = Point.maxOf(Point(0f, 0f), mapOrigin - mapOffset)
             val p1 = mapOrigin - mapOffset + mapBitmapRatio * bitmapExtent
 
-            /*
+
             println("map extent = $mapExtent")
             println("map origin = $mapOrigin")
             println("map offset = $mapOffset")
             println("map-bitmap ratio = $mapBitmapRatio")
+            println("bitmap extent = $bitmapExtent")
             println("p0 = $p0, p1 = $p1")
 
-             */
+
 
             mapCreator.getMapBitmap(
                 idx = mapIdx,
@@ -357,8 +362,10 @@ class MapView(context: Context, attributeSet: AttributeSet):
             )?.let { bm ->
                 // Rotate and scale the bitmap and post to the main thread for display.
                 // This transform takes most of the remaining time of the update loop (5 - 8 ms of 10 ms total).
-                newBitmap.postValue(transformBitmap(bm, bitmapMatrix)
-                )}
+                println("UPDATE!!!")
+                newBitmap.postValue(transformBitmap(bm, bitmapMatrix))
+            }
+            println("====================================")
         }
     }
 
@@ -398,7 +405,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
         updateZoom(zFactor)
         // Set a new map offset, so that we are returned to the same focus.
         val newMapOffset = mapOrigin - mapFocus + mapBitmapRatio * bitmapFocus
-        updateMapOffset(mapOffset - newMapOffset)
+        updateMapOffset(newMapOffset - mapOffset)
     }
 
     /** Scroll the map from a scrolling finger movement.
@@ -417,6 +424,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
     private fun scroll(viewScroll: Point) {
         updateMapOffset(deltaMapOffset = viewScroll * bitmapViewRatio * mapBitmapRatio)
     }
+
 
     // ---------------------------------------------------------------------------------------------
     // Gesture detection
