@@ -399,7 +399,6 @@ class MapView(context: Context, attributeSet: AttributeSet):
      * this function.
      * */
     fun processMotionEvent(event: MotionEvent): Boolean {
-        // todo - adjust event coordinates from parent to child using left/right?
         var res = scaleGestureDetector.onTouchEvent(event)
         res = gestureDetector.onTouchEvent(event) || res
         return res
