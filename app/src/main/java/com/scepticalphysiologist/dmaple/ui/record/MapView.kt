@@ -309,7 +309,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
      * This is intended to be run within a coroutine. Therefore the bitmap of the section of map
      * to be shown is posted as live data so that it can be displayed in the main UI thread.
      * */
-    fun updateBitmap2() {
+    fun updateBitmap() {
         creator?.let { mapCreator ->
             // Update size.
             updateMapExtent()
@@ -317,25 +317,37 @@ class MapView(context: Context, attributeSet: AttributeSet):
             val p0 = Point.maxOf(Point(0f, 0f), mapOrigin - mapOffset)
             val p1 = mapOrigin - mapOffset + mapBitmapRatio * bitmapExtent
 
-
-            val bitmapSize = p1 / mapBitmapRatio
+            val bitmapSize = (p1 - p0) / mapBitmapRatio
+            println("bitmap size = $bitmapSize")
             val nx = bitmapSize.x.toInt()
             val ny = bitmapSize.y.toInt()
             val bitmapCoors = mutableListOf<IntArray>()
-            var mp = Point()
+            var mp: Point
+            var k: Int
+            val isLandscape = width > height
             for(j in 0 until ny)
                 for(i in 0 until nx) {
-                    bitmapCoors.add(intArrayOf(nx * j + i, 1, 1))
+                    mp = mapOrigin - mapOffset + mapBitmapRatio * Point(i.toFloat(), j.toFloat())
+                    k = if(isLandscape) ny * i + j else nx * j + i
+                    bitmapCoors.add(intArrayOf(k, mapExtent.x.toInt() - mp.x.toInt() - 1, mp.y.toInt()))
                 }
 
+            mapCreator.getBitmapValues(
+                idx = mapIdx,
+                mapCoordinates = bitmapCoors,
+                backing = bitmapBacking,
+                live = updating
+            )
 
-
-            newBitmap.postValue(Bitmap.createBitmap(bitmapBacking, nx, ny, Bitmap.Config.ARGB_8888))
+            newBitmap.postValue(
+                if (isLandscape) Bitmap.createBitmap(bitmapBacking, ny, nx, Bitmap.Config.ARGB_8888)
+                else Bitmap.createBitmap(bitmapBacking, nx, ny, Bitmap.Config.ARGB_8888)
+            )
 
         }
     }
 
-    fun updateBitmap() {
+    fun updateBitmap2() {
 
 
         creator?.let { mapCreator ->
@@ -343,24 +355,11 @@ class MapView(context: Context, attributeSet: AttributeSet):
             // Update size.
             //if(!scaleGestureDetector.isInProgress)
             if(updating) updateMapExtent()
-            // Extract section of the map as a bitmap.
-            //val pE = Point.minOf(bitmapSize, viewSizeInBitmapPixels)
-            //val p0 = Point.maxOf(bitmapSize - pE - offset, Point())
-            //val p1 = p0 + pE
 
+            // Extract section of the map as a bitmap.
             // (mapOrigin - mapOffset) will be negative when the map does not fill the view.
             val p0 = Point.maxOf(Point(0f, 0f), mapOrigin - mapOffset)
             val p1 = mapOrigin - mapOffset + mapBitmapRatio * bitmapExtent
-
-
-            println("map extent = $mapExtent")
-            println("map origin = $mapOrigin")
-            println("map offset = $mapOffset")
-            println("map-bitmap ratio = $mapBitmapRatio")
-            println("bitmap extent = $bitmapExtent")
-            println("p0 = $p0, p1 = $p1")
-
-
 
             mapCreator.getMapBitmap(
                 idx = mapIdx,
@@ -371,10 +370,8 @@ class MapView(context: Context, attributeSet: AttributeSet):
             )?.let { bm ->
                 // Rotate and scale the bitmap and post to the main thread for display.
                 // This transform takes most of the remaining time of the update loop (5 - 8 ms of 10 ms total).
-                println("UPDATE!!!")
                 newBitmap.postValue(transformBitmap(bm, bitmapMatrix))
             }
-            println("====================================")
         }
     }
 

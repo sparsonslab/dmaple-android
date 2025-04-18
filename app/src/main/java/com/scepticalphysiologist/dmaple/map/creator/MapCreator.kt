@@ -182,7 +182,7 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
             // https://stackoverflow.com/questions/30802463/how-many-threads-are-spawned-in-parallelstream-in-java-8
             val job = forkedPool.submit {
                 mapCoordinates.parallelStream().forEach { coor ->
-                    backing[0] = buffer.getColorInt(coor[1], coor[2])
+                    backing[coor[0]] = buffer.getColorInt(coor[1], coor[2])
                 }
             }
 
