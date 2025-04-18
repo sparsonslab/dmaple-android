@@ -193,13 +193,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
         updateMapBitmapRatio()
     }
 
-    /** Update the zoom ([zoom]). */
-    private fun updateZoom(newZoom: Point) {
-        // Restrict zoom ranges.
-        // Space (x) cannot be zoomed out to less than the width of the screen (zoom >= 1).
-        zoom = Point.maxOf(Point.minOf(newZoom, Point(4f, 5f)), Point(1f, 0.1f))
-        updateMapBitmapRatio()
-    }
+
 
     private fun updateMapBitmapRatio() {
         mapBitmapRatio = (zoom / unitZoomMapBitmapRatio).inverse()
@@ -212,12 +206,23 @@ class MapView(context: Context, attributeSet: AttributeSet):
         mapOrigin = mapExtent - mapBitmapRatio * bitmapExtent
     }
 
-    private fun updateMapOffset(viewScroll: Point) {
-        // Scroll in map pixels.
-        val mapScroll = viewScroll * bitmapViewRatio * mapBitmapRatio
-        // Must satisfy :  0 (scroll to end of map) < offset < origin (scroll to start of map)
+    /** Update the zoom ([zoom]).
+     * @param zFactor The multiplicative factor with which to change the zoom.
+     * */
+    private fun updateZoom(zFactor: Point) {
+        // Restrict zoom ranges.
+        // Space (x) cannot be zoomed out to less than the width of the screen (zoom >= 1).
+        zoom = Point.maxOf(Point.minOf(zFactor * zoom, Point(4f, 5f)), Point(1f, 0.1f))
+        updateMapBitmapRatio()
+    }
+
+    /** Update the map offset.
+     * @param deltaMapOffset The amount to change the offset by.
+     * */
+    private fun updateMapOffset(deltaMapOffset: Point) {
+        // Must satisfy :  0 (offset to end of map) < offset < origin (offset to start of map)
         mapOffset = Point.minOf(
-            Point.maxOf(Point(0f, 0f), mapOffset + mapScroll),
+            Point.maxOf(Point(0f, 0f), mapOffset + deltaMapOffset),
             mapOrigin
         )
     }
@@ -373,11 +378,27 @@ class MapView(context: Context, attributeSet: AttributeSet):
         // and zoom factor (> 1 zoom in, < 1 zoom out).
         val dFinger = spaceTimePoint(s1 - s0).abs()
         val zFactor = spaceTimePoint(s1 / s0)
+        val zCenter = spaceTimePoint(f1)
         // Zoom only in one direction, of the larger finger movement.
         if(dFinger.x > dFinger.y) zFactor.y = 1f else zFactor.x = 1f
         // Zoom.
-        updateZoom(zFactor * zoom)
+        zoom(zFactor, zCenter)
         if(!updating) updateBitmap()
+    }
+
+    /** Zoom the map.
+     * @param zFactor The factor to multiply the zoom by.
+     * @param viewFocus The focal point of the zoom in the view.
+     */
+    private fun zoom(zFactor: Point, viewFocus: Point) {
+        // Focal point of zoom in bitmap and map coordinates.
+        val bitmapFocus = viewFocus * bitmapViewRatio
+        val mapFocus = mapOrigin - mapOffset + mapBitmapRatio * bitmapFocus
+        // Update zoom.
+        updateZoom(zFactor)
+        // Set a new map offset, so that we are returned to the same focus.
+        val newMapOffset = mapOrigin - mapFocus + mapBitmapRatio * bitmapFocus
+        updateMapOffset(mapOffset - newMapOffset)
     }
 
     /** Scroll the map from a scrolling finger movement.
@@ -385,10 +406,16 @@ class MapView(context: Context, attributeSet: AttributeSet):
      * @param ds The change in finger position during a scroll.
      */
     private fun fingerScroll(ds: Point) {
-        val viewShift = spaceTimePoint(ds)
-        viewShift.y *= -1f
-        updateMapOffset(viewShift)
+        val viewScroll = spaceTimePoint(ds)
+        viewScroll.y *= -1f
+        scroll(viewScroll)
         if(!updating) updateBitmap()
+    }
+
+    /** Scroll the map.
+     * @param viewScroll The amount by which to scroll the view. */
+    private fun scroll(viewScroll: Point) {
+        updateMapOffset(deltaMapOffset = viewScroll * bitmapViewRatio * mapBitmapRatio)
     }
 
     // ---------------------------------------------------------------------------------------------
