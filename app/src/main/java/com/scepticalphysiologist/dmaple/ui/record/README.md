@@ -26,19 +26,32 @@ recording, the `FieldView` takes up the whole fragment and the `MapView` is hidd
 
 ### Calculation of the map view port and conversion into a bitmap
 
+To create a bitmap of a "view port" of the spatio-temporal map, `MapView` has to convert bitmap 
+coordinates into map coordinates. The linear equation for this is,
+
 $$  m = M_{orig} - M_{off} + bR_{mb} $$
 
 $$ R_{mb} = \frac{R_{mb}^*}{Z} $$
 
 $$ R_{mb}^* = \frac{m_{ext}(x)}{b_{ext}(x)}  $$
 
+The spatial zoom is constrained as,
+
+$$ Z(x) \ge 1 $$
+
+so that the map's view port always takes up the full extent of the view.
+
+$ M_{off}$ is used to scroll the image. It is constrained as,
+
 $$  0 \le M_{off} \le M_{orig} $$
 
-$$ Z(x) \ge 1$$
+where $M_{off} = 0$ is the map scrolled to its leading edge and $M_{off} = M_{orig}$ is the map
+scrolled to its start.
 
 The map viewport is then:
 
 $$ max((0, 0), M_{orig} - M_{off}) : M_{orig} - M_{off} + b_{ext} R_{mb}$$
+
 
 | symbol     | description                                          | `MapView` attribute      |
 |------------|------------------------------------------------------|--------------------------|
