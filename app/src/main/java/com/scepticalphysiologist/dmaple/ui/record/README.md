@@ -24,6 +24,26 @@ recording, the `FieldView` takes up the whole fragment and the `MapView` is hidd
 
 ## MapView
 
+### Calculation of the map view port and conversion into a bitmap
+
+$$  m = M_{orig} - M_{off} + bR_{mb} $$
+
+$$ R_{mb} = \frac{R_{mb}^*}{Z}$$
+
+| symbol     | description       | attribute                |
+|------------|-------------------|--------------------------|
+| $b$        | bitmap coordinate | -                        |
+| $m$        | map coordinate    | -                        |
+| $M_{orig}$ |                   | `mapOrigin`              |
+| $M_{off}$  |                   | `mapOffset`              |
+| $R_{mb}$   |                   | `mapBitmapRatio`         |
+| $R_{mb}^*$ |                   | `unitZoomMapBitmapRatio` |
+| $Z$        |                   | `zoom`                   |
+
+| ![image](../../images/mapview_geom.jpg) |
+|:---------------------------------------:|
+| *Bitmap to map coordinate conversion.*  |
+
 
 | ![image](../../images/mapview_calls.jpg) |
 |:----------------------------------------:|
