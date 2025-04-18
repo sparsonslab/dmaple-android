@@ -105,7 +105,6 @@ class MapView(context: Context, attributeSet: AttributeSet):
     /***/
     private var bitmapMatrix = Matrix()
 
-
     // Scale bars
     // ----------
     /** The text to go with the bars (x and y bars, respectively). */
@@ -162,7 +161,6 @@ class MapView(context: Context, attributeSet: AttributeSet):
     // ---------------------------------------------------------------------------------------------
     // Map viewport calculations.
     // ---------------------------------------------------------------------------------------------
-
 
     /** Convert a screen point to a space-time coordinate.
      * Time is always the larger dimension of the view.
@@ -275,15 +273,12 @@ class MapView(context: Context, attributeSet: AttributeSet):
         }
     }
 
-
     // ---------------------------------------------------------------------------------------------
     // Map update
     // ---------------------------------------------------------------------------------------------
 
+    /** Is the view inflated? */
     private fun isInflated(): Boolean { return (width > 0) && (height > 0) }
-
-    /** Set parameters related to whether the map is being updated live.  */
-    fun setLiveUpdateState(updating: Boolean) { this.updating = updating }
 
     /** Update the map being shown. */
     fun updateCreator(creatorAndMapIdx: Pair<MapCreator?, Int>) {
@@ -295,6 +290,9 @@ class MapView(context: Context, attributeSet: AttributeSet):
             if(!updating) updateBitmap()
         }
     }
+
+    /** Set parameters related to whether the map is being updated live.  */
+    fun setLiveUpdateState(updating: Boolean) { this.updating = updating }
 
     /** Reset the map view after inflation - call this function after inflation of the fragment. */
     fun reset(){
