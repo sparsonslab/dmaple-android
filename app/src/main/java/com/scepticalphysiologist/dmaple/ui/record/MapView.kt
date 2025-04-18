@@ -183,8 +183,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
             if(mapExtent.x != w) {
                 mapExtent.x = w
                 updateUnitZoom()
-            } else
-            updateMapOrigin()
+            } else updateMapOrigin()
         }
     }
 
@@ -244,7 +243,6 @@ class MapView(context: Context, attributeSet: AttributeSet):
             ))
         }
     }
-
 
     /** Update the map's bitmap transformation matrix ([bitmapMatrix]). */
     private fun updateMatrix() {
