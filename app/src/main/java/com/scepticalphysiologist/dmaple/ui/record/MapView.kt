@@ -81,6 +81,29 @@ class MapView(context: Context, attributeSet: AttributeSet):
 
     // Space(x)-Time(y) pairs.
     // -------------------------
+    /** The size of this view. */
+    private var viewExtent = Point()
+    /** Scaling factor from view to bitmap pixels (< 1 = down-sampling). */
+    private val bitmapViewRatio = 0.6f
+    /** The size of the bitmap when it fills the view. */
+    private var bitmapExtent: Point = viewExtent * bitmapViewRatio
+    /** The size of the shown spatio-temporal map. */
+    private var mapExtent = Point()
+    /** If the leading edge of the map is shown, the position on the map*/
+    private var mapOrigin = Point(0f, 0f)
+    /** An offset back from the leading edge of the map. */
+    private var mapOffset = Point(0f, 0f)
+    /** The ratio of map to bitmap pixels at a zoom of 1.
+     * Defined such that the zoom is unitary when the spatial (x) dimension of the map is fully shown. */
+    private var unitZoomMapBitmapRatio: Float = mapExtent.x / bitmapExtent.x
+    /** The zoom. */
+    private var zoom = Point(1f, 1f)
+    /** The ratio of map to bitmap pixels. */
+    private var mapBitmapRatio: Point = (zoom / unitZoomMapBitmapRatio).inverse()
+    /***/
+    private var pixelStep: Point = Point.maxOf((mapBitmapRatio).ceil(), Point(1f, 1f))
+    /***/
+    private var bitmapMatrix = Matrix()
 
 
     // Scale bars
@@ -139,17 +162,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
     // ---------------------------------------------------------------------------------------------
     // Map viewport calculations.
     // ---------------------------------------------------------------------------------------------
-    private var viewExtent = Point()
-    private val bitmapViewRatio = 0.6f
-    private var bitmapExtent: Point = viewExtent * bitmapViewRatio
-    private var mapExtent = Point()
-    private var mapOrigin = Point(0f, 0f)
-    private var mapOffset = Point(0f, 0f)
-    private var unitZoomMapBitmapRatio: Float = mapExtent.x / bitmapExtent.x
-    private var zoom = Point(1f, 1f)
-    private var mapBitmapRatio: Point = (zoom / unitZoomMapBitmapRatio).inverse()
-    private var pixelStep: Point = Point.maxOf((mapBitmapRatio).ceil(), Point(1f, 1f))
-    private var bitmapMatrix = Matrix()
+
 
     /** Convert a screen point to a space-time coordinate.
      * Time is always the larger dimension of the view.
