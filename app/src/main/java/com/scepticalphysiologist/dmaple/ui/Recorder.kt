@@ -64,6 +64,7 @@ class Recorder: Fragment() {
             binding.cameraAndRoi.setExposureSlider(0.5f)
             binding.cameraAndRoi.setRoisAndRuler(model.getRoisAndRuler())
             setUIState()
+            binding.maps.reset()
         }
 
         // Show any warnings from the main activity.
