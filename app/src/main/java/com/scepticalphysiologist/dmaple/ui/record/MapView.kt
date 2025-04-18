@@ -79,8 +79,13 @@ class MapView(context: Context, attributeSet: AttributeSet):
     /** Holder for the scale (distance between fingers) at the start of a pinch. */
     private var scaleStart = Point()
 
-    // Space(x)-Time(y) pairs.
+    // Map viewport calculations
     // -------------------------
+    // All these points are space-time coordinates and are interdependent.
+    // Could use getter properties for a lot of these but:
+    // 1) Many would unnecessarily be recalculated with each live update.
+    // 2) Many involve more complicated calculations than can be expressed in a single line.
+    // 3) I want more control over the tree of dependencies.
     /** The size of this view. */
     private var viewExtent = Point()
     /** Scaling factor from view to bitmap pixels (< 1 = down-sampling). */
@@ -100,9 +105,9 @@ class MapView(context: Context, attributeSet: AttributeSet):
     private var zoom = Point(1f, 1f)
     /** The ratio of map to bitmap pixels. */
     private var mapBitmapRatio: Point = (zoom / unitZoomMapBitmapRatio).inverse()
-    /***/
+    /** Pixel skip for down-sampling the map. */
     private var pixelStep: Point = Point.maxOf((mapBitmapRatio).ceil(), Point(1f, 1f))
-    /***/
+    /** A matrix for transforming the output bitmap for display. */
     private var bitmapMatrix = Matrix()
 
     // Scale bars
@@ -163,8 +168,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
     // ---------------------------------------------------------------------------------------------
 
     /** Convert a screen point to a space-time coordinate.
-     * Time is always the larger dimension of the view.
-     * */
+     * Time is always the larger dimension of the view. */
     private fun spaceTimePoint(screenPoint: Point): Point {
         return if(width > height) screenPoint.swap() else screenPoint
     }
@@ -174,18 +178,14 @@ class MapView(context: Context, attributeSet: AttributeSet):
         return spaceTimePoint(spaceTimePoint)
     }
 
-    private fun screenPair(spaceTimePair: Pair<String, String>): Pair<String, String> {
-        return if(width > height) Pair(spaceTimePair.second, spaceTimePair.first) else spaceTimePair
-    }
-
-    /** Update the view size [viewSize]. */
+    /** Update the size of this view ([viewExtent]). */
     private fun updateViewExtent(){
         viewExtent = spaceTimePoint(Point(width.toFloat(), height.toFloat()))
         bitmapExtent = viewExtent * bitmapViewRatio
         updateUnitZoom()
     }
 
-    /** Update the size of the map's bitmap ([bitmapSize]). */
+    /** Update the size of the map ([mapExtent]). */
     private fun updateMapExtent(){
         creator?.let {
             val mSize = it.spaceTimeSampleSize()
@@ -198,12 +198,13 @@ class MapView(context: Context, attributeSet: AttributeSet):
         }
     }
 
+    /** Update the [unitZoomMapBitmapRatio]. */
     private fun updateUnitZoom(){
         unitZoomMapBitmapRatio = mapExtent.x / bitmapExtent.x
         updateMapBitmapRatio()
     }
 
-    /** Update the zoom ([zoom]).
+    /** Update the [zoom].
      * @param zFactor The multiplicative factor with which to change the zoom.
      * */
     private fun updateZoom(zFactor: Point) {
@@ -213,6 +214,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
         updateMapBitmapRatio()
     }
 
+    /** Update the [mapBitmapRatio]. */
     private fun updateMapBitmapRatio() {
         mapBitmapRatio = (zoom / unitZoomMapBitmapRatio).inverse()
         pixelStep = Point.maxOf((mapBitmapRatio).ceil(), Point(1f, 1f))
@@ -221,14 +223,14 @@ class MapView(context: Context, attributeSet: AttributeSet):
         updateMatrix()
     }
 
+    /** Update the [mapOrigin]. */
     private fun updateMapOrigin() {
         mapOrigin = mapExtent - mapBitmapRatio * bitmapExtent
         updateMapOffset()
     }
 
-    /** Update the map offset.
-     * @param deltaMapOffset The amount to change the offset by.
-     * */
+    /** Update the [mapOffset].
+     * @param deltaMapOffset The amount to change the offset by. */
     private fun updateMapOffset(deltaMapOffset: Point = Point(0f, 0f)) {
         // Must satisfy :  0 (offset to end of map) < offset < origin (offset to start of map)
         mapOffset = Point.minOf(
@@ -239,6 +241,9 @@ class MapView(context: Context, attributeSet: AttributeSet):
 
     /** Update the scale bars. */
     private fun updateBar() {
+        fun screenPair(spaceTimePair: Pair<String, String>): Pair<String, String> {
+            return if(width > height) Pair(spaceTimePair.second, spaceTimePair.first) else spaceTimePair
+        }
         creator?.let { crt ->
             val mapPixelsPerUnit = Point(crt.spatialRes.first, crt.temporalRes.first)
             // rounded bar size in units for ~fifth of screen
@@ -304,63 +309,18 @@ class MapView(context: Context, attributeSet: AttributeSet):
         updateBitmap()
     }
 
-    /** Update the map shown.
-     *
-     * This is intended to be run within a coroutine. Therefore the bitmap of the section of map
-     * to be shown is posted as live data so that it can be displayed in the main UI thread.
-     * */
+    /** Update the shown bitmap with the view of the map. */
     fun updateBitmap() {
         creator?.let { mapCreator ->
-            // Update size.
-            updateMapExtent()
-
-            val p0 = Point.maxOf(Point(0f, 0f), mapOrigin - mapOffset)
-            val p1 = mapOrigin - mapOffset + mapBitmapRatio * bitmapExtent
-
-            val bitmapSize = (p1 - p0) / mapBitmapRatio
-            println("bitmap size = $bitmapSize")
-            val nx = bitmapSize.x.toInt()
-            val ny = bitmapSize.y.toInt()
-            val bitmapCoors = mutableListOf<IntArray>()
-            var mp: Point
-            var k: Int
-            val isLandscape = width > height
-            for(j in 0 until ny)
-                for(i in 0 until nx) {
-                    mp = mapOrigin - mapOffset + mapBitmapRatio * Point(i.toFloat(), j.toFloat())
-                    k = if(isLandscape) ny * i + j else nx * j + i
-                    bitmapCoors.add(intArrayOf(k, mapExtent.x.toInt() - mp.x.toInt() - 1, mp.y.toInt()))
-                }
-
-            mapCreator.getBitmapValues(
-                idx = mapIdx,
-                mapCoordinates = bitmapCoors,
-                backing = bitmapBacking,
-                live = updating
-            )
-
-            newBitmap.postValue(
-                if (isLandscape) Bitmap.createBitmap(bitmapBacking, ny, nx, Bitmap.Config.ARGB_8888)
-                else Bitmap.createBitmap(bitmapBacking, nx, ny, Bitmap.Config.ARGB_8888)
-            )
-
-        }
-    }
-
-    fun updateBitmap2() {
-
-
-        creator?.let { mapCreator ->
-
-            // Update size.
-            //if(!scaleGestureDetector.isInProgress)
+            // Update map size if updating live.
             if(updating) updateMapExtent()
 
-            // Extract section of the map as a bitmap.
+            // Section of the map the show.
             // (mapOrigin - mapOffset) will be negative when the map does not fill the view.
             val p0 = Point.maxOf(Point(0f, 0f), mapOrigin - mapOffset)
             val p1 = mapOrigin - mapOffset + mapBitmapRatio * bitmapExtent
 
+            // Create the bitmap for that section, transform it and post for display in the main thread.
             mapCreator.getMapBitmap(
                 idx = mapIdx,
                 crop = Rect(p0.x.toInt(), p0.y.toInt(), p1.x.toInt(), p1.y.toInt()),
@@ -374,7 +334,6 @@ class MapView(context: Context, attributeSet: AttributeSet):
             }
         }
     }
-
 
     // ---------------------------------------------------------------------------------------------
     // Gesture reaction.
@@ -404,7 +363,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
      * @param viewFocus The focal point of the zoom in the view.
      */
     private fun zoom(zFactor: Point, viewFocus: Point) {
-        // Focal point of zoom in bitmap and map coordinates.
+        // Current focal point of zoom in bitmap and map coordinates.
         val bitmapFocus = viewFocus * bitmapViewRatio
         val mapFocus = mapOrigin - mapOffset + mapBitmapRatio * bitmapFocus
         // Update zoom.
@@ -415,7 +374,6 @@ class MapView(context: Context, attributeSet: AttributeSet):
     }
 
     /** Scroll the map from a scrolling finger movement.
-     *
      * @param ds The change in finger position during a scroll.
      */
     private fun fingerScroll(ds: Point) {
@@ -430,7 +388,6 @@ class MapView(context: Context, attributeSet: AttributeSet):
     private fun scroll(viewScroll: Point) {
         updateMapOffset(deltaMapOffset = viewScroll * bitmapViewRatio * mapBitmapRatio)
     }
-
 
     // ---------------------------------------------------------------------------------------------
     // Gesture detection
