@@ -246,7 +246,7 @@ class Recorder: Fragment() {
     // User guide
     // ---------------------------------------------------------------------------------------------
 
-    // Open the app user guide.
+    /** Open the user guide. */
     private fun openUserGuide() {
         val outPath = File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
@@ -287,9 +287,8 @@ class Recorder: Fragment() {
     private fun setHandedness(){
         fun changeGravity(group: ViewGroup) {
             val oldLayout = group.layoutParams
-            group.layoutParams = FrameLayout.LayoutParams(
-                oldLayout.width, oldLayout.height, if(leftHanded) Gravity.LEFT else Gravity.RIGHT
-            )
+            val gravity = if(leftHanded) Gravity.LEFT else Gravity.RIGHT
+            group.layoutParams = FrameLayout.LayoutParams(oldLayout.width, oldLayout.height, gravity)
         }
         changeGravity(binding.menuButtons)
         changeGravity(binding.cameraAndRoi.sliderGroup)
