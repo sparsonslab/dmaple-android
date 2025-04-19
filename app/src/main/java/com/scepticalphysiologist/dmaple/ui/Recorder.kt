@@ -168,14 +168,14 @@ class Recorder: Fragment() {
         binding.cameraAndRoi.freezeField(field)
         if(show) {
             // The camera field in shown over the top corner of the map, and editing of ROIs is blocked.
-            binding.toInfoButtons.visibility = View.INVISIBLE
+            binding.menuButtons.visibility = View.INVISIBLE
             binding.cameraAndRoi.allowEditing(false)
             val extent = Point.ofViewExtent(binding.root) * 0.5f
             binding.cameraAndRoi.resize(extent.x.toInt(), extent.y.toInt())
             showMapAndCreator(model.getCurrentlyShownMap())
         } else {
             // The camera field takes up the whole screen and ROIs can be edited.
-            binding.toInfoButtons.visibility = View.VISIBLE
+            binding.menuButtons.visibility = View.VISIBLE
             binding.cameraAndRoi.allowEditing(true)
             binding.cameraAndRoi.fullSize()
             binding.cameraTimer.text = ""
