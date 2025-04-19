@@ -12,6 +12,12 @@
             app:summary="Fix the app's screen orientation or allow it to adjust freely:\t[%s]"/>
 
         <SwitchPreference
+            android:key="SCREEN_FOR_LEFT_HAND"
+            android:title="Buttons on Left"
+            android:summary="Switch the side buttons to the left for left-handers."
+            android:defaultValue="false"/>
+
+        <SwitchPreference
             android:key="KEEP_SCREEN_ON"
             android:title="Keep on"
             android:summary="Do not allow the screen to sleep while the app is open."

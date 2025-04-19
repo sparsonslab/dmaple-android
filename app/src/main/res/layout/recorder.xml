@@ -32,61 +32,54 @@
         android:layout_height="match_parent">
     </com.scepticalphysiologist.dmaple.ui.record.FieldView>
 
-
-
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:orientation="horizontal"
-        android:layout_gravity="bottom"
-        android:layout_margin="10dp">
+        android:id="@+id/menu_buttons"
+        android:layout_width="50dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_gravity="top|right">
 
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="35dp"
-                android:layout_weight="0.2"
-                android:layout_gravity="center_vertical"
-                android:gravity="center_horizontal|left">
+        <ImageButton
+            android:id="@+id/to_records_button"
+            android:layout_width="match_parent"
+            android:layout_height="35dp"
+            android:src="@drawable/folder_open"
+            android:background="@null"
+            android:scaleType="fitCenter"
+            android:layout_margin="10dp">
+        </ImageButton>
 
-                <ImageButton
-                    android:id="@+id/to_records_button"
-                    android:layout_width="40dp"
-                    android:layout_height="match_parent"
-                    android:src="@drawable/folder_open"
-                    android:background="@null"
-                    android:scaleType="fitCenter"
-                    android:layout_marginHorizontal="10dp">
-                </ImageButton>
+        <ImageButton
+            android:id="@+id/to_settings_button"
+            android:layout_width="match_parent"
+            android:layout_height="35dp"
+            android:src="@drawable/settings_cog"
+            android:background="@null"
+            android:scaleType="fitCenter"
+            android:layout_margin="10dp">
+        </ImageButton>
 
-                <ImageButton
-                    android:id="@+id/to_settings_button"
-                    android:layout_width="35dp"
-                    android:layout_height="match_parent"
-                    android:src="@drawable/settings_cog"
-                    android:background="@null"
-                    android:scaleType="fitCenter">
-                </ImageButton>
-
-            </LinearLayout>
-
-
-            <ImageButton
-                android:id="@+id/record_button"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="0.6"
-                android:src="@drawable/play_arrow"
-                android:background="@null"
-                android:scaleType="fitCenter">
-            </ImageButton>
-
-        <View
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="0.2">
-        </View>
-
+        <ImageButton
+            android:id="@+id/to_guide_button"
+            android:layout_width="match_parent"
+            android:layout_height="35dp"
+            android:src="@drawable/open_book"
+            android:background="@null"
+            android:scaleType="fitCenter"
+            android:layout_margin="10dp">
+        </ImageButton>
 
     </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/record_button"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_margin="10dp"
+        android:src="@drawable/play_arrow"
+        android:background="@null"
+        android:scaleType="fitCenter"
+        android:layout_gravity="bottom|center_horizontal">
+    </ImageButton>
 
 </FrameLayout>
