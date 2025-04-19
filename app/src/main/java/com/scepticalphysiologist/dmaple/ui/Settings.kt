@@ -1,7 +1,6 @@
 package com.scepticalphysiologist.dmaple.ui
 
 import android.app.Activity
-import android.content.SharedPreferences
 import android.content.pm.ActivityInfo
 import android.graphics.Color
 import android.os.Bundle
