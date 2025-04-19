@@ -34,40 +34,39 @@
 
     <LinearLayout
         android:id="@+id/menu_buttons"
-        android:layout_width="wrap_content"
-        android:layout_height="35dp"
-        android:layout_margin="10dp"
-        android:layout_gravity="top|right"
-        android:gravity="center_horizontal|right">
+        android:layout_width="50dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_gravity="top|right">
 
         <ImageButton
             android:id="@+id/to_records_button"
-            android:layout_width="35dp"
-            android:layout_height="match_parent"
+            android:layout_width="match_parent"
+            android:layout_height="35dp"
             android:src="@drawable/folder_open"
             android:background="@null"
             android:scaleType="fitCenter"
-            android:layout_marginHorizontal="10dp">
+            android:layout_margin="10dp">
         </ImageButton>
 
         <ImageButton
             android:id="@+id/to_settings_button"
-            android:layout_width="35dp"
-            android:layout_height="match_parent"
+            android:layout_width="match_parent"
+            android:layout_height="35dp"
             android:src="@drawable/settings_cog"
             android:background="@null"
             android:scaleType="fitCenter"
-            android:layout_marginHorizontal="10dp">
+            android:layout_margin="10dp">
         </ImageButton>
 
         <ImageButton
             android:id="@+id/to_guide_button"
-            android:layout_width="35dp"
-            android:layout_height="match_parent"
+            android:layout_width="match_parent"
+            android:layout_height="35dp"
             android:src="@drawable/open_book"
             android:background="@null"
             android:scaleType="fitCenter"
-            android:layout_marginHorizontal="10dp">
+            android:layout_margin="10dp">
         </ImageButton>
 
     </LinearLayout>
