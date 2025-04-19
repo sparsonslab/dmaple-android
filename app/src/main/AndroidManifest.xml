@@ -39,11 +39,24 @@
             android:name="preloaded_fonts"
             android:resource="@array/preloaded_fonts" />
 
+        <!-- The mapping service. -->
         <service android:name=".map.MappingService"
             android:foregroundServiceType="camera"
             android:exported="false">
         </service>
 
+        <!-- File provider so we can open the user guide in a PDF reader. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/provider_paths"/>
+        </provider>
+
     </application>
+
 
 </manifest>

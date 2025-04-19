@@ -2,16 +2,21 @@ package com.scepticalphysiologist.dmaple.ui
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.res.AssetManager
+import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
 import android.text.format.DateUtils
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import com.scepticalphysiologist.dmaple.BuildConfig
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.SettingsActivity
@@ -22,6 +27,8 @@ import com.scepticalphysiologist.dmaple.map.field.FieldImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.FileOutputStream
 
 /** The main fragment of the app, in which the user sets up the ROIs and maps to record,
  * does the recording and views completed recordings.
@@ -117,6 +124,30 @@ class Recorder: Fragment() {
         // Go to settings.
         binding.toSettingsButton.setOnClickListener {
             activity?.startActivity(Intent(activity, SettingsActivity::class.java))
+        }
+
+        binding.toGuideButton.setOnClickListener {
+            val outPath = File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
+                "DMapLE_User_Guide.pdf"
+            )
+            if(!outPath.exists()) {
+                val outStream = FileOutputStream(outPath, false)
+                val inStream = requireContext().assets.open(
+                    "dmaple_user_guide.pdf", AssetManager.ACCESS_BUFFER
+                )
+                inStream.copyTo(outStream)
+                inStream.close()
+                outStream.close()
+            }
+            if(outPath.exists()) {
+                val uri = FileProvider.getUriForFile(requireContext(), BuildConfig.APPLICATION_ID + ".provider", outPath)
+                val intent = Intent(Intent.ACTION_VIEW)
+                intent.setDataAndType(uri, "application/pdf")
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                startActivity(intent)
+            }
+
         }
     }
 
