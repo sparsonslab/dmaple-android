@@ -36,7 +36,7 @@ https://www.scepticalphysiologist.com/code/DMapLE/DMapLE.pdf
 
 ## User Guide
 
-A PDF guide to using the app can be found [here](dmaple_user_guide.pdf).
+A PDF guide to using the app can be found [here](app/src/main/assets/dmaple_user_guide.pdf).
 
 ## Architecture
 
