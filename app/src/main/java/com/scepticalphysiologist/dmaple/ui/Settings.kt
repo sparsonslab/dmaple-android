@@ -1,6 +1,7 @@
 package com.scepticalphysiologist.dmaple.ui
 
 import android.app.Activity
+import android.content.SharedPreferences
 import android.content.pm.ActivityInfo
 import android.graphics.Color
 import android.os.Bundle
@@ -34,56 +35,39 @@ class Settings: PreferenceFragmentCompat() {
 
         fun setFromPreferences(activity: Activity){
             val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
-            setScreenRotation(prefs.getString("SCREEN_ORIENTATION", "free"), activity)
-            setKeepScreenOn(prefs.getBoolean("KEEP_SCREEN_ON", false))
-            setFrameRate(prefs.getString("FRAME_RATE_FPS", "30"))
-            setThresholdInverted(prefs.getBoolean("THRESHOLD_INVERTED", false))
-            setSpinePixelSkip(prefs.getInt("SPINE_SKIP", 0))
-            setSeedMinWidth(prefs.getInt("SEED_MIN_WIDTH", 10))
-            setSpineSmooth(prefs.getInt("SPINE_SMOOTH", 1))
-            setSpineMaxGap(prefs.getInt("SPINE_MAX_GAP", 2))
-            setAutoSaveOnClose(prefs.getBoolean("SAVE_ON_CLOSE", false))
+            fun <T> getPreference(key: String, default: T): T {
+                return when (default) {
+                    is Boolean -> prefs.getBoolean(key, default) as T
+                    is String -> prefs.getString(key, default) as T
+                    is Int -> prefs.getInt(key, default) as T
+                    is Long -> prefs.getLong(key, default) as T
+                    is Float -> prefs.getFloat(key, default) as T
+                    is Double -> prefs.getFloat(key, default.toFloat()).toDouble() as T
+                    else -> default
+                }
+            }
+
+            setScreenRotation(getPreference("SCREEN_ORIENTATION", "free"), activity)
+            Recorder.leftHanded = getPreference("SCREEN_FOR_LEFT_HAND", false)
+            MainActivity.keepScreenOn = getPreference("KEEP_SCREEN_ON", false)
+            MainActivity.setMappingServiceFrameRate(getPreference("FRAME_RATE_FPS", "30").toInt())
+            setThresholdInverted(getPreference("THRESHOLD_INVERTED", false))
+            FieldParams.preference.spineSkipPixels = getPreference("SPINE_SKIP", 0)
+            FieldParams.preference.minWidth = getPreference("SEED_MIN_WIDTH", 10)
+            FieldParams.preference.spineSmoothPixels = getPreference("SPINE_SMOOTH", 1)
+            FieldParams.preference.maxGap = getPreference("SPINE_MAX_GAP", 2)
+            MappingService.AUTO_SAVE_ON_CLOSE = getPreference( "SAVE_ON_CLOSE", false)
         }
 
-        fun setScreenRotation(entry: Any?, activity: Activity) {
-            val or = ORIENTATION_MAP[entry.toString()] ?: ActivityInfo.SCREEN_ORIENTATION_SENSOR
-            activity.requestedOrientation = or
+        fun setScreenRotation(entry: String, activity: Activity) {
+            activity.requestedOrientation = ORIENTATION_MAP[entry] ?: ActivityInfo.SCREEN_ORIENTATION_SENSOR
         }
 
-        private fun setKeepScreenOn(entry: Any?) {
-            MainActivity.keepScreenOn = if(entry is Boolean) entry else entry.toString().toBoolean()
-        }
-
-        private fun setFrameRate(entry: Any?) {
-            entry.toString().toIntOrNull()?.let { MainActivity.setMappingServiceFrameRate(it) }
-        }
-
-        private fun setThresholdInverted(entry: Any?) {
-            val inverted = if(entry is Boolean) entry else entry.toString().toBoolean()
+        private fun setThresholdInverted(inverted: Boolean) {
             FieldParams.preference.gutsAreAboveThreshold = !inverted
             // todo - get the below from the above.
             BackgroundHighlight.backgroundIsAboveThreshold = inverted
             SpineOverlay.spinePaint.color = if(inverted) Color.WHITE else Color.BLACK
-        }
-
-        private fun setSpinePixelSkip(entry: Any?) {
-            entry.toString().toIntOrNull()?.let { FieldParams.preference.spineSkipPixels = it }
-        }
-
-        private fun setSeedMinWidth(entry: Any?) {
-            entry.toString().toIntOrNull()?.let { FieldParams.preference.minWidth = it }
-        }
-
-        private fun setSpineSmooth(entry: Any?) {
-            entry.toString().toIntOrNull()?.let { FieldParams.preference.spineSmoothPixels = it }
-        }
-
-        private fun setSpineMaxGap(entry: Any?) {
-            entry.toString().toIntOrNull()?.let { FieldParams.preference.maxGap = it }
-        }
-
-        private fun setAutoSaveOnClose(entry: Any?) {
-            MappingService.AUTO_SAVE_ON_CLOSE = if(entry is Boolean) entry else entry.toString().toBoolean()
         }
 
     }
@@ -97,7 +81,7 @@ class Settings: PreferenceFragmentCompat() {
             pref.entryValues = entries
             // ... so the settings page itself rotates immediately when the setting is changed.
             pref.setOnPreferenceChangeListener { _, newValue ->
-                setScreenRotation(newValue, requireActivity())
+                setScreenRotation(newValue.toString(), requireActivity())
                 true
             }
         }

@@ -41,6 +41,7 @@ class FieldView(context: Context, attributeSet: AttributeSet?):
 
     // Controls
     // --------
+    val sliderGroup = LinearLayout(context)
     /** A slider for thresholding mapping ROIs. */
     private val thresholdSlider = SwitchableSlider(context, Pair(0, 255), R.drawable.threshold_steps, resources.getColor(R.color.roi))
     /** A slide for controlling exposure. */
@@ -66,7 +67,6 @@ class FieldView(context: Context, attributeSet: AttributeSet?):
         this.addView(spineOverlay)
 
         // Slider controls.
-        val sliderGroup = LinearLayout(context)
         sliderGroup.orientation = LinearLayout.HORIZONTAL
         sliderGroup.layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT, Gravity.RIGHT)
         sliderGroup.addView(thresholdSlider)

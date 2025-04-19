@@ -3,14 +3,15 @@ package com.scepticalphysiologist.dmaple.ui
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.res.AssetManager
-import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.text.format.DateUtils
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -46,6 +47,11 @@ class Recorder: Fragment() {
     /** Whether we are recording or not. */
     private var recording: Boolean = false
 
+    companion object {
+        /** Set buttons, etc. for the left handed. */
+        var leftHanded = false
+    }
+
     // ---------------------------------------------------------------------------------------------
     // Fragment creation
     // ---------------------------------------------------------------------------------------------
@@ -71,6 +77,7 @@ class Recorder: Fragment() {
             model.setCameraPreview(binding.cameraAndRoi.getCameraPreview())
             binding.cameraAndRoi.setExposureSlider(0.5f)
             binding.cameraAndRoi.setRoisAndRuler(model.getRoisAndRuler())
+
             setUIState()
             binding.maps.reset()
         }
@@ -265,6 +272,24 @@ class Recorder: Fragment() {
             intent.setDataAndType(uri, "application/pdf")
             startActivity(intent)
         }
+    }
+
+    override fun onResume() {
+        setHandedness()
+        super.onResume()
+    }
+
+    /** Set the side buttons to the side appropriate for left or right handedness. */
+    private fun setHandedness(){
+        fun changeGravity(group: ViewGroup) {
+            val oldLayout = group.layoutParams
+            group.layoutParams = FrameLayout.LayoutParams(
+                oldLayout.width, oldLayout.height, if(leftHanded) Gravity.LEFT else Gravity.RIGHT
+            )
+        }
+        changeGravity(binding.menuButtons)
+        changeGravity(binding.cameraAndRoi.sliderGroup)
+        binding.root.requestLayout()
     }
 
     // ---------------------------------------------------------------------------------------------
