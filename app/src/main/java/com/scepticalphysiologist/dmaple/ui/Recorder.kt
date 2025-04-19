@@ -29,6 +29,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 
 /** The main fragment of the app, in which the user sets up the ROIs and maps to record,
  * does the recording and views completed recordings.
@@ -126,29 +127,8 @@ class Recorder: Fragment() {
             activity?.startActivity(Intent(activity, SettingsActivity::class.java))
         }
 
-        binding.toGuideButton.setOnClickListener {
-            val outPath = File(
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
-                "DMapLE_User_Guide.pdf"
-            )
-            if(!outPath.exists()) {
-                val outStream = FileOutputStream(outPath, false)
-                val inStream = requireContext().assets.open(
-                    "dmaple_user_guide.pdf", AssetManager.ACCESS_BUFFER
-                )
-                inStream.copyTo(outStream)
-                inStream.close()
-                outStream.close()
-            }
-            if(outPath.exists()) {
-                val uri = FileProvider.getUriForFile(requireContext(), BuildConfig.APPLICATION_ID + ".provider", outPath)
-                val intent = Intent(Intent.ACTION_VIEW)
-                intent.setDataAndType(uri, "application/pdf")
-                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                startActivity(intent)
-            }
-
-        }
+        // Open user guide.
+        binding.toGuideButton.setOnClickListener { openUserGuide() }
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -188,16 +168,14 @@ class Recorder: Fragment() {
         binding.cameraAndRoi.freezeField(field)
         if(show) {
             // The camera field in shown over the top corner of the map, and editing of ROIs is blocked.
-            binding.toRecordsButton.visibility = View.INVISIBLE
-            binding.toSettingsButton.visibility = View.INVISIBLE
+            binding.toInfoButtons.visibility = View.INVISIBLE
             binding.cameraAndRoi.allowEditing(false)
             val extent = Point.ofViewExtent(binding.root) * 0.5f
             binding.cameraAndRoi.resize(extent.x.toInt(), extent.y.toInt())
             showMapAndCreator(model.getCurrentlyShownMap())
         } else {
             // The camera field takes up the whole screen and ROIs can be edited.
-            binding.toRecordsButton.visibility = View.VISIBLE
-            binding.toSettingsButton.visibility = View.VISIBLE
+            binding.toInfoButtons.visibility = View.VISIBLE
             binding.cameraAndRoi.allowEditing(true)
             binding.cameraAndRoi.fullSize()
             binding.cameraTimer.text = ""
@@ -255,6 +233,38 @@ class Recorder: Fragment() {
             }
         }
         return false
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // User guide
+    // ---------------------------------------------------------------------------------------------
+
+    // Open the app user guide.
+    private fun openUserGuide() {
+        val outPath = File(
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
+            "DMapLE_User_Guide.pdf"
+        )
+        // If needed, copy from app assets to device documents folder.
+        if(!outPath.exists()) {
+            val outStream = FileOutputStream(outPath, false)
+            try {
+                val inStream = requireContext().assets.open(
+                    "dmaple_user_guide.pdf", AssetManager.ACCESS_BUFFER
+                )
+                inStream.copyTo(outStream)
+                inStream.close()
+            } catch (_: IOException) {}
+            outStream.close()
+        }
+        // Open in PDF viewer.
+        if(outPath.exists()) {
+            val uri = FileProvider.getUriForFile(requireContext(), BuildConfig.APPLICATION_ID + ".provider", outPath)
+            val intent = Intent(Intent.ACTION_VIEW)
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            intent.setDataAndType(uri, "application/pdf")
+            startActivity(intent)
+        }
     }
 
     // ---------------------------------------------------------------------------------------------
