@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  ~ (C) Copyright 2017-2022 Arete Medical Technologies, Cambridge, UK.
-  ~ All rights reserved.
-  ~ Unauthorized copying of this file, via any medium is strictly prohibited.
+  ~ Copyright (c) 2025-2025. Dr Sean Paul Parsons. All rights reserved.
   -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle" >

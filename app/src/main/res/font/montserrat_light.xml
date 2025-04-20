@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) 2025-2025. Dr Sean Paul Parsons. All rights reserved.
+  -->
+
 <font-family xmlns:app="http://schemas.android.com/apk/res-auto"
         app:fontProviderAuthority="com.google.android.gms.fonts"
         app:fontProviderPackage="com.google.android.gms"

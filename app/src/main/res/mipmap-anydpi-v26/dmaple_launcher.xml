@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) 2025-2025. Dr Sean Paul Parsons. All rights reserved.
+  -->
+
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@color/dmaple_launcher_background"/>
     <foreground android:drawable="@mipmap/dmaple_launcher_foreground"/>

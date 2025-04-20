@@ -1,3 +1,5 @@
+// Copyright (c) 2025-2025. Dr Sean Paul Parsons. All rights reserved.
+
 package com.scepticalphysiologist.dmaple
 
 import com.google.gson.Gson
