@@ -78,7 +78,7 @@ class FieldView(context: Context, attributeSet: AttributeSet?):
         this.addView(sliderGroup)
 
         // Layout.
-        setBackgroundColor(Color.GRAY)
+        setBackgroundColor(resources.getColor(R.color.field_padding))
 
         // React to the thresholding slider.
         val owner = context as LifecycleOwner

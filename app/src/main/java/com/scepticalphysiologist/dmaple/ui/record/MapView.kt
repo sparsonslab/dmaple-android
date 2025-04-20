@@ -122,14 +122,14 @@ class MapView(context: Context, attributeSet: AttributeSet):
     private var barEnd = Point(0f, 0f)
     /** The paint for drawing the bar text. */
     private val barTextPaint = Paint().also {
-        it.color = Color.RED
+        it.color = resources.getColor(R.color.scale_bars)
         it.textSize = resources.getDimensionPixelSize(R.dimen.normal_text_size).toFloat()
         it.textAlign = Paint.Align.RIGHT
         it.strokeWidth = 2.5f
     }
     /** The paint used for drawing the bars. */
     private val barPaint = Paint().also {
-        it.color = Color.RED
+        it.color = resources.getColor(R.color.scale_bars)
         it.strokeWidth = 5f
     }
 

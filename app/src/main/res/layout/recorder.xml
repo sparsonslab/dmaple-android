@@ -16,7 +16,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="fitCenter"
-        android:background="@color/teal_200">
+        android:background="@color/map_background">
     </com.scepticalphysiologist.dmaple.ui.record.MapView>
 
     <TextView

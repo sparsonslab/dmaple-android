@@ -12,9 +12,12 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-
+    <color name="status_bar">#FF000000</color>
+    <color name="field_padding">#FF000000</color>
+    <color name="map_background">#03C1DE</color>
     <color name="button_icon">#FFA1AF</color>
     <color name="roi">#fe2452</color>
     <color name="ruler">#fe2452</color>
+    <color name="scale_bars">#fe2452</color>
 
 </resources>
