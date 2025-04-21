@@ -13,6 +13,7 @@ import mil.nga.tiff.TIFFImage
 import mil.nga.tiff.TiffWriter
 import java.io.File
 import java.io.FileOutputStream
+import java.time.Instant
 
 /** Input-output of a mapping recording.
  *
@@ -22,18 +23,17 @@ class MappingRecord(
     val location: File,
     /** An image of the mapping field (i.e. a camera frame). */
     val field: Bitmap?,
+    /** The frame rate timer. */
+    val timer: FrameRateTimer?,
     /** Map creators. */
     val creators: List<MapCreator>,
-    /** The period (start and end time) of the recording. */
-    val timer: FrameRateTimer,
-) {
-
     /** Metadata for serialisation. */
-    val metadata =  RecordMetadata(
-        recordingPeriod = timer.recordingPeriod(),
+    val metadata: RecordMetadata =  RecordMetadata(
+        recordingPeriod = timer?.recordingPeriod() ?: listOf(Instant.now(), Instant.now()),
         rois = creators.map{it.roi},
         params = creators[0].params
     )
+) {
 
     companion object {
 
@@ -72,7 +72,7 @@ class MappingRecord(
             val metadata = RecordMetadata.deserialize(File(location, METADATA_FILE)) ?: return null
 
             // Timer.
-            val timer = FrameRateTimer.read(File(location, TIMING_FILE)) ?: return null
+            val timer = FrameRateTimer.read(File(location, TIMING_FILE))
 
             // Recreate creators from metadata.
             val creators = metadata.rois.map { roi -> MapCreator(roi, metadata.params) }
@@ -86,6 +86,7 @@ class MappingRecord(
                 location = location,
                 field = field,
                 creators = creators,
+                metadata = metadata,
                 timer = timer
             )
         }
@@ -111,7 +112,7 @@ class MappingRecord(
         metadata.serialise(File(location, METADATA_FILE))
 
         // Timer.
-        timer.write(File(location, TIMING_FILE))
+        timer?.write(File(location, TIMING_FILE))
 
         // Field bitmap
         field?.compress(Bitmap.CompressFormat.JPEG, 90, FileOutputStream(File(location, FIELD_FILE)))

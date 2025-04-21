@@ -51,6 +51,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.util.concurrent.Executors
+import kotlin.math.abs
 
 /** A foreground service that will run the camera, record spatio-temporal maps and keep ROI state.
  *
@@ -324,6 +325,14 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     /** The number of seconds since the service started mapping. */
     fun elapsedSeconds(): Long { return timer.secFromRecordingStart() }
+
+    /** The percent error in the frame rate rom the expected. */
+    fun frameRateError(): Float {
+        val mu = timer.meanFrameIntervalMilliSec(100)
+        val err = if(mu > 0) 100f * abs((mu - frameIntervalMs) / frameIntervalMs) else 0f
+        println("\t\t%$err %")
+        return err
+    }
 
     /** Get current map's creator and map index. */
     fun getCurrentMapCreator(): Pair<MapCreator?, Int> {
