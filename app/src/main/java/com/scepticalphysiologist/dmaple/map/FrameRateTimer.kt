@@ -52,8 +52,8 @@ class FrameRateTimer {
 
     fun lastFrameIntervalMilliSec(): Float? { return frameIntervalsMilliSec.lastOrNull() }
 
-    fun meanFrameIntervalMilliSec(n: Int = frameIntervalsMilliSec.size - 1): Float? {
-        if(n > frameIntervalsMilliSec.size - 1) return null
+    fun meanFrameIntervalMilliSec(n: Int = frameIntervalsMilliSec.size - 1): Float {
+        if(n > frameIntervalsMilliSec.size - 1) return 0f
         return frameIntervalsMilliSec.takeLast(n).average().toFloat()
     }
 

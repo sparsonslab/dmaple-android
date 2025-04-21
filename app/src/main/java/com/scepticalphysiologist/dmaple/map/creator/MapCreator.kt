@@ -148,8 +148,10 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
 
     /** Set the temporal resolution the current recording duration. */
     fun setTemporalResolutionFromDuration(durationSec: Float) {
-        temporalRes = Pair(nt.toFloat() / durationSec, "s")
+        setTemporalResolution(nt.toFloat() / durationSec)
     }
+
+    fun setTemporalResolution(frameIntervalSec: Float) { temporalRes = Pair(frameIntervalSec, "s") }
 
     /** Set the temporal resolution based upon an estimated frame rate (frames/sec). */
     fun setTemporalResolutionFromFPS(fps: Float) { temporalRes = Pair(fps, "s") }

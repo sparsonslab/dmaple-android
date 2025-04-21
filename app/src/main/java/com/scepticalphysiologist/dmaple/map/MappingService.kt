@@ -456,10 +456,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** Set the temporal resolution of the creators based upon
      * the time from the start of the recording to now. */
     private fun setCreatorTemporalRes() {
-        // todo - this is not very accurate for short recordings because the frame interval
-        //     often jitters to very long values at the start of the recording.
-        val dur = timer.recordingDurationSec()
-        for(creator in creators) creator.setTemporalResolutionFromDuration(dur)
+        val interval = timer.meanFrameIntervalMilliSec()
+        for(creator in creators) creator.setTemporalResolution(interval)
     }
 
     /** Clear all creators, freeing up their buffers and resetting the current map. */
