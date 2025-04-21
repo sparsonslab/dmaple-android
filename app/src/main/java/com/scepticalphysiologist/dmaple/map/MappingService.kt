@@ -44,16 +44,14 @@ import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.field.FieldRuler
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import com.scepticalphysiologist.dmaple.map.field.RoisAndRuler
+import com.scepticalphysiologist.dmaple.map.record.FrameRateTimer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.File
-import java.time.Duration
-import java.time.Instant
 import java.util.concurrent.Executors
-import kotlin.time.TimeSource
 
 /** A foreground service that will run the camera, record spatio-temporal maps and keep ROI state.
  *
@@ -121,18 +119,12 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
      * 100 MB ~= 60 min x 60 sec/min x 30 frame/sec x 1000 bytes/frame.
      * */
     private var bufferProvider = MapBufferProvider(File(""), 0, 0)
-    /** The instant that creation of maps started. */
-    private var startTime: Instant = Instant.now()
-    /** The instant that creation of maps stopped. */
-    private var endTime: Instant = Instant.now()
     /** Read luminance values from the camera. */
     private var imageReader: LumaReader = LumaReader()
     /** The coroutine scope for recording maps. */
     private var scope: CoroutineScope = MainScope()
-    /** Timer for regularising frame rate. */
-    private val tSource = TimeSource.Monotonic
-    /** Time marker for regularising frame rate. */
-    private var tMark = tSource.markNow()
+    /** Timer for marking recording duration and regularising frame rate. */
+    private val timer = FrameRateTimer()
 
     // ---------------------------------------------------------------------------------------------
     // Initiation
@@ -332,9 +324,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     fun isCreatingMaps(): Boolean { return creating }
 
     /** The number of seconds since the service started mapping. */
-    fun elapsedSeconds(): Long {
-        return (Duration.between(startTime, Instant.now()).toMillis() / 1000f).toLong()
-    }
+    fun elapsedSeconds(): Long { return timer.secFromRecordingStart() }
 
     /** Get current map's creator and map index. */
     fun getCurrentMapCreator(): Pair<MapCreator?, Int> {
@@ -391,7 +381,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
                 location = path.file,
                 field = imageReader.colorBitmap,
                 creators = creators,
-                recordingPeriod = listOf(startTime, endTime)
+                recordingPeriod = timer.recordingPeriod()
             )
             record.write()
             MappingRecord.read(path.file)?.let {MappingRecord.records.add(0, it)}
@@ -441,7 +431,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         autosOn = false
         setPreview()
         creating = true
-        startTime = Instant.now()
+        timer.start()
         imageReader.reset()
         return warning
     }
@@ -449,7 +439,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** Stop creating maps. */
     private fun stop(): Warnings {
         // State
-        endTime = Instant.now()
+        timer.stop()
         creating = false
         autosOn = true
         setCreatorTemporalRes()
@@ -468,7 +458,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     private fun setCreatorTemporalRes() {
         // todo - this is not very accurate for short recordings because the frame interval
         //     often jitters to very long values at the start of the recording.
-        val dur = 0.001f * Duration.between(startTime, Instant.now()).toMillis().toFloat()
+        val dur = timer.recordingDurationSec()
         for(creator in creators) creator.setTemporalResolutionFromDuration(dur)
     }
 
@@ -481,20 +471,19 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         System.gc()
     }
 
-    //var t0 = tSource.markNow()
+
     /** Analyse each frame from the camera feed. Called continuously during the life of the service. */
     override fun analyze(image: ImageProxy) {
-        tMark = tSource.markNow()
+        timer.markFrameStart()
         // Pass the image to each map creator to analyse.
         if(creating) {
-            //println(t0.elapsedNow().inWholeMilliseconds)
-            //t0 = tSource.markNow()
+            println(timer.lastFrameIntervalMilliSec())
             imageReader.readYUVImage(image)
             for(creator in creators) creator.updateWithCameraImage(imageReader)
         }
         // Sleep the thread to get an actual frame rate close to that wanted.
         // Not sure why adding 2 ms here works but it does.
-        val elapsed = tMark.elapsedNow().inWholeMilliseconds + 2
+        val elapsed = timer.millisFromFrameStart() + 2
         if(elapsed < frameIntervalMs) Thread.sleep(frameIntervalMs - elapsed)
         // Close the image to allow analyze to be called for the next frame.
         image.close()
