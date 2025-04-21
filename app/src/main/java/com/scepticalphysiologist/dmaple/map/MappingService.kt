@@ -47,11 +47,13 @@ import com.scepticalphysiologist.dmaple.map.field.RoisAndRuler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.util.concurrent.Executors
 import kotlin.math.abs
+import kotlin.time.TimeSource
 
 /** A foreground service that will run the camera, record spatio-temporal maps and keep ROI state.
  *
@@ -478,21 +480,36 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         System.gc()
     }
 
+    val source = TimeSource.Monotonic
+
+    var ts = source.markNow()
 
     /** Analyse each frame from the camera feed. Called continuously during the life of the service. */
     override fun analyze(image: ImageProxy) {
-        timer.markFrameStart()
-        // Pass the image to each map creator to analyse.
-        if(creating) {
-            println(timer.lastFrameIntervalMilliSec())
-            imageReader.readYUVImage(image)
-            for(creator in creators) creator.updateWithCameraImage(imageReader)
-        }
+
         // Sleep the thread to get an actual frame rate close to that wanted.
         // Not sure why adding 1/2 ms here works but it does.
         // See the unit tests for FrameRateTimer
-        val elapsed = timer.millisFromFrameStart() + 2
-        if(elapsed < frameIntervalMs) Thread.sleep(frameIntervalMs - elapsed)
+
+        val elapsed = timer.millisFromFrameStart() + 1
+        if(elapsed < frameIntervalMs) {
+            ts = source.markNow()
+            Thread.sleep(frameIntervalMs - elapsed)
+           if(creating) println("\t[${frameIntervalMs - elapsed}, ${ts.elapsedNow().inWholeMicroseconds}]")
+        }
+
+
+
+        //while(timer.millisFromFrameStart() < frameIntervalMs){}
+
+        timer.markFrameStart()
+        // Pass the image to each map creator to analyse.
+        if(creating) {
+            println("${timer.lastFrameIntervalMilliSec()}")
+            imageReader.readYUVImage(image)
+            for(creator in creators) creator.updateWithCameraImage(imageReader)
+        }
+
         // Close the image to allow analyze to be called for the next frame.
         image.close()
     }
