@@ -47,6 +47,11 @@ class FrameRateTimer {
 
     fun lastFrameIntervalMilliSec(): Float? { return frameIntervalsMilliSec.lastOrNull() }
 
+    fun meanFrameIntervalMilliSec(n: Int = frameIntervalsMilliSec.size - 1): Float? {
+        if(n > frameIntervalsMilliSec.size - 1) return null
+        return frameIntervalsMilliSec.takeLast(n).average().toFloat()
+    }
+
     // ---------------------------------------------------------------------------------------------
     // End recording
     // ---------------------------------------------------------------------------------------------
@@ -59,9 +64,5 @@ class FrameRateTimer {
         return Duration.between(recordingStart, recordingEnd).toMillis().toFloat() * 0.001f
     }
 
-    fun recordingStatistics() {
-
-
-    }
 
 }

@@ -440,6 +440,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     private fun stop(): Warnings {
         // State
         timer.stop()
+        println("mean frame interval = ${timer.meanFrameIntervalMilliSec(200)}")
         creating = false
         autosOn = true
         setCreatorTemporalRes()
@@ -482,8 +483,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             for(creator in creators) creator.updateWithCameraImage(imageReader)
         }
         // Sleep the thread to get an actual frame rate close to that wanted.
-        // Not sure why adding 2 ms here works but it does.
-        val elapsed = timer.millisFromFrameStart() + 2
+        // Not sure why adding 1/2 ms here works but it does.
+        val elapsed = timer.millisFromFrameStart() + 1
         if(elapsed < frameIntervalMs) Thread.sleep(frameIntervalMs - elapsed)
         // Close the image to allow analyze to be called for the next frame.
         image.close()
