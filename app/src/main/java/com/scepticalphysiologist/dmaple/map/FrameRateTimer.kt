@@ -1,7 +1,12 @@
 // Copyright (c) 2025-2025. Dr Sean Paul Parsons. All rights reserved.
 
-package com.scepticalphysiologist.dmaple.map.record
+package com.scepticalphysiologist.dmaple.map
 
+import java.io.BufferedReader
+import java.io.BufferedWriter
+import java.io.File
+import java.io.FileReader
+import java.io.FileWriter
 import java.time.Duration
 import java.time.Instant
 import kotlin.time.TimeSource
@@ -12,7 +17,7 @@ class FrameRateTimer {
 
     private var recordingStart = Instant.now()
 
-    private var frameStart = source.markNow()
+    private var frameStart = TimeSource.Monotonic.markNow()
 
     private var frameIntervalsMilliSec = ArrayDeque<Float>()
 
@@ -22,8 +27,8 @@ class FrameRateTimer {
     // Start recording
     // ---------------------------------------------------------------------------------------------
 
-    fun start(){
-        recordingStart = Instant.now()
+    fun start(t: Instant = Instant.now()){
+        recordingStart = t
         frameIntervalsMilliSec.clear()
     }
 
@@ -56,7 +61,7 @@ class FrameRateTimer {
     // End recording
     // ---------------------------------------------------------------------------------------------
 
-    fun stop(){ recordingEnd = Instant.now() }
+    fun stop(t: Instant = Instant.now()){ recordingEnd = t }
 
     fun recordingPeriod(): List<Instant> { return listOf(recordingStart, recordingEnd) }
 
@@ -64,5 +69,33 @@ class FrameRateTimer {
         return Duration.between(recordingStart, recordingEnd).toMillis().toFloat() * 0.001f
     }
 
+    fun intervalsMilliSec(): List<Float> { return frameIntervalsMilliSec.toList() }
+
+    fun write(file: File) {
+        val strm = BufferedWriter(FileWriter(file))
+        strm.write("${recordingStart}\n")
+        strm.write("${recordingEnd}\n")
+        strm.write(frameIntervalsMilliSec.map{it.toString()}.joinToString("\n"))
+        strm.close()
+    }
+
+    companion object {
+
+        fun read(file: File): FrameRateTimer? {
+            if(!file.exists()) return null
+            val timer = FrameRateTimer()
+            val strm = BufferedReader(FileReader(file))
+            try {
+                timer.start(Instant.parse(strm.readLine()))
+                timer.stop(Instant.parse(strm.readLine()))
+            }
+            catch(_: java.time.format.DateTimeParseException){ return null }
+            catch(_: java.io.IOException){return null}
+            strm.lines().forEach { line -> line.toFloatOrNull()?.let{timer.frameIntervalsMilliSec.add(it) }}
+            strm.close()
+            return timer
+        }
+
+    }
 
 }

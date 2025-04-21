@@ -44,7 +44,6 @@ import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.field.FieldRuler
 import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import com.scepticalphysiologist.dmaple.map.field.RoisAndRuler
-import com.scepticalphysiologist.dmaple.map.record.FrameRateTimer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -381,7 +380,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
                 location = path.file,
                 field = imageReader.colorBitmap,
                 creators = creators,
-                recordingPeriod = timer.recordingPeriod()
+                timer = timer
             )
             record.write()
             MappingRecord.read(path.file)?.let {MappingRecord.records.add(0, it)}
@@ -484,7 +483,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         }
         // Sleep the thread to get an actual frame rate close to that wanted.
         // Not sure why adding 1/2 ms here works but it does.
-        val elapsed = timer.millisFromFrameStart() + 1
+        // See the unit tests for FrameRateTimer
+        val elapsed = timer.millisFromFrameStart() + 2
         if(elapsed < frameIntervalMs) Thread.sleep(frameIntervalMs - elapsed)
         // Close the image to allow analyze to be called for the next frame.
         image.close()
