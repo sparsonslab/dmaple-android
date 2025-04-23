@@ -133,6 +133,8 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
             // Set the service's surface to the provided preview surface.
             surface?.let { service.setSurface(it) }
             // Set the service's buffer provider to the device's public documents folder.
+            // 10 buffers gives 10 spatio-temporal maps.
+            // 100 MB ~= 60 min x 60 sec/min x 30 frame/sec x 1000 bytes/frame.
             applicationContext.getExternalFilesDir(null)?.let { documentsFolder ->
                 service.setBufferProvider(MapBufferProvider(
                     sourceDirectory = documentsFolder,

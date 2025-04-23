@@ -115,10 +115,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     private var currentMap: Pair<Int, Int> = Pair(0, 0)
     /** Maps are being created ("recording"). */
     private var creating: Boolean = false
-    /** Provides file-mapped byte buffers for holding map data as it is created.
-     * 10 buffers gives 10 spatio-temporal maps.
-     * 100 MB ~= 60 min x 60 sec/min x 30 frame/sec x 1000 bytes/frame.
-     * */
+    /** Provides file-mapped byte buffers for holding map data as it is created. */
     private var bufferProvider = MapBufferProvider(File(""), 0, 0)
     /** Read luminance values from the camera. */
     private var imageReader: LumaReader = LumaReader()
