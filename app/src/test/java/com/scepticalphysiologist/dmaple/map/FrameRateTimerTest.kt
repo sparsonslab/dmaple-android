@@ -7,6 +7,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.robolectric.util.TempDirectory
 import java.io.File
+import java.util.concurrent.locks.LockSupport
 
 class FrameRateTimerTest {
 
@@ -40,17 +41,18 @@ class FrameRateTimerTest {
         val timer = FrameRateTimer()
 
         // When: The timer is run at the target frame rate.
-        val targetInterval = 30L
+        val targetIntervalMs = 30L
+        val targetIntervalMicroS = targetIntervalMs * 1000L
         timer.start()
         for(i in 0 until 50){
+            while(targetIntervalMicroS > timer.microSecFromFrameStart()) LockSupport.parkNanos(50_000)
             timer.markFrameStart()
-            Thread.sleep(targetInterval - 2)
         }
         timer.stop()
 
         // Then: The mean frame rate is as expected.
         timer.lastFrameIntervalMilliSec()?.let { meanInterval ->
-            assertEquals(targetInterval.toFloat(), meanInterval, 2f)
+            assertEquals(targetIntervalMs.toFloat(), meanInterval, 0.1f)
         }
     }
 
