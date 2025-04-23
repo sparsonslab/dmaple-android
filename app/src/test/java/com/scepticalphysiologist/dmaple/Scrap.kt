@@ -3,60 +3,58 @@
 package com.scepticalphysiologist.dmaple
 
 
-import com.scepticalphysiologist.dmaple.map.FrameTimer
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
+import com.scepticalphysiologist.dmaple.geom.Edge
+import com.scepticalphysiologist.dmaple.geom.Frame
+import com.scepticalphysiologist.dmaple.geom.Point
+import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import org.junit.Test
+import java.io.BufferedWriter
+import java.io.File
+import java.io.FileOutputStream
+import java.io.FileWriter
+import java.io.OutputStream
 import java.nio.ByteBuffer
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 
 
-class FrameRunnable: Runnable {
-
-    val timer = FrameTimer()
-
-    override fun run() {
-        timer.markFrameStart()
-    }
-
-}
 
 
 class Scrap {
 
-
     @Test
-    fun `schedule`() {
+    fun `write roi`() {
 
-        val timer = FrameTimer()
-        val executor = Executors.newScheduledThreadPool(100)
-
-
-        val interval = 50L
-        val runner = executor.scheduleAtFixedRate(
-            Runnable { timer.markFrameStart() },
-            interval, interval, TimeUnit.MILLISECONDS
+        val roi = FieldRoi(
+            frame = Frame(size = Point(500f, 500f)),
+            c0 = Point(100f, 100f),
+            c1 = Point(210f, 405f),
+            seedingEdge = Edge.RIGHT,
+            uid = "my_roi"
         )
+        val folder = File("/Users/senparsons/Downloads")
 
-        runBlocking {
-            delay(2000L)
-            executor.schedule(
-                Runnable { runner.cancel(false); executor.shutdown() },
-                10L, TimeUnit.MILLISECONDS
-            ).get()
+
+
+        val buffer = ByteBuffer.allocate(100)
+        buffer.put(byteArrayOf(73, 111, 117, 116))// "Iout"
+        buffer.put(byteArrayOf())
+
+        /*
+        void putShort(int base, int v) {
+            data[base] = (byte)(v>>>8);
+            data[base+1] = (byte)v;
         }
+        */
+
+        val path = File(folder, "${roi.uid}.roi")
+        val strm = FileOutputStream(path)
 
 
-        println("=============================")
-        println(timer.intervalsMilliSec())
-        println(timer.meanFrameIntervalMilliSec())
+
+
+
 
 
     }
-
-
-
 
 
     @Test
