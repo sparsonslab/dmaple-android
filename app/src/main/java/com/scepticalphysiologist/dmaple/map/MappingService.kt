@@ -446,8 +446,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         // State
         creating = false
         timer.markRecordingEnd()
+        setCreatorTemporalResolutionFromTimer()
         autosOn = true
-        setCreatorTemporalRes()
         setPreview()
         return Warnings("Stop Recording")
     }
@@ -460,7 +460,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     /** Set the temporal resolution of the creators based upon
      * the time from the start of the recording to now. */
-    private fun setCreatorTemporalRes() {
+    private fun setCreatorTemporalResolutionFromTimer() {
         val interval = timer.meanFrameIntervalMilliSec()
         for(creator in creators) creator.setTemporalResolution(interval)
     }
