@@ -17,13 +17,13 @@
 
         <SwitchPreference
             android:key="SCREEN_FOR_LEFT_HAND"
-            android:title="Buttons on Left"
+            android:title="Controls on Left"
             android:summary="Switch the side buttons to the left for left-handers."
             android:defaultValue="false"/>
 
         <SwitchPreference
             android:key="KEEP_SCREEN_ON"
-            android:title="Keep on"
+            android:title="Keep On"
             android:summary="Do not allow the screen to sleep while the app is open."
             android:defaultValue="false"/>
 
@@ -35,7 +35,7 @@
 
         <DropDownPreference
             android:key="FRAME_RATE_FPS"
-            android:title="Frame rate"
+            android:title="Frame Rate"
             android:summary="The approximate number of frames per second:\t[%s] fps"/>
 
         <SeekBarPreference
