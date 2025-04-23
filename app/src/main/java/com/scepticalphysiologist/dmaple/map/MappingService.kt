@@ -482,7 +482,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         // Sleep the thread to get an actual frame rate close to that wanted.
         val sleepMicro = frameIntervalMicroSec - timer.microSecFromFrameStart()
         if(sleepMicro > 0) {
-            // Repeated call to parkNanos() is much more accurate than a single call to Thread.sleep().
+            // Repeated call to parkNanos() ("busy wait") is much more accurate than a
+            // single call to Thread.sleep().
             while(timer.microSecFromFrameStart() < frameIntervalMicroSec){
                 LockSupport.parkNanos(50_000)
             }
