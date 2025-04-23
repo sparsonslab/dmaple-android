@@ -18,7 +18,7 @@
         <SwitchPreference
             android:key="SCREEN_FOR_LEFT_HAND"
             android:title="Controls on Left"
-            android:summary="Switch the side buttons to the left for left-handers."
+            android:summary="Switch the controls (buttons and sliders) to the left for left-handers."
             android:defaultValue="false"/>
 
         <SwitchPreference
