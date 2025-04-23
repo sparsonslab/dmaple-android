@@ -43,3 +43,5 @@ A PDF guide to using the app can be found [here](app/src/main/assets/dmaple_user
 Each source code package includes a read-me that summarises the classes and their interconnection,
 starting at the root, [here](app/src/main/java/com/scepticalphysiologist/dmaple).
 
+---
+Copyright (c) 2025-2025. Dr Sean Paul Parsons. All rights reserved.
