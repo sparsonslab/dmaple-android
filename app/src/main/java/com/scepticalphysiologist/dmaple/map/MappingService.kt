@@ -11,7 +11,6 @@ import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CaptureRequest
 import android.os.Binder
 import android.os.IBinder
-import android.os.SystemClock
 import android.util.Log
 import android.util.Range
 import android.view.Display
@@ -47,17 +46,13 @@ import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import com.scepticalphysiologist.dmaple.map.field.RoisAndRuler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.File
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.LockSupport
 import kotlin.math.abs
-import kotlin.time.TimeSource
 
 /** A foreground service that will run the camera, record spatio-temporal maps and keep ROI state.
  *
@@ -103,8 +98,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     // ------------
     /** Approximate frame rate (frames/second). */
     private var frameRateFps: Int = getAvailableFps().max()
-    /** Approximate interval between frames (milliseconds). */
-    private val frameIntervalMs: Long get() = (1000f / frameRateFps.toFloat()).toLong()
+    /** Approximate interval between frames (microseconds). */
+    private val frameIntervalMicroSec: Long get() = (1_000_000f / frameRateFps.toFloat()).toLong()
     /** Auto exposure, white-balance and focus are on. */
     private var autosOn: Boolean = true
 
@@ -169,25 +164,17 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         }
     }
 
-    val executor: ExecutorService = Executors.newFixedThreadPool(5)
-
     /** Set the image analyser use case of CameraX. */
     private fun setAnalyser() {
         unBindUse(analyser)
-        //val ex = Executors.newFixedThreadPool(5)
-        //val ex = Executors.newScheduledThreadPool(5)
-        //ex.scheduleAtFixedRate(this.analyser, frameIntervalMs)
-
         analyser = ImageAnalysis.Builder().also { builder ->
             builder.setTargetAspectRatio(CAMERA_ASPECT_RATIO)
             builder.setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             builder.setImageQueueDepth(5)
             builder.setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
         }.build().also { use ->
-            use.setAnalyzer(executor, this)
+            use.setAnalyzer(Executors.newFixedThreadPool(5), this)
             bindUse(use)
-
-
         }
 
     }
@@ -342,8 +329,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     /** The percent error in the frame rate rom the expected. */
     fun frameRateError(): Float {
-        val mu = timer.meanFrameIntervalMilliSec(100)
-        val err = if(mu > 0) 100f * abs((mu - frameIntervalMs) / frameIntervalMs) else 0f
+        val mu = 1000f * timer.meanFrameIntervalMilliSec(100)
+        val err = if(mu > 0) 100f * abs((mu - frameIntervalMicroSec) / frameIntervalMicroSec) else 0f
         println("\t\t%$err %")
         return err
     }
@@ -492,51 +479,25 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         System.gc()
     }
 
-    val source = TimeSource.Monotonic
-
-    var ts = source.markNow()
-
-    var dummy = 3.5f
-
-    suspend fun sleep(milliSec: Long) {
-        delay(milliSec)
-    }
-
     /** Analyse each frame from the camera feed. Called continuously during the life of the service. */
     override fun analyze(image: ImageProxy) {
-
-        // Sleep the thread to get an actual frame rate close to that wanted.
-        // Not sure why adding 1/2 ms here works but it does.
-        // See the unit tests for FrameRateTimer
-
-        val elapsed = timer.millisFromFrameStart() + 1
-        if(elapsed < frameIntervalMs) {
-            ts = source.markNow()
-
-            //GlobalScope.launch { delay(frameIntervalMs - elapsed) }
-
-            //runBlocking { sleep(frameIntervalMs - elapsed) }
-            Thread.sleep(frameIntervalMs - elapsed)
-            //TimeUnit.MILLISECONDS.sleep(frameIntervalMs - elapsed)
-
-            //SystemClock.sleep(frameIntervalMs - elapsed)
-            // while(timer.millisFromFrameStart() < frameIntervalMs){ Thread.yield()}
-
-           if(creating) println("\t[${frameIntervalMs - elapsed}, ${ts.elapsedNow().inWholeMicroseconds}]")
+        // Park the thread to get an actual frame rate close to that wanted.
+        val sleepMicro = frameIntervalMicroSec - timer.microSecFromFrameStart()
+        if(sleepMicro > 0) {
+            while(timer.microSecFromFrameStart() < frameIntervalMicroSec){
+                LockSupport.parkNanos(50_000)
+            }
         }
 
-
-
-        //while(timer.millisFromFrameStart() < frameIntervalMs){}
-
+        // Mark frame start.
         timer.markFrameStart()
+
         // Pass the image to each map creator to analyse.
         if(creating) {
             println("${timer.lastFrameIntervalMilliSec()}")
             imageReader.readYUVImage(image)
             for(creator in creators) creator.updateWithCameraImage(imageReader)
         }
-
         // Close the image to allow analyze to be called for the next frame.
         image.close()
     }

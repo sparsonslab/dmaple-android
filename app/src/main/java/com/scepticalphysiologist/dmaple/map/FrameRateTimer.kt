@@ -42,8 +42,8 @@ class FrameRateTimer {
         frameStart = source.markNow()
     }
 
-    fun millisFromFrameStart(): Long {
-        return frameStart.elapsedNow().inWholeMilliseconds
+    fun microSecFromFrameStart(): Long {
+        return frameStart.elapsedNow().inWholeMicroseconds
     }
 
     fun secFromRecordingStart(): Long {

@@ -64,13 +64,9 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         Log.i("dmaple_lifetime", "main activity: onCreate")
         setContentView(R.layout.activity_main)
 
-        // Load records
+        // Prepare.
         MappingRecord.loadRecords()
-
-        // Set static attributes from preferences.
         setPreferences()
-
-        // Ask for permissions.
         requestPermissions()
     }
 
@@ -144,6 +140,8 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
                     bufferByteSize = 100_000_000L
                 ))
             }
+            // Set preferences.
+            setPreferences()
         }
     }
 
