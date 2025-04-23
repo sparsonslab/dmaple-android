@@ -11,6 +11,7 @@ import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CaptureRequest
 import android.os.Binder
 import android.os.IBinder
+import android.os.SystemClock
 import android.util.Log
 import android.util.Range
 import android.view.Display
@@ -46,12 +47,15 @@ import com.scepticalphysiologist.dmaple.map.record.MappingRecord
 import com.scepticalphysiologist.dmaple.map.field.RoisAndRuler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.File
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 import kotlin.time.TimeSource
 
@@ -165,17 +169,25 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         }
     }
 
+    val executor: ExecutorService = Executors.newFixedThreadPool(5)
+
     /** Set the image analyser use case of CameraX. */
     private fun setAnalyser() {
         unBindUse(analyser)
+        //val ex = Executors.newFixedThreadPool(5)
+        //val ex = Executors.newScheduledThreadPool(5)
+        //ex.scheduleAtFixedRate(this.analyser, frameIntervalMs)
+
         analyser = ImageAnalysis.Builder().also { builder ->
             builder.setTargetAspectRatio(CAMERA_ASPECT_RATIO)
             builder.setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             builder.setImageQueueDepth(5)
             builder.setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
         }.build().also { use ->
-            use.setAnalyzer(Executors.newFixedThreadPool(5), this)
+            use.setAnalyzer(executor, this)
             bindUse(use)
+
+
         }
 
     }
@@ -484,6 +496,12 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     var ts = source.markNow()
 
+    var dummy = 3.5f
+
+    suspend fun sleep(milliSec: Long) {
+        delay(milliSec)
+    }
+
     /** Analyse each frame from the camera feed. Called continuously during the life of the service. */
     override fun analyze(image: ImageProxy) {
 
@@ -494,7 +512,16 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         val elapsed = timer.millisFromFrameStart() + 1
         if(elapsed < frameIntervalMs) {
             ts = source.markNow()
+
+            //GlobalScope.launch { delay(frameIntervalMs - elapsed) }
+
+            //runBlocking { sleep(frameIntervalMs - elapsed) }
             Thread.sleep(frameIntervalMs - elapsed)
+            //TimeUnit.MILLISECONDS.sleep(frameIntervalMs - elapsed)
+
+            //SystemClock.sleep(frameIntervalMs - elapsed)
+            // while(timer.millisFromFrameStart() < frameIntervalMs){ Thread.yield()}
+
            if(creating) println("\t[${frameIntervalMs - elapsed}, ${ts.elapsedNow().inWholeMicroseconds}]")
         }
 
