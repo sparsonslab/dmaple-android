@@ -5,6 +5,7 @@ package com.scepticalphysiologist.dmaple.map.record
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Environment
+import com.scepticalphysiologist.dmaple.map.FrameTimer
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import mil.nga.tiff.FieldTagType
@@ -22,18 +23,17 @@ class MappingRecord(
     val location: File,
     /** An image of the mapping field (i.e. a camera frame). */
     val field: Bitmap?,
+    /** The frame rate timer. */
+    val timer: FrameTimer?,
     /** Map creators. */
     val creators: List<MapCreator>,
-    /** The period (start and end time) of the recording. */
-    recordingPeriod: List<Instant>,
-) {
-
     /** Metadata for serialisation. */
-    val metadata =  RecordMetadata(
-        recordingPeriod = recordingPeriod,
+    val metadata: RecordMetadata =  RecordMetadata(
+        recordingPeriod = timer?.recordingPeriod() ?: listOf(Instant.now(), Instant.now()),
         rois = creators.map{it.roi},
         params = creators[0].params
     )
+) {
 
     companion object {
 
@@ -46,12 +46,14 @@ class MappingRecord(
         /** All the loaded mapping records. */
         val records = mutableListOf<MappingRecord>()
 
-        // Files
-        // -----
+        // File names
+        // ----------
         /** The file name for the field image. */
         const val FIELD_FILE = "field.jpg"
         /** The file name for the recording metadata. */
         const val METADATA_FILE = "metadata.json"
+
+        const val TIMING_FILE = "timing.txt"
 
         /** Load all records. */
         fun loadRecords(root: File = DEFAULT_ROOT) {
@@ -69,6 +71,9 @@ class MappingRecord(
             // Metadata.
             val metadata = RecordMetadata.deserialize(File(location, METADATA_FILE)) ?: return null
 
+            // Timer.
+            val timer = FrameTimer.read(File(location, TIMING_FILE))
+
             // Recreate creators from metadata.
             val creators = metadata.rois.map { roi -> MapCreator(roi, metadata.params) }
 
@@ -76,11 +81,13 @@ class MappingRecord(
             val fieldFile = File(location, FIELD_FILE)
             val field = if(fieldFile.exists()) BitmapFactory.decodeFile(fieldFile.absolutePath) else null
 
+            // Record
             return MappingRecord(
                 location = location,
                 field = field,
                 creators = creators,
-                recordingPeriod = metadata.recordingPeriod
+                metadata = metadata,
+                timer = timer
             )
         }
 
@@ -103,6 +110,9 @@ class MappingRecord(
 
         // Metadata.
         metadata.serialise(File(location, METADATA_FILE))
+
+        // Timer.
+        timer?.write(File(location, TIMING_FILE))
 
         // Field bitmap
         field?.compress(Bitmap.CompressFormat.JPEG, 90, FileOutputStream(File(location, FIELD_FILE)))

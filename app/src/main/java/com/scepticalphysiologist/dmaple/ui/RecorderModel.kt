@@ -41,8 +41,8 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
 
     /** Indicate warning messages that should be shown, e.g. when starting mapping. */
     val messages = MutableLiveData<ComposeDialog?>(null)
-    /** Indicate the elapsed time (seconds) of mapping. */
-    val timer = MutableLiveData<Long>(0L)
+    /** the elapsed time (seconds) of mapping and the percentage error in frame rate from the expected. */
+    val timer = MutableLiveData<Pair<Long, Float>>(Pair(0L, 0f))
     /** A coroutine scope for running the timer. */
     private var scope: CoroutineScope? = null
 
@@ -133,7 +133,7 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
 
     private fun runTimer() = scope?.launch(Dispatchers.Default) {
         while(true) {
-            mapper?.let {timer.postValue(it.elapsedSeconds())}
+            mapper?.let { timer.postValue(Pair(it.elapsedSeconds(), it.frameRatePercentError())) }
             delay(1000)
         }
     }

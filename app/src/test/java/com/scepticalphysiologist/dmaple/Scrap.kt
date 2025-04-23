@@ -3,12 +3,61 @@
 package com.scepticalphysiologist.dmaple
 
 
-import com.scepticalphysiologist.dmaple.map.creator.rationalToFloat
+import com.scepticalphysiologist.dmaple.map.FrameTimer
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import java.nio.ByteBuffer
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+
+
+class FrameRunnable: Runnable {
+
+    val timer = FrameTimer()
+
+    override fun run() {
+        timer.markFrameStart()
+    }
+
+}
 
 
 class Scrap {
+
+
+    @Test
+    fun `schedule`() {
+
+        val timer = FrameTimer()
+        val executor = Executors.newScheduledThreadPool(100)
+
+
+        val interval = 50L
+        val runner = executor.scheduleAtFixedRate(
+            Runnable { timer.markFrameStart() },
+            interval, interval, TimeUnit.MILLISECONDS
+        )
+
+        runBlocking {
+            delay(2000L)
+            executor.schedule(
+                Runnable { runner.cancel(false); executor.shutdown() },
+                10L, TimeUnit.MILLISECONDS
+            ).get()
+        }
+
+
+        println("=============================")
+        println(timer.intervalsMilliSec())
+        println(timer.meanFrameIntervalMilliSec())
+
+
+    }
+
+
+
+
 
     @Test
     fun `yuv back forward`(){
