@@ -3,19 +3,18 @@
 package com.scepticalphysiologist.dmaple
 
 
-import com.scepticalphysiologist.dmaple.map.FrameRateTimer
+import com.scepticalphysiologist.dmaple.map.FrameTimer
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import java.nio.ByteBuffer
 import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
 
 class FrameRunnable: Runnable {
 
-    val timer = FrameRateTimer()
+    val timer = FrameTimer()
 
     override fun run() {
         timer.markFrameStart()
@@ -30,7 +29,7 @@ class Scrap {
     @Test
     fun `schedule`() {
 
-        val timer = FrameRateTimer()
+        val timer = FrameTimer()
         val executor = Executors.newScheduledThreadPool(100)
 
 

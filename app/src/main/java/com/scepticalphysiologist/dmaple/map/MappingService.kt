@@ -125,7 +125,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** The coroutine scope for recording maps. */
     private var scope: CoroutineScope = MainScope()
     /** Timer for marking recording duration and regularising frame rate. */
-    private val timer = FrameRateTimer()
+    private val timer = FrameTimer()
 
     // ---------------------------------------------------------------------------------------------
     // Initiation
@@ -328,10 +328,9 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     fun elapsedSeconds(): Long { return timer.secFromRecordingStart() }
 
     /** The percent error in the frame rate rom the expected. */
-    fun frameRateError(): Float {
+    fun frameRatePercentError(): Float {
         val mu = 1000f * timer.meanFrameIntervalMilliSec(100)
         val err = if(mu > 0) 100f * abs((mu - frameIntervalMicroSec) / frameIntervalMicroSec) else 0f
-        println("\t\t%$err %")
         return err
     }
 
@@ -440,7 +439,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         autosOn = false
         setPreview()
         creating = true
-        timer.start()
+        timer.markRecordingStart()
         imageReader.reset()
         return warning
     }
@@ -448,9 +447,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** Stop creating maps. */
     private fun stop(): Warnings {
         // State
-        timer.stop()
-        println("mean frame interval = ${timer.meanFrameIntervalMilliSec(200)}")
         creating = false
+        timer.markRecordingEnd()
         autosOn = true
         setCreatorTemporalRes()
         setPreview()
@@ -481,9 +479,10 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     /** Analyse each frame from the camera feed. Called continuously during the life of the service. */
     override fun analyze(image: ImageProxy) {
-        // Park the thread to get an actual frame rate close to that wanted.
+        // Sleep the thread to get an actual frame rate close to that wanted.
         val sleepMicro = frameIntervalMicroSec - timer.microSecFromFrameStart()
         if(sleepMicro > 0) {
+            // Repeated call to parkNanos() is much more accurate than a single call to Thread.sleep().
             while(timer.microSecFromFrameStart() < frameIntervalMicroSec){
                 LockSupport.parkNanos(50_000)
             }
@@ -494,7 +493,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
         // Pass the image to each map creator to analyse.
         if(creating) {
-            println("${timer.lastFrameIntervalMilliSec()}")
+            //println("${timer.lastFrameIntervalMilliSec()}")
             imageReader.readYUVImage(image)
             for(creator in creators) creator.updateWithCameraImage(imageReader)
         }

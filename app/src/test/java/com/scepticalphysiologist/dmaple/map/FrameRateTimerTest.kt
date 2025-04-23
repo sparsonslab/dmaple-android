@@ -14,21 +14,21 @@ class FrameRateTimerTest {
     @Test
     fun `write read round trip`(){
         // Given: A frame rate timer.
-        val timer = FrameRateTimer()
+        val timer = FrameTimer()
 
         // When: The timer is run at the target frame rate.
         val targetInterval = 30L
-        timer.start()
+        timer.markRecordingStart()
         for(i in 0 until 50){
             timer.markFrameStart()
             Thread.sleep(targetInterval - 2)
         }
-        timer.stop()
+        timer.markRecordingEnd()
 
         // When: The timer is written to file and then read back.
         val file = File(TempDirectory().create("example").toFile(), "timer.txt")
         timer.write(file)
-        val timerRead = FrameRateTimer.read(file)
+        val timerRead = FrameTimer.read(file)
 
         // Then: The times are as expected.
         assertEquals(timer.recordingPeriod(), timerRead?.recordingPeriod())
@@ -38,17 +38,17 @@ class FrameRateTimerTest {
     @Test
     fun `frame rate estimate correct`(){
         // Given: A frame rate timer.
-        val timer = FrameRateTimer()
+        val timer = FrameTimer()
 
         // When: The timer is run at the target frame rate.
         val targetIntervalMs = 30L
         val targetIntervalMicroS = targetIntervalMs * 1000L
-        timer.start()
+        timer.markRecordingStart()
         for(i in 0 until 50){
             while(targetIntervalMicroS > timer.microSecFromFrameStart()) LockSupport.parkNanos(50_000)
             timer.markFrameStart()
         }
-        timer.stop()
+        timer.markRecordingEnd()
 
         // Then: The mean frame rate is as expected.
         timer.lastFrameIntervalMilliSec()?.let { meanInterval ->

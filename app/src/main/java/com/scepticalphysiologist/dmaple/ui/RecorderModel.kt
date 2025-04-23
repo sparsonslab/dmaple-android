@@ -133,7 +133,7 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
 
     private fun runTimer() = scope?.launch(Dispatchers.Default) {
         while(true) {
-            mapper?.let { timer.postValue(Pair(it.elapsedSeconds(), it.frameRateError())) }
+            mapper?.let { timer.postValue(Pair(it.elapsedSeconds(), it.frameRatePercentError())) }
             delay(1000)
         }
     }

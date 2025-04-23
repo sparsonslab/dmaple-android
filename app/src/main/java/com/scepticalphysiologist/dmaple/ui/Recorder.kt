@@ -122,9 +122,9 @@ class Recorder: Fragment() {
         }
 
         // Update the timer shown during recording.
-        model.timer.observe(viewLifecycleOwner) { (elapsedSec, intervalError) ->
+        model.timer.observe(viewLifecycleOwner) { (elapsedSec, percentIntervalError) ->
             var txt = DateUtils.formatElapsedTime(elapsedSec)
-            if(intervalError > 10) txt += "*"
+            if(percentIntervalError > 10) txt += "*"
             binding.cameraTimer.text = txt
         }
 

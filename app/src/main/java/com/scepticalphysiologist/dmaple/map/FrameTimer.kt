@@ -11,66 +11,78 @@ import java.time.Duration
 import java.time.Instant
 import kotlin.time.TimeSource
 
-class FrameRateTimer {
+/** Records the duration of a recording and the interval of its frames. */
+class FrameTimer {
 
+    /** A monotonic timer. */
     private val source = TimeSource.Monotonic
-
+    /** The time at the start of the recording. */
     private var recordingStart = Instant.now()
-
+    /** The time at the end of the recording. */
+    private var recordingEnd = Instant.now()
+    /** The time at the start of the last frame in the recording. */
     private var frameStart = TimeSource.Monotonic.markNow()
-
+    /** For each frame in the recording, the interval in milliseconds since the last frame.
+     * Zero for the first frame. */
     private var frameIntervalsMilliSec = ArrayDeque<Float>()
 
-    private var recordingEnd = Instant.now()
-
     // ---------------------------------------------------------------------------------------------
-    // Start recording
+    // Mark times.
     // ---------------------------------------------------------------------------------------------
 
-    fun start(t: Instant = Instant.now()){
+    /** Mark the start of a recording. */
+    fun markRecordingStart(t: Instant = Instant.now()){
         recordingStart = t
         frameIntervalsMilliSec.clear()
     }
 
-    // ---------------------------------------------------------------------------------------------
-    // During recording
-    // ---------------------------------------------------------------------------------------------
-
+    /** Mark the start of a frame. */
     fun markFrameStart(){
         if(frameIntervalsMilliSec.isEmpty()) frameIntervalsMilliSec.add(0f)
         else frameIntervalsMilliSec.add(frameStart.elapsedNow().inWholeMicroseconds.toFloat() / 1000f)
         frameStart = source.markNow()
     }
 
-    fun microSecFromFrameStart(): Long {
-        return frameStart.elapsedNow().inWholeMicroseconds
-    }
+    /** Mark the end of a recording. */
+    fun markRecordingEnd(t: Instant = Instant.now()){ recordingEnd = t }
 
+    // ---------------------------------------------------------------------------------------------
+    // Information
+    // ---------------------------------------------------------------------------------------------
+
+    /** Micro-seconds elapsed since the start of the last frame. */
+    fun microSecFromFrameStart(): Long { return frameStart.elapsedNow().inWholeMicroseconds }
+
+    /** Seconds since the start of the recording. */
     fun secFromRecordingStart(): Long {
         return Duration.between(recordingStart, Instant.now()).toSeconds()
     }
 
+    /** Milli-second interval of the last frame. */
     fun lastFrameIntervalMilliSec(): Float? { return frameIntervalsMilliSec.lastOrNull() }
 
+    /** Mean milli-second interval of the last [n] frames or 0 if their have not been n frames. */
     fun meanFrameIntervalMilliSec(n: Int = frameIntervalsMilliSec.size - 1): Float {
         if(n > frameIntervalsMilliSec.size - 1) return 0f
         return frameIntervalsMilliSec.takeLast(n).average().toFloat()
     }
 
-    // ---------------------------------------------------------------------------------------------
-    // End recording
-    // ---------------------------------------------------------------------------------------------
+    /** All the frame intervals in mill-seconds. */
+    fun intervalsMilliSec(): List<Float> { return frameIntervalsMilliSec.toList() }
 
-    fun stop(t: Instant = Instant.now()){ recordingEnd = t }
-
+    /** The times at ehe start and end of the recording. */
     fun recordingPeriod(): List<Instant> { return listOf(recordingStart, recordingEnd) }
 
+    /** The second duration of the recording. */
     fun recordingDurationSec(): Float {
         return Duration.between(recordingStart, recordingEnd).toMillis().toFloat() * 0.001f
     }
 
-    fun intervalsMilliSec(): List<Float> { return frameIntervalsMilliSec.toList() }
+    // ---------------------------------------------------------------------------------------------
+    // I/O
+    // ---------------------------------------------------------------------------------------------
 
+    /** Write the recording start and end times and frame intervals to file. */
     fun write(file: File) {
         val strm = BufferedWriter(FileWriter(file))
         strm.write("${recordingStart}\n")
@@ -80,14 +92,14 @@ class FrameRateTimer {
     }
 
     companion object {
-
-        fun read(file: File): FrameRateTimer? {
+        /** Read the recording start and end times and frame intervals from file. */
+        fun read(file: File): FrameTimer? {
             if(!file.exists()) return null
-            val timer = FrameRateTimer()
+            val timer = FrameTimer()
             val strm = BufferedReader(FileReader(file))
             try {
-                timer.start(Instant.parse(strm.readLine()))
-                timer.stop(Instant.parse(strm.readLine()))
+                timer.markRecordingStart(Instant.parse(strm.readLine()))
+                timer.markRecordingEnd(Instant.parse(strm.readLine()))
             }
             catch(_: java.time.format.DateTimeParseException){ return null }
             catch(_: java.io.IOException){return null}
@@ -95,7 +107,6 @@ class FrameRateTimer {
             strm.close()
             return timer
         }
-
     }
 
 }

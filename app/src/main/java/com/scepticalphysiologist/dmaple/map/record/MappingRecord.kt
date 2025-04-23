@@ -5,7 +5,7 @@ package com.scepticalphysiologist.dmaple.map.record
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Environment
-import com.scepticalphysiologist.dmaple.map.FrameRateTimer
+import com.scepticalphysiologist.dmaple.map.FrameTimer
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import mil.nga.tiff.FieldTagType
@@ -24,7 +24,7 @@ class MappingRecord(
     /** An image of the mapping field (i.e. a camera frame). */
     val field: Bitmap?,
     /** The frame rate timer. */
-    val timer: FrameRateTimer?,
+    val timer: FrameTimer?,
     /** Map creators. */
     val creators: List<MapCreator>,
     /** Metadata for serialisation. */
@@ -72,7 +72,7 @@ class MappingRecord(
             val metadata = RecordMetadata.deserialize(File(location, METADATA_FILE)) ?: return null
 
             // Timer.
-            val timer = FrameRateTimer.read(File(location, TIMING_FILE))
+            val timer = FrameTimer.read(File(location, TIMING_FILE))
 
             // Recreate creators from metadata.
             val creators = metadata.rois.map { roi -> MapCreator(roi, metadata.params) }
