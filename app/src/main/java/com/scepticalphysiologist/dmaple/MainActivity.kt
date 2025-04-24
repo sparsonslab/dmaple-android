@@ -94,7 +94,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
     // ---------------------------------------------------------------------------------------------
 
     private fun requestPermissions() {
-        val permissionsToAsk = Permission.manifestKeysRequiredForApi()
+        val permissionsToAsk = Permission.requiredManifestPermissions()
         if(permissionsToAsk.isNotEmpty()) requestPermissions(permissionsToAsk, 6543)
     }
 
