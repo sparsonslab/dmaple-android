@@ -15,7 +15,7 @@ import android.view.WindowManager
 import androidx.camera.core.Preview.SurfaceProvider
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.MutableLiveData
-import com.scepticalphysiologist.dmaple.etc.PermissionSets
+import com.scepticalphysiologist.dmaple.etc.Permission
 import com.scepticalphysiologist.dmaple.ui.dialog.Warnings
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
@@ -94,18 +94,20 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
     // ---------------------------------------------------------------------------------------------
 
     private fun requestPermissions() {
-        val permissionsToAsk = PermissionSets.allPermissions().toTypedArray()
-        if(permissionsToAsk.isNotEmpty())requestPermissions(permissionsToAsk, 6543)
+        val permissionsToAsk = Permission.manifestKeysRequiredForApi()
+        if(permissionsToAsk.isNotEmpty()) requestPermissions(permissionsToAsk, 6543)
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         // If all permissions have been given,
-        if(grantResults.all{it == PackageManager.PERMISSION_GRANTED}) {
-            connectMappingService(applicationContext)
-        } else {
+        val nonGranted = permissions.filterIndexed { i, _ -> grantResults[i] == PackageManager.PERMISSION_DENIED }
+        if(nonGranted.isEmpty()) connectMappingService(applicationContext)
+        else {
             val warning = Warnings("The App Cannot Run")
-            warning.add("You have not given the permissions required for the app to run.\nPlease either:", true)
+            warning.add("You have not given the permissions required for the app to run:", true)
+            warning.add(Permission.permissionRationales(nonGranted).joinToString("\n"), true)
+            warning.add("Please either:", true)
             warning.add("1. Close and reopen the app and give all the requested permissions.", true)
             warning.add("2. Open the device settings and give the app the Camera permission.", true)
             message.postValue(warning)
