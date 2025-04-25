@@ -49,6 +49,7 @@ class RulerInfo(
                             TextField(
                                 value = measuredLength.value,
                                 readOnly = false,
+                                singleLine = true,
                                 keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
                                 onValueChange = { measuredLength.value = it },
                                 modifier = Modifier.weight(0.75f)
