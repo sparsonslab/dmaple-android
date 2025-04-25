@@ -14,6 +14,7 @@ import mil.nga.tiff.TIFFImage
 import mil.nga.tiff.TiffWriter
 import java.io.File
 import java.io.FileOutputStream
+import java.time.Duration
 import java.time.Instant
 
 /** Data from a recording that can be written to file and then later read back to recreate the
@@ -97,6 +98,13 @@ class MappingRecord(
             )
         }
 
+    }
+
+    /** The recording duration of the record. */
+    fun duration(): Duration {
+        if(metadata.recordingPeriod.size > 1)
+            return Duration.between(metadata.recordingPeriod[0], metadata.recordingPeriod[1])
+        return timer?.recordingDuration() ?: Duration.ZERO
     }
 
     /** Once a record has been read, load the map TIFFs. */

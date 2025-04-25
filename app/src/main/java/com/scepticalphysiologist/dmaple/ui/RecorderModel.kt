@@ -112,7 +112,11 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
     /** Load a recording. */
     fun loadRecording(record: MappingRecord): Boolean {
         val loaded = mapper?.loadRecord(record) ?: false
-        if(loaded) state = RecState.OLD_RECORD
+        if(loaded) {
+            state = RecState.OLD_RECORD
+            // Show duration of loaded recording on map view's timer.
+            timer.postValue(Pair(record.duration().toSeconds(), 0f))
+        }
         return loaded
     }
 

@@ -59,12 +59,6 @@ class RecordMetadata(
     /** Serialise this metadata. */
     fun serialise(file: File){ file.writeText(gson.toJson(this)) }
 
-    /** The recording duration as HH:MM:SS. */
-    fun durationString(): String {
-        val d = Duration.between(recordingPeriod[0], recordingPeriod[1])
-        return String.format("%02d:%02d:%02d", d.toHours(), d.toMinutesPart(), d.toSecondsPart())
-    }
-
 }
 
 /** GSON type adaptor for [Instant]. */

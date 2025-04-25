@@ -2,6 +2,7 @@
 
 package com.scepticalphysiologist.dmaple.ui
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -90,8 +91,12 @@ class Explorer: Fragment() {
         return view
     }
 
+    @SuppressLint("DefaultLocale")
     private fun recordDescription(record: MappingRecord): String {
-        var description = "duration: ${record.metadata.durationString()}\n"
+        val d = record.duration()
+        var description = "duration: ${String.format(
+            "%02d:%02d:%02d", d.toHours(), d.toMinutesPart(), d.toSecondsPart()
+        )}\n"
         for(creator in record.creators) description +=
             "${creator.roi.uid}: ${creator.roi.maps.joinToString(", ").lowercase()}\n"
         return description

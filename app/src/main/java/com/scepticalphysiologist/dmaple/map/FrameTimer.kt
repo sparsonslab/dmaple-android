@@ -76,8 +76,8 @@ class FrameTimer {
     fun recordingPeriod(): List<Instant> { return listOf(recordingStart, recordingEnd) }
 
     /** The second duration of the recording. */
-    fun recordingDurationSec(): Float {
-        return Duration.between(recordingStart, recordingEnd).toMillis().toFloat() * 0.001f
+    fun recordingDuration(): Duration {
+        return Duration.between(recordingStart, recordingEnd)
     }
 
     // ---------------------------------------------------------------------------------------------
