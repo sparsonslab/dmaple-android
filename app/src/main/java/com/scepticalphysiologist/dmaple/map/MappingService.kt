@@ -328,7 +328,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** The number of seconds since the service started mapping. */
     fun elapsedSeconds(): Long { return timer.secFromRecordingStart() }
 
-    /** The percent error in the frame rate rom the expected. */
+    /** The percent error in the frame rate from the expected. */
     fun frameRatePercentError(): Float {
         val mu = 1000f * timer.meanFrameIntervalMilliSec(100)
         val err = if(mu > 0) 100f * abs((mu - frameIntervalMicroSec) / frameIntervalMicroSec) else 0f
