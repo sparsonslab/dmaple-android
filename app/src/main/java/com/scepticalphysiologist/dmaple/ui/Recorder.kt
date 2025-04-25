@@ -128,7 +128,7 @@ class Recorder: Fragment() {
             binding.cameraTimer.text = txt
         }
 
-        // Got to records.
+        // Go to records.
         binding.toRecordsButton.setOnClickListener {
             findNavController().navigate(R.id.recorder_to_explorer)
         }
