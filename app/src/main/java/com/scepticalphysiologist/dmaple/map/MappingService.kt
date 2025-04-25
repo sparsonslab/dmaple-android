@@ -173,7 +173,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             use.setAnalyzer(Executors.newFixedThreadPool(5), this)
             bindUse(use)
         }
-
     }
 
     /** Bind a CameraX use case. */

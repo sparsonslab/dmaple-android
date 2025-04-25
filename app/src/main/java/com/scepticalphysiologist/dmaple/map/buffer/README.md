@@ -19,7 +19,7 @@ way the Java provides "views" for the `ByteBuffer` class (`ShortBuffer`, `FloatB
 is an abstract parent class for two concrete views:
 
 - [`ShortMap`](ShortMap.kt). Short (16 bit) values of diameters and radii (diameter and radius maps).
-- [`RGBMap`](RGBMap.kt). RGB colors of the camera along the gut spine (spine maps).
+- [`ByteMap`](ByteMap.kt). Luminosity the camera along the gut spine (spine maps).
 
 [`MapBufferView`](MapBufferView.kt) also has methods for writing the map data into a TIFF directory
 and loading a map from a TIFF directory. These methods also use file-channels/memory-mapping to avoid 
