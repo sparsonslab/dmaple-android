@@ -263,7 +263,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     }
 
     // ---------------------------------------------------------------------------------------------
-    // Public interface: get and set mapping parameters
+    // Public interface: Get and set mapping parameters before recording
     // ---------------------------------------------------------------------------------------------
 
     /** Set the camera exposure (as a fraction of the available range). */
