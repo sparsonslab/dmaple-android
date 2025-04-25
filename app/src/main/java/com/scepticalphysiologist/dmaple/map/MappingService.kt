@@ -423,6 +423,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             )
             return warning
         }
+
         // Create map creators.
         for(roi in rois) {
             // ... initiate and set spatio-temporal resolution.
