@@ -5,8 +5,6 @@ package com.scepticalphysiologist.dmaple.map.record
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Environment
-import com.scepticalphysiologist.dmaple.geom.Frame
-import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.map.FrameTimer
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
@@ -18,7 +16,8 @@ import java.io.File
 import java.io.FileOutputStream
 import java.time.Instant
 
-/** Input and output of a mapping recording.
+/** Data from a recording that can be written to file and then later read back to recreate the
+ * recording conditions - the mapping ROIs.
  *
  */
 class MappingRecord(
