@@ -428,7 +428,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         for(roi in rois) {
             // ... initiate and set spatio-temporal resolution.
             val creator = MapCreator(roi.inNewFrame(imageFrame), FieldParams.preference.copy())
-            creator.setSpatialPixelsPerUnit(ruler?.getResolution() ?: Pair(1f, "cm"))
+            creator.setSpatialPixelsPerUnit(ruler?.getResolution() ?: Pair(1f, "mm"))
             creator.setFrameRatePerSec(frameRateFps.toFloat())
             // ... buffer and add to list.
             val buffers = (0 until creator.nMaps).map{ bufferProvider.getFreeBuffer()}.filterNotNull()
