@@ -263,7 +263,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     }
 
     // ---------------------------------------------------------------------------------------------
-    // Public interface: other
+    // Public interface: get and set mapping parameters
     // ---------------------------------------------------------------------------------------------
 
     /** Set the camera exposure (as a fraction of the available range). */
@@ -315,6 +315,10 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** Get the field's ROIs and ruler. e.g. for when a view of the field needs to be reconstructed. */
     fun getRoisAndRuler(): RoisAndRuler { return RoisAndRuler(rois, ruler) }
 
+    // ---------------------------------------------------------------------------------------------
+    // Public interface: Record
+    // ---------------------------------------------------------------------------------------------
+
     /** Start or stop map creation, depending on the current creation state. */
     fun startStop(): Warnings { return if(creating) stop() else start() }
 
@@ -349,25 +353,9 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** Given a selected ROI, set the next map to show. */
     fun setNextMap(roiUID: String) { currentMap = getNextMap(roiUID) }
 
-    /** Load a (old) recording.
-     *
-     * @param record The record to be loaded.
-     * @return Whether the record was loaded (will not be loaded if a record is being created).
-     * */
-    fun loadRecord(record: MappingRecord): Boolean {
-        if(creating) return false
-        // Check there are enough buffers.
-        val rois = record.creators.map { it.roi }
-        if(!enoughBuffersForMaps(rois)) return false
-        // Load the ROIs, ruler and creators.
-        setRoisAndRuler(RoisAndRuler(rois, record.ruler))
-        clearCreators()
-        record.loadMapTiffs(bufferProvider)
-        creators.addAll(record.creators)
-        record.field?.let{imageReader.readBitmap(it)}
-        currentMap = Pair(0, 0)
-        return true
-    }
+    // ---------------------------------------------------------------------------------------------
+    // Public interface: save and load recordings.
+    // ---------------------------------------------------------------------------------------------
 
     /** If maps are not being created, save the maps, clear the creators and free-up resources.
      *
@@ -393,6 +381,26 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             MappingRecord.read(path.file)?.let {MappingRecord.records.add(0, it)}
         }
         clearCreators()
+    }
+
+    /** Load a (old) recording.
+     *
+     * @param record The record to be loaded.
+     * @return Whether the record was loaded (will not be loaded if a record is being created).
+     * */
+    fun loadRecord(record: MappingRecord): Boolean {
+        if(creating) return false
+        // Check there are enough buffers.
+        val rois = record.creators.map { it.roi }
+        if(!enoughBuffersForMaps(rois)) return false
+        // Load the ROIs, ruler and creators.
+        setRoisAndRuler(RoisAndRuler(rois, record.ruler))
+        clearCreators()
+        record.loadMapTiffs(bufferProvider)
+        creators.addAll(record.creators)
+        record.field?.let{imageReader.readBitmap(it)}
+        currentMap = Pair(0, 0)
+        return true
     }
 
     // ---------------------------------------------------------------------------------------------
