@@ -176,15 +176,15 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
      * i.e. the spatial down-sampling of the map.
      * @param stepY The number of time samples to step when sampling the map.
      * @param backing A backing array for the bitmap, into the map samples will be put.
-     * @param live The bitmap is intended to be shown as part of a live display. i.e.
-     * this function will be called at a high frequency).
+     * @param allowIncompleteBacking Transfer of the map to the backing array does not have to be
+     * completed before returning the bitmap. This can speed up live display of maps.
      * */
     fun getMapBitmap(
         idx: Int,
         crop: Rect?,
         stepX: Int = 1, stepY: Int = 1,
         backing: IntArray,
-        live: Boolean,
+        allowIncompleteBacking: Boolean,
     ): Bitmap? {
 
         val buffer = mapBuffers.mapNotNull {it.second}.getOrNull(idx) ?: return null
@@ -210,13 +210,7 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
                     backing[it[2]] = buffer.getColorInt(it[0], it[1])
                 }
             }
-
-            // If we are using the bitmap for live display allow the bitmap to be returned
-            // before we have actually finished updating the backing. This massively speeds
-            // up the frame rate apparent to the user (especially for maps with a large number
-            // of spatial samples), with only the small side effect that
-            // the last few time pixels of the map's view might look un-updated.
-            if(!live) job.join()
+            if(!allowIncompleteBacking) job.join()
 
             // Return bitmap.
             return Bitmap.createBitmap(backing, bs.width, bs.height, Bitmap.Config.ARGB_8888)

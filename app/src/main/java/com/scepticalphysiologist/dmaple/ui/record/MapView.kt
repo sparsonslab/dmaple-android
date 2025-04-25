@@ -5,7 +5,6 @@ package com.scepticalphysiologist.dmaple.ui.record
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Rect
@@ -80,6 +79,10 @@ class MapView(context: Context, attributeSet: AttributeSet):
     private val scaleGestureDetector: ScaleGestureDetector = ScaleGestureDetector(this.context, this)
     /** Holder for the scale (distance between fingers) at the start of a pinch. */
     private var scaleStart = Point()
+    /** The map is being scrolled. */
+    private var isScrolling: Boolean = false
+    /** The map is being zoomed. */
+    private var isZooming: Boolean = false
 
     // Map viewport calculations
     // -------------------------
@@ -323,12 +326,17 @@ class MapView(context: Context, attributeSet: AttributeSet):
             val p1 = mapOrigin - mapOffset + mapBitmapRatio * bitmapExtent
 
             // Create the bitmap for that section, transform it and post for display in the main thread.
+            // If we are updating live allow incomplete backing. This massively speeds up the frame rate
+            // apparent to the user (especially for maps with a large number of spatial samples),
+            // with only the small side effect that the last few time pixels of the map's view might
+            // look un-updated.
+            // However force backing-completion when scrolling live, otherwise the map flickers.
             mapCreator.getMapBitmap(
                 idx = mapIdx,
                 crop = Rect(p0.x.toInt(), p0.y.toInt(), p1.x.toInt(), p1.y.toInt()),
                 stepX = pixelStep.x.toInt(), stepY = pixelStep.y.toInt(),
                 backing = bitmapBacking,
-                live = updating
+                allowIncompleteBacking = updating && !isScrolling
             )?.let { bm ->
                 // Rotate and scale the bitmap and post to the main thread for display.
                 // This transform takes most of the remaining time of the update loop (5 - 8 ms of 10 ms total).
@@ -414,15 +422,20 @@ class MapView(context: Context, attributeSet: AttributeSet):
 
     override fun onScroll(down: MotionEvent?, current: MotionEvent, dx: Float, dy: Float): Boolean {
         if(scaleGestureDetector.isInProgress) return false
+        isScrolling = true
         fingerScroll(Point(dx, dy))
         return true
     }
 
     override fun onLongPress(p0: MotionEvent) { }
 
-    override fun onFling(p0: MotionEvent?, p1: MotionEvent, p2: Float, p3: Float): Boolean { return true }
+    override fun onFling(p0: MotionEvent?, p1: MotionEvent, p2: Float, p3: Float): Boolean {
+        isScrolling = false
+        return true
+    }
 
     override fun onScaleBegin(gd: ScaleGestureDetector): Boolean {
+        isZooming = true
         scaleStart.x = gd.currentSpanX
         scaleStart.y = gd.currentSpanY
         return true
@@ -431,6 +444,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
     override fun onScale(gd: ScaleGestureDetector): Boolean { return true }
 
     override fun onScaleEnd(gd: ScaleGestureDetector) {
+        isZooming = false
         fingerZoom(scaleStart, Point(gd.currentSpanX, gd.currentSpanY), Point(gd.focusX, gd.focusY))
     }
 }
