@@ -153,6 +153,6 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
     private fun saveMaps(folderName: String) { mapper?.saveAndClear(folderName) }
 
     /** Do not save maps, but still clear-up. */
-    private fun doNotSaveMaps(input: String = "") { mapper?.saveAndClear(null) }
+    private fun doNotSaveMaps() { mapper?.saveAndClear(null) }
 
 }

@@ -13,7 +13,6 @@ import com.scepticalphysiologist.dmaple.map.creator.FieldParams
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
 import com.scepticalphysiologist.dmaple.map.field.FieldRuler
 import java.io.File
-import java.time.Duration
 import java.time.Instant
 import java.time.format.DateTimeParseException
 
