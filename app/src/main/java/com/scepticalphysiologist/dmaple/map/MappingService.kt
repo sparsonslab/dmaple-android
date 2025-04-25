@@ -427,7 +427,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         for(roi in rois) {
             val creator = MapCreator(roi.inNewFrame(imageFrame), FieldParams.preference.copy())
             ruler?.let{ creator.setSpatialResolutionFromRuler(it) }
-            creator.setTemporalResolutionFromFPS(frameRateFps.toFloat())
+            creator.setFrameRatePerSec(frameRateFps.toFloat())
             val buffers = (0 until creator.nMaps).map{ bufferProvider.getFreeBuffer()}.filterNotNull()
             if(creator.provideBuffers(buffers)) creators.add(creator)
         }
@@ -458,11 +458,14 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         return bufferProvider.nFreeBuffers() >= nMaps
     }
 
-    /** Set the temporal resolution of the creators based upon
-     * the time from the start of the recording to now. */
+    /** Set the temporal resolution of the creators based upon the actual recording timer. */
     private fun setCreatorTemporalResolutionFromTimer() {
-        val interval = timer.meanFrameIntervalMilliSec()
-        for(creator in creators) creator.setTemporalResolution(interval)
+        // To use the timer's recorded frame rate we exclude the first 20 frames (which are
+        // often delayed) and have at least 50 frames thereafter (to give a decent average).
+        // Otherwise just use the target frame rate.
+        val n = timer.nFrames() - 20
+        val interval = if(n > 50) 0.001f * timer.meanFrameIntervalMilliSec(n) else 1f / frameRateFps.toFloat()
+        for(creator in creators) creator.setFrameIntervalSec(frameIntervalSec = interval)
     }
 
     /** Clear all creators, freeing up their buffers and resetting the current map. */

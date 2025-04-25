@@ -146,15 +146,14 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
         } catch (_: java.nio.BufferOverflowException) { reachedEnd = true }
     }
 
-    /** Set the temporal resolution the current recording duration. */
-    fun setTemporalResolutionFromDuration(durationSec: Float) {
-        setTemporalResolution(nt.toFloat() / durationSec)
-    }
+    /** Set the temporal resolution from the recording duration (sec). */
+    fun setDurationSec(durationSec: Float) { setFrameIntervalSec(nt.toFloat() / durationSec) }
 
-    fun setTemporalResolution(frameIntervalSec: Float) { temporalRes = Pair(frameIntervalSec, "s") }
+    /** Set the temporal resolution from the frame interval (sec). */
+    fun setFrameIntervalSec(frameIntervalSec: Float) { temporalRes = Pair(1f / frameIntervalSec, "s") }
 
-    /** Set the temporal resolution based upon an estimated frame rate (frames/sec). */
-    fun setTemporalResolutionFromFPS(fps: Float) { temporalRes = Pair(fps, "s") }
+    /** Set the temporal resolution from the frame rate (frames/sec). */
+    fun setFrameRatePerSec(framesPerSec: Float) { temporalRes = Pair(framesPerSec, "s") }
 
     /** Set the spatial resolution from a ruler. */
     fun setSpatialResolutionFromRuler(ruler: FieldRuler) {
