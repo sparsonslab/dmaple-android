@@ -8,6 +8,7 @@ import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.map.creator.FieldParams
 import com.scepticalphysiologist.dmaple.map.creator.MapType
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
+import com.scepticalphysiologist.dmaple.map.field.FieldRuler
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.robolectric.util.TempDirectory
@@ -39,6 +40,11 @@ class RecordMetadataTest {
                     maps = listOf(MapType.DIAMETER),
                     uid = "colon_distal"
                 ),
+            ),
+            ruler = FieldRuler(
+                frame = Frame(size = Point(1000f, 200f), orientation = 90),
+                p0 = Point(356f, 2.67f), p1 = Point(589.7f, 6.8f),
+                unit = "cm"
             ),
             params = FieldParams(
                 gutsAreAboveThreshold = false,
