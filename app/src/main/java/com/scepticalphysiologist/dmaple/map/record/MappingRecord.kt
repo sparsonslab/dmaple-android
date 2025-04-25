@@ -5,9 +5,12 @@ package com.scepticalphysiologist.dmaple.map.record
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Environment
+import com.scepticalphysiologist.dmaple.geom.Frame
+import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.map.FrameTimer
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
+import com.scepticalphysiologist.dmaple.map.field.FieldRuler
 import mil.nga.tiff.FieldTagType
 import mil.nga.tiff.TIFFImage
 import mil.nga.tiff.TiffWriter
@@ -15,7 +18,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.time.Instant
 
-/** Input-output of a mapping recording.
+/** Input and output of a mapping recording.
  *
  */
 class MappingRecord(
@@ -23,6 +26,8 @@ class MappingRecord(
     val location: File,
     /** An image of the mapping field (i.e. a camera frame). */
     val field: Bitmap?,
+    /** The field ruler. */
+    val ruler: FieldRuler?,
     /** The frame rate timer. */
     val timer: FrameTimer?,
     /** Map creators. */
@@ -31,6 +36,7 @@ class MappingRecord(
     val metadata: RecordMetadata =  RecordMetadata(
         recordingPeriod = timer?.recordingPeriod() ?: listOf(Instant.now(), Instant.now()),
         rois = creators.map{it.roi},
+        ruler = ruler,
         params = creators[0].params
     )
 ) {
@@ -85,6 +91,7 @@ class MappingRecord(
             return MappingRecord(
                 location = location,
                 field = field,
+                ruler = metadata.ruler,
                 creators = creators,
                 metadata = metadata,
                 timer = timer

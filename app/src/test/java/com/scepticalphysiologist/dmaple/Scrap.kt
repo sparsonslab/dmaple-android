@@ -3,6 +3,7 @@
 package com.scepticalphysiologist.dmaple
 
 
+import com.google.gson.GsonBuilder
 import com.scepticalphysiologist.dmaple.geom.Edge
 import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
@@ -16,9 +17,35 @@ import java.io.OutputStream
 import java.nio.ByteBuffer
 
 
+class ExampleClass(
+    val roi: FieldRoi?,
+    val scalar: Float = 1f
+)
 
 
 class Scrap {
+
+    @Test
+    fun `serialize nulls`() {
+
+        println("=======================")
+        val roi = FieldRoi(
+            frame=Frame(Point(100f, 100f), orientation = 180),
+            c0 = Point(34.6f, 9.5f), c1 = Point(98f, 34.5f)
+        )
+
+        // serailize
+        val ex = ExampleClass(roi = null)
+        val gson = GsonBuilder().serializeNulls().create()
+        val s = gson.toJson(ex)
+        println(s)
+
+        // deserialize
+        val exde = gson.fromJson(s, ExampleClass::class.java)
+        println(exde.roi)
+
+
+    }
 
     @Test
     fun `write roi`() {
@@ -47,12 +74,6 @@ class Scrap {
 
         val path = File(folder, "${roi.uid}.roi")
         val strm = FileOutputStream(path)
-
-
-
-
-
-
 
     }
 

@@ -359,8 +359,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         // Check there are enough buffers.
         val rois = record.creators.map { it.roi }
         if(!enoughBuffersForMaps(rois)) return false
-        // Load the ROIs and creators.
-        setRoisAndRuler(RoisAndRuler(rois, null))
+        // Load the ROIs, ruler and creators.
+        setRoisAndRuler(RoisAndRuler(rois, record.ruler))
         clearCreators()
         record.loadMapTiffs(bufferProvider)
         creators.addAll(record.creators)
@@ -385,6 +385,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             val record = MappingRecord(
                 location = path.file,
                 field = imageReader.colorBitmap,
+                ruler = ruler,
                 creators = creators,
                 timer = timer
             )

@@ -11,6 +11,7 @@ import com.google.gson.stream.JsonWriter
 import com.scepticalphysiologist.dmaple.BuildConfig
 import com.scepticalphysiologist.dmaple.map.creator.FieldParams
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
+import com.scepticalphysiologist.dmaple.map.field.FieldRuler
 import java.io.File
 import java.time.Duration
 import java.time.Instant
@@ -26,6 +27,7 @@ import java.time.format.DateTimeParseException
 class RecordMetadata(
     val recordingPeriod: List<Instant>,
     val rois: List<FieldRoi>,
+    val ruler: FieldRuler?,
     val params: FieldParams
 ){
 
@@ -35,7 +37,10 @@ class RecordMetadata(
     companion object {
 
         /** GSON (de)serialization object for JSON files. */
-        val gson: Gson = GsonBuilder().registerTypeAdapter(Instant::class.java, InstantTypeAdapter()).create()
+        val gson: Gson = GsonBuilder()
+                        .registerTypeAdapter(Instant::class.java, InstantTypeAdapter())
+                        .serializeNulls()
+                        .create()
 
         /** De-serialise metadata. */
         fun deserialize(file: File): RecordMetadata? {
