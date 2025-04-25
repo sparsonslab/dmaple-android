@@ -309,7 +309,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     fun setRoisAndRuler(field: RoisAndRuler) {
         rois.clear()
         for(roi in field.rois) rois.add(roi.copy())
-        ruler = field.ruler
+        ruler = field.ruler?.copy()
     }
 
     /** Get the field's ROIs and ruler. e.g. for when a view of the field needs to be reconstructed. */
@@ -394,6 +394,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         val rois = record.creators.map { it.roi }
         if(!enoughBuffersForMaps(rois)) return false
         // Load the ROIs, ruler and creators.
+        println("RECORD RULER LENGTH = ${record.ruler?.length}")
         setRoisAndRuler(RoisAndRuler(rois, record.ruler))
         clearCreators()
         record.loadMapTiffs(bufferProvider)

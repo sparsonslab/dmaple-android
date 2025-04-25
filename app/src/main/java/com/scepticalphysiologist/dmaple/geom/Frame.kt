@@ -22,6 +22,10 @@ class Frame(val size: Point, val orientation: Int = 0) {
         return "x = ${size.x}, y = ${size.y}, o =  $orientation"
     }
 
+    fun copy(): Frame {
+        return Frame(size=this.size.copy(), orientation=this.orientation)
+    }
+
     /** The difference in orientation with another frame in degrees and radians. */
     private fun deltaOrientation(other: Frame): Pair<Float, Float> {
         val degrees = (other.orientation - this.orientation).toFloat()

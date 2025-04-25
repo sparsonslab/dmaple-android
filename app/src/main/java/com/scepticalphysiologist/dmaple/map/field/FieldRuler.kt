@@ -58,5 +58,16 @@ class FieldRuler(
         unit = input.second
     }
 
+    fun copy(): FieldRuler {
+        return FieldRuler(
+            frame = this.frame.copy(),
+            p0 = this.p0.copy(),
+            p1 = this.p1.copy(),
+            end = this.end,
+            length = this.length,
+            unit = this.unit
+        )
+    }
+
 }
 

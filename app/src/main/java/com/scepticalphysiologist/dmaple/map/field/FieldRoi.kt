@@ -51,7 +51,7 @@ class FieldRoi(
     /** Copy the ROI. */
     override fun copy(): FieldRoi {
         val cpy = FieldRoi(
-            frame = this.frame,
+            frame = this.frame.copy(),
             c0 = this.c0.copy(),
             c1 = this.c1.copy(),
             threshold = this.threshold,
