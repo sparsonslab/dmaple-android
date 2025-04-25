@@ -414,8 +414,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             causesStop = true
         )
         if(warning.shouldStop()) return warning
-
-        // Create map creators.
         val imageFrame = analyser?.let{Frame.ofImageAnalyser(it, display)} ?: return warning
         if(!enoughBuffersForMaps()) {
             warning.add(message =
@@ -425,10 +423,13 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             )
             return warning
         }
+        // Create map creators.
         for(roi in rois) {
+            // ... initiate and set spatio-temporal resolution.
             val creator = MapCreator(roi.inNewFrame(imageFrame), FieldParams.preference.copy())
-            ruler?.let{ creator.setSpatialResolutionFromRuler(it) }
+            creator.setSpatialPixelsPerUnit(ruler?.getResolution() ?: Pair(1f, "cm"))
             creator.setFrameRatePerSec(frameRateFps.toFloat())
+            // ... buffer and add to list.
             val buffers = (0 until creator.nMaps).map{ bufferProvider.getFreeBuffer()}.filterNotNull()
             if(creator.provideBuffers(buffers)) creators.add(creator)
         }

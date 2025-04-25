@@ -10,7 +10,6 @@ import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferView
 import com.scepticalphysiologist.dmaple.map.buffer.ShortMap
 import com.scepticalphysiologist.dmaple.map.field.FieldRoi
-import com.scepticalphysiologist.dmaple.map.field.FieldRuler
 import mil.nga.tiff.FileDirectory
 import mil.nga.tiff.TiffReader
 import java.io.File
@@ -155,11 +154,10 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
     /** Set the temporal resolution from the frame rate (frames/sec). */
     fun setFrameRatePerSec(framesPerSec: Float) { temporalRes = Pair(framesPerSec, "s") }
 
-    /** Set the spatial resolution from a ruler. */
-    fun setSpatialResolutionFromRuler(ruler: FieldRuler) {
-        val fullResolution = ruler.getResolution()
+    /** Set the spatial resolution from the frame pixels per spatial unit. */
+    fun setSpatialPixelsPerUnit(resolution: Pair<Float, String>) {
         val mapStep = abs(segmentor.longIdx[1] - segmentor.longIdx[0]).toFloat()
-        spatialRes = Pair(fullResolution.first / mapStep, fullResolution.second)
+        spatialRes = Pair(resolution.first / mapStep, resolution.second)
     }
 
     /** At least one buffer has reached capacity and no more samples will be added to the maps,
