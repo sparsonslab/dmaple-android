@@ -75,9 +75,10 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     companion object {
         /** The aspect ratio of the camera. */
         const val CAMERA_ASPECT_RATIO = AspectRatio.RATIO_16_9
-
+        /** The [ImageAnalysis] queue depth. If 1, the analyser is non-blocking, only
+         * keeping the latest frame, https://developer.android.com/media/camera/camerax/analyze
+         * */
         var IMAGE_QUEUE_DEPTH: Int = 1
-
         /** Automatically save any live recording when the app is closed. */
         var AUTO_SAVE_ON_CLOSE: Boolean = false
     }
