@@ -296,7 +296,7 @@ class MapView(context: Context, attributeSet: AttributeSet):
         mapIdx = creatorAndMapIdx.second
         // If the view is inflated ...
         if(isInflated()) {
-            updateBar()
+            updateMapExtent()
             if(!updating) updateBitmap()
         }
     }
