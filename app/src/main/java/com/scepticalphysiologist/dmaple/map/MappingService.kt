@@ -75,6 +75,9 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     companion object {
         /** The aspect ratio of the camera. */
         const val CAMERA_ASPECT_RATIO = AspectRatio.RATIO_16_9
+
+        var IMAGE_QUEUE_DEPTH: Int = 1
+
         /** Automatically save any live recording when the app is closed. */
         var AUTO_SAVE_ON_CLOSE: Boolean = false
     }
@@ -115,6 +118,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     private var currentMap: Pair<Int, Int> = Pair(0, 0)
     /** Maps are being created ("recording"). */
     private var creating: Boolean = false
+    /** For keeping track of whether an image is being analysed with an [IMAGE_QUEUE_DEPTH] > 1.*/
+    private var isAnalysing: Boolean = false
     /** Provides file-mapped byte buffers for holding map data as it is created. */
     private var bufferProvider = MapBufferProvider(File(""), 0, 0)
     /** Read luminance values from the camera. */
@@ -146,9 +151,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             builder.setTargetAspectRatio(CAMERA_ASPECT_RATIO)
             // Frame rate.
             val inop = Camera2Interop.Extender(builder)
-            inop.setCaptureRequestOption(
-                CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, Range(frameRateFps, frameRateFps)
-            )
+            inop.setCaptureRequestOption(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, Range(frameRateFps, frameRateFps))
             // Auto exposure and white-balance.
             if(!autosOn) {
                 inop.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_LOCK, true)
@@ -166,8 +169,12 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         unBindUse(analyser)
         analyser = ImageAnalysis.Builder().also { builder ->
             builder.setTargetAspectRatio(CAMERA_ASPECT_RATIO)
-            builder.setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-            builder.setImageQueueDepth(5)
+            if(IMAGE_QUEUE_DEPTH < 2){
+                builder.setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            } else {
+                builder.setBackpressureStrategy(ImageAnalysis.STRATEGY_BLOCK_PRODUCER)
+                builder.setImageQueueDepth(IMAGE_QUEUE_DEPTH)
+            }
             builder.setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
         }.build().also { use ->
             use.setAnalyzer(Executors.newFixedThreadPool(5), this)
@@ -446,6 +453,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         autosOn = false
         setPreview()
         creating = true
+        isAnalysing = false
         timer.markRecordingStart()
         imageReader.reset()
         return warning
@@ -489,25 +497,32 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     /** Analyse each frame from the camera feed. Called continuously during the life of the service. */
     override fun analyze(image: ImageProxy) {
-        // Sleep the thread to get an actual frame rate close to that wanted.
-        val sleepMicro = frameIntervalMicroSec - timer.microSecFromFrameStart()
-        if(sleepMicro > 0) {
-            // Repeated call to parkNanos() ("busy wait") is much more accurate than a
-            // single call to Thread.sleep().
-            while(timer.microSecFromFrameStart() < frameIntervalMicroSec){
-                LockSupport.parkNanos(50_000)
-            }
+        // If the last image is still being analysed (this can happen with an image queue > 1) or
+        // we are not recording, then close and return.
+        if(isAnalysing || !creating) {
+            image.close()
+            return
         }
+
+        // Sleep the thread to get an actual frame rate close to that wanted.
+        // Repeated call to parkNanos() ("busy wait") is much more accurate than a
+        //  single call to Thread.sleep().
+        val sleepMicro = frameIntervalMicroSec - timer.microSecFromFrameStart()
+        if(sleepMicro > 0)
+            while(timer.microSecFromFrameStart() < frameIntervalMicroSec)
+                LockSupport.parkNanos(50_000)
 
         // Mark frame start.
+        isAnalysing = true
         timer.markFrameStart()
+        //println("${timer.lastFrameIntervalMilliSec()}")
 
         // Pass the image to each map creator to analyse.
-        if(creating) {
-            //println("${timer.lastFrameIntervalMilliSec()}")
-            imageReader.readYUVImage(image)
-            for(creator in creators) creator.updateWithCameraImage(imageReader)
-        }
+        imageReader.readYUVImage(image)
+        for(creator in creators) creator.updateWithCameraImage(imageReader)
+        //println("\tanalysed ${0.001 * timer.microSecFromFrameStart()}")
+        isAnalysing = false
+
         // Close the image to allow analyze to be called for the next frame.
         image.close()
     }

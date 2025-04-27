@@ -42,11 +42,19 @@
             android:key="SPINE_SKIP"
             android:title="Spatial Pixel Skip"
             android:summary="Skip pixels along the long axis of the gut, to reduce resolution of the map's spatial axis."
-
             app:showSeekBarValue="true"
             app:min="0"
             android:max="4"
             android:defaultValue="0"/>
+
+        <SeekBarPreference
+            android:key="IMAGE_QUEUE_DEPTH"
+            android:title="Image Queue"
+            android:summary="The size of the camera image queue. Increasing this improves "
+            app:showSeekBarValue="true"
+            app:min="1"
+            android:max="30"
+            android:defaultValue="1"/>
 
     </PreferenceCategory>
 
