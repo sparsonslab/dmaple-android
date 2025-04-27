@@ -6,6 +6,7 @@ import android.app.Activity
 import android.content.pm.ActivityInfo
 import android.graphics.Color
 import android.os.Bundle
+import android.text.BoringLayout
 import androidx.preference.DropDownPreference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
@@ -34,8 +35,9 @@ class Settings: PreferenceFragmentCompat() {
             "portrait reverse" to ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT
         )
 
-        fun setFromPreferences(activity: Activity){
+        fun setFromPreferences(activity: Activity, justRotation: Boolean = false){
             val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
+
             fun <T> getPreference(key: String, default: T): T {
                 return when (default) {
                     is Boolean -> prefs.getBoolean(key, default) as T
@@ -47,8 +49,8 @@ class Settings: PreferenceFragmentCompat() {
                     else -> default
                 }
             }
-
             setScreenRotation(getPreference("SCREEN_ORIENTATION", "free"), activity)
+            if(justRotation) return
             Recorder.leftHanded = getPreference("SCREEN_FOR_LEFT_HAND", false)
             MainActivity.keepScreenOn = getPreference("KEEP_SCREEN_ON", false)
             MainActivity.setMappingServiceFrameRate(getPreference("FRAME_RATE_FPS", "30").toInt())
@@ -108,3 +110,5 @@ class Settings: PreferenceFragmentCompat() {
     }
 
 }
+
+

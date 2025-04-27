@@ -11,5 +11,6 @@ class SettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         supportFragmentManager.beginTransaction().replace(android.R.id.content, Settings()).commit()
+        Settings.setFromPreferences(this, justRotation = true)
     }
 }

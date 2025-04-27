@@ -47,15 +47,6 @@
             android:max="4"
             android:defaultValue="0"/>
 
-        <SeekBarPreference
-            android:key="IMAGE_QUEUE_DEPTH"
-            android:title="Image Queue"
-            android:summary="The size of the camera image queue. Increasing this improves "
-            app:showSeekBarValue="true"
-            app:min="1"
-            android:max="30"
-            android:defaultValue="1"/>
-
     </PreferenceCategory>
 
     <PreferenceCategory
@@ -93,6 +84,15 @@
             app:showSeekBarValue="true"
             app:min="1"
             android:max="50"
+            android:defaultValue="1"/>
+
+        <SeekBarPreference
+            android:key="IMAGE_QUEUE_DEPTH"
+            android:title="Image Queue"
+            android:summary="The size of the camera image queue. Increasing this improves "
+            app:showSeekBarValue="true"
+            app:min="1"
+            android:max="30"
             android:defaultValue="1"/>
 
     </PreferenceCategory>
