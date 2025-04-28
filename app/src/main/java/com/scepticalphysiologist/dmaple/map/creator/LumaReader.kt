@@ -47,7 +47,7 @@ class LumaReader {
             this.width = proxy.width
             this.height = proxy.height
             colorBitmap = null
-            buffer = ByteBuffer.allocate(width * height)
+            //buffer = ByteBuffer.allocate(width * height)
         }
         if(colorBitmap == null) colorBitmap = proxy.toBitmap()
         // Luminance (Y) is the first image plane.
@@ -87,9 +87,9 @@ class LumaReader {
         // Need for "and 0xff":
         // https://stackoverflow.com/questions/42097861/android-camera2-yuv-420-888-y-channel-interpretation
         try { return buffer.get(k).toInt() and 0xff }
-        // "java.lang.IllegalStateException: buffer is inaccessible" can happen with image queuing.
-        catch(_: java.lang.IllegalStateException){}
-        return 0
+        catch(_: java.lang.IndexOutOfBoundsException){}
+        catch(_: java.lang.IllegalStateException){ println("illegal!")}
+        return 255
     }
 
 }

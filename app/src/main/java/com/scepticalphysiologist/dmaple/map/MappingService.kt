@@ -11,6 +11,7 @@ import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CaptureRequest
 import android.os.Binder
 import android.os.IBinder
+import android.os.SystemClock
 import android.util.Log
 import android.util.Range
 import android.view.Display
@@ -53,6 +54,7 @@ import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.locks.LockSupport
 import kotlin.math.abs
+import kotlin.time.TimeSource
 
 /** A foreground service that will run the camera, record spatio-temporal maps and keep ROI state.
  *
@@ -119,8 +121,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     private var currentMap: Pair<Int, Int> = Pair(0, 0)
     /** Maps are being created ("recording"). */
     private var creating: Boolean = false
-    /** For keeping track of whether an image is being analysed with an [IMAGE_QUEUE_DEPTH] > 1.*/
-    private var isAnalysing: Boolean = false
     /** Provides file-mapped byte buffers for holding map data as it is created. */
     private var bufferProvider = MapBufferProvider(File(""), 0, 0)
     /** Read luminance values from the camera. */
@@ -454,7 +454,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         autosOn = false
         setPreview()
         creating = true
-        isAnalysing = false
         timer.markRecordingStart()
         imageReader.reset()
         return warning
@@ -496,37 +495,29 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         System.gc()
     }
 
-    /** Analyse each frame from the camera feed. Called continuously during the life of the service. */
+    val source = TimeSource.Monotonic
+
     override fun analyze(image: ImageProxy) {
-        // If the last image is still being analysed (this can happen with an image queue > 1) or
-        // we are not recording, then close and return.
-        if(isAnalysing || !creating) {
-            image.close()
-            return
+        if(creating) {
+
+            runBlocking {
+                timer.markFrame(image)
+
+                timer.lastFrameIntervalMilliSec()?.let{
+                    val delta = it - frameIntervalMicroSec * 0.001
+                    if((delta > 1) || (delta < - 1)) println("delta = $delta ms")
+                }
+
+                //println("${timer.lastFrameIntervalMilliSec()}")
+                imageReader.readYUVImage(image)
+                for(creator in creators) creator.updateWithCameraImage(imageReader)
+
+                val t0 = source.markNow()
+                while(t0.elapsedNow().inWholeMilliseconds < 2) LockSupport.parkNanos(50_000)
+
+            }
+
         }
-
-        // Sleep the thread to get an actual frame rate close to that wanted.
-        // Repeated call to parkNanos() ("busy wait") is much more accurate than a
-        //  single call to Thread.sleep().
-        val sleepMicro = frameIntervalMicroSec - timer.microSecFromFrameStart()
-        if(sleepMicro > 0){
-            while(timer.microSecFromFrameStart() < frameIntervalMicroSec)
-                LockSupport.parkNanos(50_000)
-            //println("\tslept ${0.001 * sleepMicro}")
-        }
-
-        // Mark frame start.
-        isAnalysing = true
-        timer.markFrameStart()
-        //println("${timer.lastFrameIntervalMilliSec()}")
-
-        // Pass the image to each map creator to analyse.
-        imageReader.readYUVImage(image)
-        for(creator in creators) creator.updateWithCameraImage(imageReader)
-        //println("\tanalysed ${0.001 * timer.microSecFromFrameStart()}")
-        isAnalysing = false
-
-        // Close the image to allow analyze to be called for the next frame.
         image.close()
     }
 
