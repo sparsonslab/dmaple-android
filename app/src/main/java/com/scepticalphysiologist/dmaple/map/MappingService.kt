@@ -11,7 +11,6 @@ import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CaptureRequest
 import android.os.Binder
 import android.os.IBinder
-import android.os.SystemClock
 import android.util.Log
 import android.util.Range
 import android.view.Display
@@ -52,9 +51,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.util.concurrent.Executors
-import java.util.concurrent.locks.LockSupport
 import kotlin.math.abs
-import kotlin.time.TimeSource
 
 /** A foreground service that will run the camera, record spatio-temporal maps and keep ROI state.
  *
@@ -277,7 +274,10 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     fun setExposure(fraction: Float) {
         val range = camera.cameraInfo.exposureState.exposureCompensationRange
         val exposure = (range.lower + fraction * (range.upper - range.lower)).toInt()
-        camera.cameraControl.setExposureCompensationIndex(exposure)
+        //println("exposure range = ${range.lower} - ${range.upper}")
+        //println("hardware level = ${cameraLevel(camera)}")
+        val fut = camera.cameraControl.setExposureCompensationIndex(exposure)
+        //runBlocking { println(fut.await()) }
     }
 
     /** Set the frame rate (frames per second). */
@@ -495,28 +495,17 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         System.gc()
     }
 
-    val source = TimeSource.Monotonic
-
     override fun analyze(image: ImageProxy) {
         if(creating) {
-
-            runBlocking {
-                timer.markFrame(image)
-
-                timer.lastFrameIntervalMilliSec()?.let{
-                    val delta = it - frameIntervalMicroSec * 0.001
-                    if((delta > 1) || (delta < - 1)) println("delta = $delta ms")
-                }
-
-                //println("${timer.lastFrameIntervalMilliSec()}")
-                imageReader.readYUVImage(image)
-                for(creator in creators) creator.updateWithCameraImage(imageReader)
-
-                val t0 = source.markNow()
-                while(t0.elapsedNow().inWholeMilliseconds < 2) LockSupport.parkNanos(50_000)
-
+            // Mark the frame. If this is not the next frame, close and return.
+            if(!timer.markFrame(image)) {
+                image.close()
+                return
             }
-
+            // Get the luminance (blocking to prevent the device threads from accessing the
+            // luminance buffer at the same time) and update the maps.
+            runBlocking {imageReader.readYUVImage(image) }
+            for(creator in creators) creator.updateWithCameraImage(imageReader)
         }
         image.close()
     }

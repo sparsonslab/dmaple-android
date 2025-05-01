@@ -41,19 +41,38 @@ class LumaReader {
         colorBitmap = null
     }
 
-    /** Read from a BT.470/PAL YUV formatted [ImageProxy]. */
+    /** Read luminance from a BT.470/PAL YUV formatted [ImageProxy].
+     *
+     * Where other processes might have concurrent access to the image plane buffers,
+     * this function should be run blocking.
+     * */
     fun readYUVImage(proxy: ImageProxy) {
         if((proxy.width != this.width) || (proxy.height != this.height)) {
             this.width = proxy.width
             this.height = proxy.height
             colorBitmap = null
-            //buffer = ByteBuffer.allocate(width * height)
         }
         if(colorBitmap == null) colorBitmap = proxy.toBitmap()
+
+        // Copy the luminance buffer.
+        // Copy rather than access directly, so that other threads (the camera) can update the
+        // buffer for a new frame. but getPixelLuminance() will return what we have here.
         // Luminance (Y) is the first image plane.
-        buffer = proxy.planes[0].buffer
-        rs = proxy.planes[0].rowStride
-        ps = proxy.planes[0].pixelStride
+        try {
+            if(buffer.capacity() < proxy.planes[0].buffer.capacity())
+                buffer = ByteBuffer.allocate(proxy.planes[0].buffer.capacity())
+            buffer.position(0)
+            proxy.planes[0].buffer.position(0)
+            buffer.put(proxy.planes[0].buffer)
+            rs = proxy.planes[0].rowStride
+            ps = proxy.planes[0].pixelStride
+        }
+        // These can be thrown when the plane buffer is being accessed or changed by
+        // another thread - e.g. the camera itself.
+        // If so, the frame data is not updated and the map data will be the same as
+        // the last temporal sample.
+        catch (_: java.lang.IllegalArgumentException) { }
+        catch (_: java.lang.SecurityException) { }
     }
 
     /** Read from a bitmap. */
@@ -84,12 +103,10 @@ class LumaReader {
     /** Get the luma of the (i, j)th pixel. */
     fun getPixelLuminance(i: Int, j: Int): Int {
         val k = (j * rs) + (i * ps)
+        if(k >= buffer.capacity()) return 255
         // Need for "and 0xff":
         // https://stackoverflow.com/questions/42097861/android-camera2-yuv-420-888-y-channel-interpretation
-        try { return buffer.get(k).toInt() and 0xff }
-        catch(_: java.lang.IndexOutOfBoundsException){}
-        catch(_: java.lang.IllegalStateException){ println("illegal!")}
-        return 255
+        return buffer.get(k).toInt() and 0xff
     }
 
 }

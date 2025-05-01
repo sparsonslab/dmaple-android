@@ -35,13 +35,21 @@ class FrameTimer {
         frameIntervalsMilliSec.clear()
     }
 
-    /** Mark the start of a frame. */
-    fun markFrame(image: ImageProxy){
-        frameIntervalsMilliSec.add(
-            if(frameIntervalsMilliSec.isEmpty()) 0f else
-            1e-6f * (image.imageInfo.timestamp - lastFrameTimeStamp)
-        )
+    /** Mark the next frame from its timestamp.
+     *
+     * @param image The possible next frame.
+     * @return If the argument frame is the next frame (is timestamped after the last). If false
+     * the frame will not be marked.
+     * */
+    fun markFrame(image: ImageProxy): Boolean {
+        if(frameIntervalsMilliSec.isEmpty()) frameIntervalsMilliSec.add(0f)
+        else {
+            val delta = 1e-6f * (image.imageInfo.timestamp - lastFrameTimeStamp)
+            if(delta < 0) return false
+            frameIntervalsMilliSec.add(delta)
+        }
         lastFrameTimeStamp = image.imageInfo.timestamp
+        return true
     }
 
     /** Mark the end of a recording. */
@@ -64,7 +72,12 @@ class FrameTimer {
     /** Mean milli-second interval of the last [n] frames or 0 if their have not been n frames. */
     fun meanFrameIntervalMilliSec(n: Int = frameIntervalsMilliSec.size - 1): Float {
         if(n > frameIntervalsMilliSec.size - 1) return 0f
-        return frameIntervalsMilliSec.takeLast(n).average().toFloat()
+        try { return frameIntervalsMilliSec.takeLast(n).average().toFloat() }
+        // This isn't really a null pointer exception.
+        // It can be thrown when the line above is called at the same time as a frame time is added
+        // through a call to markFrame().
+        catch(_: java.lang.NullPointerException) { }
+        return 0f
     }
 
     /** All the frame intervals in mill-seconds. */
