@@ -47,11 +47,14 @@ import com.scepticalphysiologist.dmaple.map.field.RoisAndRuler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.util.concurrent.Executors
+import java.util.concurrent.locks.LockSupport
 import kotlin.math.abs
+import kotlin.time.TimeSource
 
 /** A foreground service that will run the camera, record spatio-temporal maps and keep ROI state.
  *
@@ -273,8 +276,10 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** Set the camera exposure (as a fraction of the available range). */
     fun setExposure(fraction: Float) {
         val range = camera.cameraInfo.exposureState.exposureCompensationRange
+        //println("step = ${camera.cameraInfo.exposureState.exposureCompensationStep}")
+        //println("range = ${range.lower} - ${range.upper}")
         val exposure = (range.lower + fraction * (range.upper - range.lower)).toInt()
-        //println("exposure range = ${range.lower} - ${range.upper}")
+        //println("index = $exposure")
         //println("hardware level = ${cameraLevel(camera)}")
         val fut = camera.cameraControl.setExposureCompensationIndex(exposure)
         //runBlocking { println(fut.await()) }
@@ -495,20 +500,35 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         System.gc()
     }
 
+    val source = TimeSource.Monotonic
+
+    var t0: TimeSource.Monotonic.ValueTimeMark = source.markNow()
+
+    val brake = frameIntervalMicroSec
+
     override fun analyze(image: ImageProxy) {
+
+        t0 = source.markNow()
         if(creating) {
             // Mark the frame. If this is not the next frame, close and return.
             if(!timer.markFrame(image)) {
                 image.close()
                 return
             }
+            println("${timer.lastFrameIntervalMilliSec()}")
+            println("\tt1 = ${0.001 * t0.elapsedNow().inWholeMicroseconds}")
             // Get the luminance (blocking to prevent the device threads from accessing the
             // luminance buffer at the same time) and update the maps.
             runBlocking { imageReader.readYUVImage(image) }
+            println("\tt2 = ${0.001 * t0.elapsedNow().inWholeMicroseconds}")
             for(creator in creators) creator.updateWithCameraImage(imageReader)
+            println("\tt3 = ${0.001 * t0.elapsedNow().inWholeMicroseconds}")
+            //while(t0.elapsedNow().inWholeMicroseconds < brake) LockSupport.parkNanos(50_000)
+            //println("\tt4 = ${0.001 * t0.elapsedNow().inWholeMicroseconds}")
         }
         image.close()
     }
+
 
     // ---------------------------------------------------------------------------------------------
     // ROIs and maps

@@ -98,7 +98,7 @@ class FrameTimer {
         val strm = BufferedWriter(FileWriter(file))
         strm.write("${recordingStart}\n")
         strm.write("${recordingEnd}\n")
-        strm.write(frameIntervalsMilliSec.map{it.toString()}.joinToString("\n"))
+        strm.write(frameIntervalsMilliSec.toList().map{it.toString()}.joinToString("\n"))
         strm.close()
     }
 
@@ -113,7 +113,7 @@ class FrameTimer {
                 timer.markRecordingEnd(Instant.parse(strm.readLine()))
             }
             catch(_: java.time.format.DateTimeParseException){ return null }
-            catch(_: java.io.IOException){return null}
+            catch(_: java.io.IOException){ return null }
             strm.lines().forEach { line -> line.toFloatOrNull()?.let{timer.frameIntervalsMilliSec.add(it) }}
             strm.close()
             return timer

@@ -72,6 +72,7 @@ class LumaReader {
         // If so, the frame data is not updated and the map data will be the same as
         // the last temporal sample.
         catch (_: java.lang.IllegalArgumentException) { }
+        catch(_: java.nio.BufferOverflowException) { }
         catch (_: java.lang.SecurityException) { }
     }
 
