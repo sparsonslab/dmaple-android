@@ -504,7 +504,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             }
             // Get the luminance (blocking to prevent the device threads from accessing the
             // luminance buffer at the same time) and update the maps.
-            runBlocking {imageReader.readYUVImage(image) }
+            runBlocking { imageReader.readYUVImage(image) }
             for(creator in creators) creator.updateWithCameraImage(imageReader)
         }
         image.close()
