@@ -50,13 +50,13 @@ class Settings: PreferenceFragmentCompat() {
                 }
             }
             setScreenRotation(getPreference("SCREEN_ORIENTATION", "free"), activity)
+
             if(justRotation) return
             Recorder.leftHanded = getPreference("SCREEN_FOR_LEFT_HAND", false)
             MainActivity.keepScreenOn = getPreference("KEEP_SCREEN_ON", false)
             MainActivity.setMappingServiceFrameRate(getPreference("FRAME_RATE_FPS", "30").toInt())
             setThresholdInverted(getPreference("THRESHOLD_INVERTED", false))
             FieldParams.preference.spineSkipPixels = getPreference("SPINE_SKIP", 0)
-            MappingService.IMAGE_QUEUE_DEPTH = getPreference("IMAGE_QUEUE_DEPTH", 1)
             FieldParams.preference.minWidth = getPreference("SEED_MIN_WIDTH", 10)
             FieldParams.preference.spineSmoothPixels = getPreference("SPINE_SMOOTH", 1)
             FieldParams.preference.maxGap = getPreference("SPINE_MAX_GAP", 2)

@@ -9,19 +9,16 @@ import java.io.FileReader
 import java.io.FileWriter
 import java.time.Duration
 import java.time.Instant
-import kotlin.time.TimeSource
 
 /** Records the duration of a recording and the interval of its frames. */
 class FrameTimer {
 
-    /** A monotonic timer. */
-    private val source = TimeSource.Monotonic
     /** The time at the start of the recording. */
     private var recordingStart = Instant.now()
     /** The time at the end of the recording. */
     private var recordingEnd = Instant.now()
-    /** The time at the start of the last frame in the recording. */
-    private var frameStart = TimeSource.Monotonic.markNow()
+    /** The time stamp of the last frame. */
+    private var lastFrameTimeStampNanoSec: Long = 0L
     /** For each frame in the recording, the interval in milliseconds since the last frame.
      * Zero for the first frame. */
     private var frameIntervalsMilliSec = ArrayDeque<Float>()
@@ -34,13 +31,23 @@ class FrameTimer {
     fun markRecordingStart(t: Instant = Instant.now()){
         recordingStart = t
         frameIntervalsMilliSec.clear()
+        lastFrameTimeStampNanoSec = 0
     }
 
-    /** Mark the start of a frame. */
-    fun markFrameStart(){
+    /** Mark the next frame from its timestamp.
+     *
+     * @param imageTimeStampNanoSec The time stamp of an [ImageProxy] frame.
+     * @return If the timestamp is after the last. If false the frame will not be marked.
+     * */
+    fun markFrame(imageTimeStampNanoSec: Long): Boolean {
         if(frameIntervalsMilliSec.isEmpty()) frameIntervalsMilliSec.add(0f)
-        else frameIntervalsMilliSec.add(frameStart.elapsedNow().inWholeMicroseconds.toFloat() / 1000f)
-        frameStart = source.markNow()
+        else {
+            val frameIntervalMs = 1e-6f * (imageTimeStampNanoSec - lastFrameTimeStampNanoSec)
+            if(frameIntervalMs < 0) return false
+            frameIntervalsMilliSec.add(frameIntervalMs)
+        }
+        lastFrameTimeStampNanoSec = imageTimeStampNanoSec
+        return true
     }
 
     /** Mark the end of a recording. */
@@ -50,12 +57,9 @@ class FrameTimer {
     // Information
     // ---------------------------------------------------------------------------------------------
 
-    /** Micro-seconds elapsed since the start of the last frame. */
-    fun microSecFromFrameStart(): Long { return frameStart.elapsedNow().inWholeMicroseconds }
-
     /** Seconds since the start of the recording. */
-    fun secFromRecordingStart(): Long {
-        return Duration.between(recordingStart, Instant.now()).toSeconds()
+    fun secFromRecordingStart(instant: Instant = Instant.now()): Long {
+        return Duration.between(recordingStart, instant).toSeconds()
     }
 
     /** Milli-second interval of the last frame. */
@@ -66,7 +70,12 @@ class FrameTimer {
     /** Mean milli-second interval of the last [n] frames or 0 if their have not been n frames. */
     fun meanFrameIntervalMilliSec(n: Int = frameIntervalsMilliSec.size - 1): Float {
         if(n > frameIntervalsMilliSec.size - 1) return 0f
-        return frameIntervalsMilliSec.takeLast(n).average().toFloat()
+        try { return frameIntervalsMilliSec.takeLast(n).average().toFloat() }
+        // This isn't really a null pointer exception.
+        // It can be thrown when the line above is called at the same time as a frame time is added
+        // through a call to markFrame().
+        catch(_: java.lang.NullPointerException) { }
+        return 0f
     }
 
     /** All the frame intervals in mill-seconds. */
@@ -87,7 +96,7 @@ class FrameTimer {
         val strm = BufferedWriter(FileWriter(file))
         strm.write("${recordingStart}\n")
         strm.write("${recordingEnd}\n")
-        strm.write(frameIntervalsMilliSec.map{it.toString()}.joinToString("\n"))
+        strm.write(frameIntervalsMilliSec.toList().map{it.toString()}.joinToString("\n"))
         strm.close()
     }
 
@@ -102,7 +111,7 @@ class FrameTimer {
                 timer.markRecordingEnd(Instant.parse(strm.readLine()))
             }
             catch(_: java.time.format.DateTimeParseException){ return null }
-            catch(_: java.io.IOException){return null}
+            catch(_: java.io.IOException){ return null }
             strm.lines().forEach { line -> line.toFloatOrNull()?.let{timer.frameIntervalsMilliSec.add(it) }}
             strm.close()
             return timer
