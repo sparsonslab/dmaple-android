@@ -47,17 +47,11 @@ import com.scepticalphysiologist.dmaple.map.field.RoisAndRuler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.guava.await
-import kotlinx.coroutines.invoke
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.runInterruptible
 import java.io.File
 import java.util.concurrent.Executors
-import java.util.concurrent.locks.LockSupport
 import kotlin.math.abs
-import kotlin.random.Random
-import kotlin.time.TimeSource
 
 /** A foreground service that will run the camera, record spatio-temporal maps and keep ROI state.
  *

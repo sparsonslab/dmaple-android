@@ -10,7 +10,6 @@ import java.io.FileReader
 import java.io.FileWriter
 import java.time.Duration
 import java.time.Instant
-import kotlin.time.TimeSource
 
 /** Records the duration of a recording and the interval of its frames. */
 class FrameTimer {
@@ -52,8 +51,6 @@ class FrameTimer {
         lastFrameTimeStamp = image.imageInfo.timestamp
         return true
     }
-
-
 
     /** Mark the end of a recording. */
     fun markRecordingEnd(t: Instant = Instant.now()){ recordingEnd = t }
