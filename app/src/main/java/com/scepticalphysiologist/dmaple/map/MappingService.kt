@@ -485,6 +485,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         System.gc()
     }
 
+    /** Update maps from the latest image captured by the camera. */
     override fun analyze(image: ImageProxy) {
         // Mark the frame. If this is not the next frame, close and return.
         if((!creating) || (!timer.markFrame(image.imageInfo.timestamp))) {
