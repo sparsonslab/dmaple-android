@@ -16,7 +16,7 @@ import java.nio.ByteBuffer
  *
  * https://en.wikipedia.org/wiki/Y%E2%80%B2UV
  */
-open class LumaReader {
+class LumaReader {
 
     /** The width of the image. */
     var width: Int = 0
@@ -46,7 +46,7 @@ open class LumaReader {
      * Where other processes might have concurrent access to the image plane buffers,
      * this function should be run blocking.
      * */
-    open fun readYUVImage(proxy: ImageProxy) {
+    fun readYUVImage(proxy: ImageProxy) {
         if((proxy.width != this.width) || (proxy.height != this.height)) {
             this.width = proxy.width
             this.height = proxy.height
@@ -77,7 +77,7 @@ open class LumaReader {
     }
 
     /** Read from a bitmap. */
-    open fun readBitmap(bitmap: Bitmap) {
+    fun readBitmap(bitmap: Bitmap) {
         if((bitmap.width != this.width) || (bitmap.height != this.height)) {
             this.width = bitmap.width
             this.height = bitmap.height
@@ -102,7 +102,7 @@ open class LumaReader {
     }
 
     /** Get the luma of the (i, j)th pixel. */
-    open fun getPixelLuminance(i: Int, j: Int): Int {
+    fun getPixelLuminance(i: Int, j: Int): Int {
         val k = (j * rs) + (i * ps)
         if(k >= buffer.capacity()) return 255
         // Need for "and 0xff":
