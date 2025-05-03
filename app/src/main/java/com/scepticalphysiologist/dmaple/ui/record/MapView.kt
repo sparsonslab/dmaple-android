@@ -271,7 +271,6 @@ class MapView(context: Context, attributeSet: AttributeSet):
         // - time goes from top>bottom (portrait) or left>right (landscape)
         // - seeding-edge (start of space) is right (portrait) or bottom (landscape)
         // .... i.e. the scale bar is at the leading-edge of time and the seeding edge of space.
-        // todo - Does this actually work on all tablets? Is this general??
         bitmapMatrix = Matrix()
         bitmapMatrix.setRotate(if(width > height) -90f else 0f)
         val s = screenPoint(zoom * pixelStep)
