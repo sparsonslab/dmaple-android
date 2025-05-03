@@ -7,7 +7,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.robolectric.util.TempDirectory
 import java.io.File
-import java.util.concurrent.locks.LockSupport
 
 class FrameRateTimerTest {
 
@@ -16,12 +15,12 @@ class FrameRateTimerTest {
         // Given: A frame rate timer.
         val timer = FrameTimer()
 
-        // When: The timer is run at the target frame rate.
-        val targetInterval = 30L
+        // When: The timer is run.
         timer.markRecordingStart()
+        var timeStamp: Long = 6453828978
         for(i in 0 until 50){
-            timer.markFrameStart()
-            Thread.sleep(targetInterval - 2)
+            timer.markFrame(timeStamp)
+            timeStamp += 30_000_000
         }
         timer.markRecordingEnd()
 
@@ -41,12 +40,12 @@ class FrameRateTimerTest {
         val timer = FrameTimer()
 
         // When: The timer is run at the target frame rate.
-        val targetIntervalMs = 30L
-        val targetIntervalMicroS = targetIntervalMs * 1000L
+        val targetIntervalMs = 45L
         timer.markRecordingStart()
+        var timeStamp: Long = 6453828998
         for(i in 0 until 50){
-            while(targetIntervalMicroS > timer.microSecFromFrameStart()) LockSupport.parkNanos(50_000)
-            timer.markFrameStart()
+            timer.markFrame(timeStamp)
+            timeStamp += targetIntervalMs * 1_000_000
         }
         timer.markRecordingEnd()
 

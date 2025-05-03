@@ -2,7 +2,6 @@
 
 package com.scepticalphysiologist.dmaple.map
 
-import androidx.camera.core.ImageProxy
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.File
@@ -18,8 +17,8 @@ class FrameTimer {
     private var recordingStart = Instant.now()
     /** The time at the end of the recording. */
     private var recordingEnd = Instant.now()
-    /** The time stamp of the last frame (. */
-    var lastFrameTimeStamp: Long = 0L
+    /** The time stamp of the last frame. */
+    private var lastFrameTimeStampNanoSec: Long = 0L
     /** For each frame in the recording, the interval in milliseconds since the last frame.
      * Zero for the first frame. */
     private var frameIntervalsMilliSec = ArrayDeque<Float>()
@@ -32,23 +31,22 @@ class FrameTimer {
     fun markRecordingStart(t: Instant = Instant.now()){
         recordingStart = t
         frameIntervalsMilliSec.clear()
-        lastFrameTimeStamp = 0
+        lastFrameTimeStampNanoSec = 0
     }
 
     /** Mark the next frame from its timestamp.
      *
-     * @param image The possible next frame.
-     * @return If the argument frame is the next frame (is timestamped after the last). If false
-     * the frame will not be marked.
+     * @param imageTimeStampNanoSec The time stamp of an [ImageProxy] frame.
+     * @return If the timestamp is after the last. If false the frame will not be marked.
      * */
-    fun markFrame(image: ImageProxy): Boolean {
+    fun markFrame(imageTimeStampNanoSec: Long): Boolean {
         if(frameIntervalsMilliSec.isEmpty()) frameIntervalsMilliSec.add(0f)
         else {
-            val delta = 1e-6f * (image.imageInfo.timestamp - lastFrameTimeStamp)
-            if(delta < 0) return false
-            frameIntervalsMilliSec.add(delta)
+            val frameIntervalMs = 1e-6f * (imageTimeStampNanoSec - lastFrameTimeStampNanoSec)
+            if(frameIntervalMs < 0) return false
+            frameIntervalsMilliSec.add(frameIntervalMs)
         }
-        lastFrameTimeStamp = image.imageInfo.timestamp
+        lastFrameTimeStampNanoSec = imageTimeStampNanoSec
         return true
     }
 

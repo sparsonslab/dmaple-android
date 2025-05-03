@@ -487,7 +487,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     override fun analyze(image: ImageProxy) {
         // Mark the frame. If this is not the next frame, close and return.
-        if((!creating) || (!timer.markFrame(image))) {
+        if((!creating) || (!timer.markFrame(image.imageInfo.timestamp))) {
             image.close()
             return
         }
