@@ -17,7 +17,6 @@ import java.io.RandomAccessFile
 import java.lang.IllegalArgumentException
 import java.lang.IndexOutOfBoundsException
 import java.nio.ByteBuffer
-import java.util.concurrent.ForkJoinPool
 import kotlin.math.abs
 
 /** Handles the creation of spatio-temporal maps for a single ROI. */
@@ -64,11 +63,6 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
     )
     /** The end of any one of the buffers has been reached. */
     private var reachedEnd = false
-
-    // Map Display
-    // -----------
-    /** A pool of forked threads for parallelized bitmap (map image) creation.*/
-    private val forkedPool = ForkJoinPool.commonPool()
 
     // ---------------------------------------------------------------------------------------------
     // Construction
@@ -176,15 +170,12 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
      * i.e. the spatial down-sampling of the map.
      * @param stepY The number of time samples to step when sampling the map.
      * @param backing A backing array for the bitmap, into the map samples will be put.
-     * @param allowIncompleteBacking Transfer of the map to the backing array does not have to be
-     * completed before returning the bitmap. This can speed up live display of maps.
      * */
     fun getMapBitmap(
         idx: Int,
         crop: Rect?,
         stepX: Int = 1, stepY: Int = 1,
         backing: IntArray,
-        allowIncompleteBacking: Boolean,
     ): Bitmap? {
 
         val buffer = mapBuffers.mapNotNull {it.second}.getOrNull(idx) ?: return null
@@ -195,23 +186,15 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
             crop?.let { area.intersect(crop) }
             val bs = Size(rangeSize(area.width(), stepX), rangeSize(area.height(), stepY))
             if(bs.width * bs.height > backing.size) return null
-
-            // Pass values from buffer to bitmap backing in parallel.
-            // https://stackoverflow.com/questions/30802463/how-many-threads-are-spawned-in-parallelstream-in-java-8
-            val job = forkedPool.submit {
-                sequence {
-                    var k = -1
-                    for (j in area.top until area.bottom step stepY)
-                        for (i in area.left until area.right step stepX) {
-                            k += 1
-                            yield(listOf(i, j, k))
-                        }
-                }.toList().parallelStream().forEach {
-                    backing[it[2]] = buffer.getColorInt(it[0], it[1])
+            // Transfer values to bitmap backing array.
+            // It would be nice to parallise this without creating a intermediary list of indexes
+            // that takes up lots of memory.
+            var k = 0
+            for (j in area.top until area.bottom step stepY)
+                for (i in area.left until area.right step stepX) {
+                    backing[k] = buffer.getColorInt(i, j)
+                    k += 1
                 }
-            }
-            if(!allowIncompleteBacking) job.join()
-
             // Return bitmap.
             return Bitmap.createBitmap(backing, bs.width, bs.height, Bitmap.Config.ARGB_8888)
         }

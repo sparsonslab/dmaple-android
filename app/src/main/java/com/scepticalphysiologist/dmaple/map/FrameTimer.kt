@@ -20,7 +20,7 @@ class FrameTimer {
     /** The time at the end of the recording. */
     private var recordingEnd = Instant.now()
     /** The time stamp of the last frame (. */
-    private var lastFrameTimeStamp: Long = 0L
+    var lastFrameTimeStamp: Long = 0L
     /** For each frame in the recording, the interval in milliseconds since the last frame.
      * Zero for the first frame. */
     private var frameIntervalsMilliSec = ArrayDeque<Float>()
@@ -33,6 +33,7 @@ class FrameTimer {
     fun markRecordingStart(t: Instant = Instant.now()){
         recordingStart = t
         frameIntervalsMilliSec.clear()
+        lastFrameTimeStamp = 0
     }
 
     /** Mark the next frame from its timestamp.
@@ -51,6 +52,8 @@ class FrameTimer {
         lastFrameTimeStamp = image.imageInfo.timestamp
         return true
     }
+
+
 
     /** Mark the end of a recording. */
     fun markRecordingEnd(t: Instant = Instant.now()){ recordingEnd = t }
