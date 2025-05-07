@@ -15,6 +15,7 @@ android {
         applicationId "com.scepticalphysiologist.dmaple"
         versionName "1.0"
         versionCode 1
+        archivesBaseName = "DMapLE-App-$versionName"
         // Android SDK target
         minSdkVersion 31
         targetSdkVersion 34

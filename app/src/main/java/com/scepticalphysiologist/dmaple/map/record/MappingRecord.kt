@@ -47,6 +47,8 @@ class MappingRecord(
         // ----------
         /** The default root folder for mapping record folders.*/
         val DEFAULT_ROOT: File = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+        /** The actual root folder from which records have been loaded.*/
+        var root: File = DEFAULT_ROOT
         /** The default name for mapping record folders. */
         const val DEFAULT_RECORD_FOLDER: String = "Maps"
         /** All the loaded mapping records. */
@@ -68,6 +70,12 @@ class MappingRecord(
                 read(folder)?.let{ record -> records.add(record) }
             }
             records.sortByDescending { it.metadata.recordingPeriod[0] }
+            this.root = root
+        }
+
+        /** All directories in the records root directory. */
+        fun allDirectoriesInRoot(): List<File> {
+            return root.listFiles()?.filter { it.isDirectory } ?: listOf()
         }
 
         /** Read a record from the [location] folder.*/
@@ -122,26 +130,30 @@ class MappingRecord(
         // Directory to save map
         if(!location.exists()) location.mkdir()
 
-        // Metadata.
-        metadata.serialise(File(location, METADATA_FILE))
+        try {
+            // Metadata.
+            metadata.serialise(File(location, METADATA_FILE))
 
-        // Timer.
-        timer?.write(File(location, TIMING_FILE))
+            // Timer.
+            timer?.write(File(location, TIMING_FILE))
 
-        // Field bitmap
-        field?.compress(Bitmap.CompressFormat.JPEG, 90, FileOutputStream(File(location, FIELD_FILE)))
+            // Field bitmap
+            field?.compress(Bitmap.CompressFormat.JPEG, 90, FileOutputStream(File(location, FIELD_FILE)))
 
-        // Maps to separate TIFF images.
-        // Considered making each map a slice/directory of a single TIFF file and
-        // though this works, many third-party readers (e.g. ImageJ) cannot read multiple
-        // directories with different pixel types (e.g. a mix of short and RBG).
-        for(creator in creators) {
-            for(tiff in creator.toTiff()) {
-                val img = TIFFImage().also{it.add(tiff)}
-                val des = tiff.getStringEntryValue(FieldTagType.ImageUniqueID)
-                TiffWriter.writeTiff(File(location, "${creator.roi.uid}_$des.tiff"), img)
+            // Maps to separate TIFF images.
+            // Considered making each map a slice/directory of a single TIFF file and
+            // though this works, many third-party readers (e.g. ImageJ) cannot read multiple
+            // directories with different pixel types (e.g. a mix of short and RBG).
+            for(creator in creators) {
+                for(tiff in creator.toTiff()) {
+                    val img = TIFFImage().also{it.add(tiff)}
+                    val des = tiff.getStringEntryValue(FieldTagType.ImageUniqueID)
+                    TiffWriter.writeTiff(File(location, "${creator.roi.uid}_$des.tiff"), img)
+                }
             }
         }
+        // No permission to write.
+        catch(_: java.io.FileNotFoundException){}
     }
 
 }
