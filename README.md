@@ -24,16 +24,6 @@ UX to the ImageJ plugin. For starters, as cameras are built into most Android de
 live from the camera feed. This was in fact the main motivation for developing the app, the fact that
 maps could be created live with a single, cheap piece of tech - an android tablet or phone.
 
-**This app is most definitely a work in progress.**
-
-
-## References
-
-Hennig et al. (1999). Quantitative analysis of peristalsis in the guinea-pig small intestine using 
-spatio-temporal maps. *J Physiol.* 517, 575–590. [PubMed](https://pmc.ncbi.nlm.nih.gov/articles/PMC2269346/)
-
-https://www.scepticalphysiologist.com/code/DMapLE/DMapLE.pdf
-
 ## User Guide
 
 A PDF guide to using the app can be found [here](app/src/main/assets/dmaple_user_guide.pdf).
@@ -42,6 +32,13 @@ A PDF guide to using the app can be found [here](app/src/main/assets/dmaple_user
 
 Each source code package includes a read-me that summarises the classes and their interconnection,
 starting at the root, [here](app/src/main/java/com/scepticalphysiologist/dmaple).
+
+## References
+
+Hennig et al. (1999). Quantitative analysis of peristalsis in the guinea-pig small intestine using
+spatio-temporal maps. *J Physiol.* 517, 575–590. [PubMed](https://pmc.ncbi.nlm.nih.gov/articles/PMC2269346/)
+
+https://www.scepticalphysiologist.com/code/DMapLE/DMapLE.pdf
 
 ---
 Copyright (c) 2025-2025. Dr Sean Paul Parsons. All rights reserved.
