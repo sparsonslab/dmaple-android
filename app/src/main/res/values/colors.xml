@@ -19,5 +19,6 @@
     <color name="roi">#fe2452</color>
     <color name="ruler">#fe2452</color>
     <color name="scale_bars">#fe2452</color>
+    <color name="camera_control">#FFFF55</color>
 
 </resources>

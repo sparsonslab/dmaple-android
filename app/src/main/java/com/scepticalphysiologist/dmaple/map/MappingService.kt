@@ -16,8 +16,10 @@ import android.util.Range
 import android.view.Display
 import android.view.WindowManager
 import androidx.annotation.OptIn
+import androidx.camera.camera2.interop.Camera2CameraControl
 import androidx.camera.camera2.interop.Camera2CameraInfo
 import androidx.camera.camera2.interop.Camera2Interop
+import androidx.camera.camera2.interop.CaptureRequestOptions
 import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.Camera
@@ -268,6 +270,23 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         val range = camera.cameraInfo.exposureState.exposureCompensationRange
         val exposure = (range.lower + fraction * (range.upper - range.lower)).toInt()
         camera.cameraControl.setExposureCompensationIndex(exposure)
+    }
+
+    /** Set the camera focal distance (as a fraction of the available range).*/
+    fun setFocus(fraction: Float) {
+        // Focal distance as fraction of the available.
+        val distance = Camera2CameraInfo.from(camera.cameraInfo).getCameraCharacteristic(
+            CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE
+        )?.let { it - it * fraction } ?: 0f
+        // Set focus. Auto-focus (video mode) if fraction is zero.
+        val builder = CaptureRequestOptions.Builder()
+        if(fraction == 0f) {
+            builder.setCaptureRequestOption(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO)
+        } else {
+            builder.setCaptureRequestOption(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF)
+            builder.setCaptureRequestOption(CaptureRequest.LENS_FOCUS_DISTANCE, distance)
+        }
+        Camera2CameraControl.from(camera.cameraControl).captureRequestOptions = builder.build()
     }
 
     /** Set the frame rate (frames per second). */

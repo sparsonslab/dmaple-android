@@ -77,9 +77,7 @@ class Recorder: Fragment() {
         // Once the view is inflated, set the mapping service's camera surface.
         binding.root.post {
             model.setCameraPreview(binding.cameraAndRoi.getCameraPreview())
-            binding.cameraAndRoi.setExposureSlider(0.5f)
             binding.cameraAndRoi.setRoisAndRuler(model.getRoisAndRuler())
-
             setUIState()
             binding.maps.reset()
         }
@@ -89,8 +87,9 @@ class Recorder: Fragment() {
             msg?.show(requireActivity())
         }
 
-        // Exposure control.
-        binding.cameraAndRoi.exposure.observe(viewLifecycleOwner) { model.setExposure(it) }
+        // Exposure and focus control.
+        binding.cameraAndRoi.exposureSlider.fractionalPosition.observe(viewLifecycleOwner) { model.setExposure(it) }
+        binding.cameraAndRoi.focusSlider.fractionalPosition.observe(viewLifecycleOwner) { model.setFocus(it) }
 
         // Start/stop recording.
         binding.recordButton.setOnClickListener {
