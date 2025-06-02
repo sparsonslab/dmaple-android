@@ -100,6 +100,9 @@ class RecorderModel(application: Application): AndroidViewModel(application) {
     /** Set the exposure level. */
     fun setExposure(fraction: Float) { mapper?.setExposure(fraction) }
 
+    /** Set the focus. */
+    fun setFocus(fraction: Float) { mapper?.setFocus(fraction) }
+
     /** Update the currently shown map given the UID of a selected ROI. */
     fun updateCurrentlyShownMap(selectedRoiUid: String) { mapper?.setNextMap(selectedRoiUid) }
 

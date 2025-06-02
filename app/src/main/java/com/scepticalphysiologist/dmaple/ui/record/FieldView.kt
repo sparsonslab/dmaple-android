@@ -50,6 +50,10 @@ class FieldView(context: Context, attributeSet: AttributeSet?):
     private val exposureSlider = SwitchableSlider(context, Pair(0, 100), R.drawable.exposure_sun, Color.YELLOW)
     /** Indicate that exposure has changed - a value between 0 and 1. */
     val exposure = MutableLiveData<Float>(0f)
+    /** A slide for controlling focus. */
+    private val focusSlider = SwitchableSlider(context, Pair(0, 100), R.drawable.eye_icon, Color.YELLOW)
+    /** Indicate that focus has changed - a value between 0 and 1. */
+    val focus = MutableLiveData<Float>(0f)
 
     // View
     // ----
@@ -73,8 +77,10 @@ class FieldView(context: Context, attributeSet: AttributeSet?):
         sliderGroup.layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT, Gravity.RIGHT)
         sliderGroup.addView(thresholdSlider)
         sliderGroup.addView(exposureSlider)
+        sliderGroup.addView(focusSlider)
         thresholdSlider.switch(show=false)
         exposureSlider.switch(show=false)
+        focusSlider.switch(show=false)
         this.addView(sliderGroup)
 
         // Layout.
@@ -96,8 +102,9 @@ class FieldView(context: Context, attributeSet: AttributeSet?):
             thresholdSlider.visibility = if(threshold != null) View.VISIBLE else View.INVISIBLE
         }
 
-        // Exposure control
+        // Exposure and focus control
         exposureSlider.position.observe(owner) { exposure.postValue(it.toFloat() / 100f) }
+        focusSlider.position.observe(owner) { focus.postValue(it.toFloat() / 100f) }
     }
 
     // ---------------------------------------------------------------------------------------------
