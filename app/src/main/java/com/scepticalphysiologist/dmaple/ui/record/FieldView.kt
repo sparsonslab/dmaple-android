@@ -32,6 +32,7 @@ class FieldView(context: Context, attributeSet: AttributeSet?):
     FrameLayout(context, attributeSet),
     View.OnLayoutChangeListener
 {
+
     // Child Views
     // -----------
     /** The camera feed. The camera is actually run by the [MappingService]. */
@@ -45,15 +46,29 @@ class FieldView(context: Context, attributeSet: AttributeSet?):
     // --------
     val sliderGroup = LinearLayout(context)
     /** A slider for thresholding mapping ROIs. */
-    private val thresholdSlider = SwitchableSlider(context, Pair(0, 255), R.drawable.threshold_steps, resources.getColor(R.color.roi))
+    private val thresholdSlider = SwitchableSlider(
+        context = context,
+        stateKey = "THRESHOLD",
+        range = Pair(0, 255),
+        switchIcon = R.drawable.threshold_steps,
+        color = resources.getColor(R.color.roi)
+    )
     /** A slide for controlling exposure. */
-    private val exposureSlider = SwitchableSlider(context, Pair(0, 100), R.drawable.exposure_sun, Color.YELLOW)
-    /** Indicate that exposure has changed - a value between 0 and 1. */
-    val exposure = MutableLiveData<Float>(0f)
+    val exposureSlider = SwitchableSlider(
+        context = context,
+        stateKey = "EXPOSURE",
+        range = Pair(0, 100),
+        switchIcon = R.drawable.exposure_sun,
+        color = Color.YELLOW
+    )
     /** A slide for controlling focus. */
-    private val focusSlider = SwitchableSlider(context, Pair(0, 100), R.drawable.eye_icon, Color.YELLOW)
-    /** Indicate that focus has changed - a value between 0 and 1. */
-    val focus = MutableLiveData<Float>(0f)
+    val focusSlider = SwitchableSlider(
+        context = context,
+        stateKey = "FOCUS",
+        range = Pair(0, 100),
+        switchIcon = R.drawable.eye_icon,
+        color = Color.YELLOW
+    )
 
     // View
     // ----
@@ -101,10 +116,6 @@ class FieldView(context: Context, attributeSet: AttributeSet?):
             thresholdSlider.switch(show=false)
             thresholdSlider.visibility = if(threshold != null) View.VISIBLE else View.INVISIBLE
         }
-
-        // Exposure and focus control
-        exposureSlider.position.observe(owner) { exposure.postValue(it.toFloat() / 100f) }
-        focusSlider.position.observe(owner) { focus.postValue(it.toFloat() / 100f) }
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -131,10 +142,6 @@ class FieldView(context: Context, attributeSet: AttributeSet?):
     }
 
     fun getCameraPreview(): PreviewView { return cameraFeed }
-
-    fun setExposureSlider(fraction: Float) {
-        exposureSlider.setPosition((fraction * 100).toInt())
-    }
 
     fun updateCreator(creatorAndMapIdx: Pair<MapCreator?, Int>) {
         spineOverlay.updateCreator(creatorAndMapIdx)

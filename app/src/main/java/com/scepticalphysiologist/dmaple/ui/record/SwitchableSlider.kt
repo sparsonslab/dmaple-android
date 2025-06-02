@@ -14,12 +14,14 @@ import kotlin.math.abs
 
 /** Vertical slider with a "switch" at the bottom that changes its visibility.
  *
+ * @property stateKey A key for saving the state of the slider when it is destroyed.
  * @property range The range of the slider.
  * @param switchIcon The resource id of the icon used for the switch button.
  * @param color The color of the slider.
  * */
 class SwitchableSlider(
     context: Context,
+    private val stateKey: String,
     private val range: Pair<Int, Int>,
     switchIcon: Int,
     color: Int
@@ -27,6 +29,12 @@ class SwitchableSlider(
     LinearLayout(context),
     SeekBar.OnSeekBarChangeListener
 {
+
+    companion object {
+        /** Progress state of the sliders. */
+        private var progressState: MutableMap<String, Int> = mutableMapOf()
+    }
+
     // Views
     // -----
     /** The slider. */
@@ -38,8 +46,10 @@ class SwitchableSlider(
     // --------------------
     /** Announce that the user has stopped or started tracking. */
     val onoff = MutableLiveData<Boolean>(false)
-    /** Announce that the slide r position had changed. */
+    /** Announce that the slide position had changed. */
     val position = MutableLiveData<Int>(0)
+    /** Announce that the slide fractional position had changed. */
+    val fractionalPosition = MutableLiveData<Float>(0f)
 
     init {
         this.orientation = VERTICAL
@@ -47,14 +57,12 @@ class SwitchableSlider(
 
         // Padding
         val filler = FrameLayout(context)
-        filler.layoutParams =
-            LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, 0.5f)
+        filler.layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, 0.5f)
         this.addView(filler)
 
         // Slider
         val sliderFrame = FrameLayout(context)
-        sliderFrame.layoutParams =
-            LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, 0.5f)
+        sliderFrame.layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, 0.5f)
         slider.setOnSeekBarChangeListener(this)
         slider.min = range.first
         slider.max = range.second
@@ -77,7 +85,9 @@ class SwitchableSlider(
 
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
         super.onLayout(changed, l, t, r, b)
+        if(!changed) return
         slider.updateLayoutParams { width = abs(0.45f * (b - t)).toInt() }
+        progressState.get(stateKey)?.let{ setPosition(it) }
     }
 
     /** Switch the slider visibility. */
@@ -93,12 +103,19 @@ class SwitchableSlider(
             p < slider.min -> slider.min
             else -> p
         }
+        setProgressState()
     }
 
-    override fun onProgressChanged(p0: SeekBar?, p1: Int, p2: Boolean) { position.value = p1 }
+    override fun onProgressChanged(bar: SeekBar?, progress: Int, iniatedByUser: Boolean) {
+        position.value = progress
+        fractionalPosition.value = (progress - slider.min) / (slider.max - slider.min).toFloat()
+        setProgressState()
+    }
 
     override fun onStartTrackingTouch(p0: SeekBar?) { onoff.value = true }
 
     override fun onStopTrackingTouch(p0: SeekBar?) { onoff.value = false }
+
+    private fun setProgressState() { progressState[stateKey] = slider.progress }
 
 }
