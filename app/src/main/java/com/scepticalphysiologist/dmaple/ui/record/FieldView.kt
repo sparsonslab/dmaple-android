@@ -59,7 +59,7 @@ class FieldView(context: Context, attributeSet: AttributeSet?):
         stateKey = "EXPOSURE",
         range = Pair(0, 100),
         switchIcon = R.drawable.exposure_sun,
-        color = Color.YELLOW
+        color = resources.getColor(R.color.camera_control)
     )
     /** A slide for controlling focus. */
     val focusSlider = SwitchableSlider(
@@ -67,7 +67,7 @@ class FieldView(context: Context, attributeSet: AttributeSet?):
         stateKey = "FOCUS",
         range = Pair(0, 100),
         switchIcon = R.drawable.eye_icon,
-        color = Color.YELLOW
+        color = resources.getColor(R.color.camera_control)
     )
 
     // View
