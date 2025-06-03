@@ -6,7 +6,6 @@ import android.content.Context
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CaptureRequest
 import android.util.Range
-import android.view.Display
 import android.view.WindowManager
 import androidx.annotation.OptIn
 import androidx.camera.camera2.interop.Camera2CameraControl
@@ -35,29 +34,26 @@ class CameraController(
     private val owner: LifecycleOwner
 ) {
 
-
     /** The camera provider. */
     private val cameraProvider: ProcessCameraProvider = ProcessCameraProvider.getInstance(context).get()
-
     /** The camera. */
     private lateinit var camera: Camera
-
     /** The camera preview. */
     private var preview: Preview? = null
     /** The view ("surface provider") of the camera preview. */
     private var surface: SurfaceProvider? = null
     /** The camera image analyser. */
     private var analyser: ImageAnalysis? = null
-    /** Auto exposure, white-balance and focus are on. */
-    //private var autosOn: Boolean = true
+    /** Auto exposure, white-balance and focus are off. */
     private var autosOff: Boolean = false
-
-
     /** Approximate frame rate (frames/second). */
     private var frameRateFps: Int = getAvailableFps().max()
     /** Approximate interval between frames (microseconds). */
     val frameIntervalMicroSec: Long get() = (1_000_000f / frameRateFps.toFloat()).toLong()
 
+    // ---------------------------------------------------------------------------------------------
+    // Initiation
+    // ---------------------------------------------------------------------------------------------
 
     init {
         cameraProvider.unbindAll()
@@ -110,6 +106,10 @@ class CameraController(
     private fun unBindUse(use: UseCase?) { cameraProvider.unbind(use) }
 
 
+    // ---------------------------------------------------------------------------------------------
+    // Settings
+    // ---------------------------------------------------------------------------------------------
+
     fun setSurface(provider: SurfaceProvider) {
         surface = provider
         preview?.surfaceProvider = provider
@@ -146,6 +146,10 @@ class CameraController(
         setPreview()
     }
 
+    // ---------------------------------------------------------------------------------------------
+    // Information
+    // ---------------------------------------------------------------------------------------------
+
     /** Get the approximate frame rate (frames/second). */
     fun getFps(): Int { return frameRateFps }
 
@@ -172,6 +176,5 @@ class CameraController(
         val display = (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay
         return analyser?.let{Frame.ofImageAnalyser(it, display) }
     }
-
 
 }

@@ -181,37 +181,10 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     }
 
     // ---------------------------------------------------------------------------------------------
-    // Public interface: Methods to be called after service initiation.
+    // Public wrappers to camera controller
     // ---------------------------------------------------------------------------------------------
 
-    /** Set the surface provider (physical view) for the camera preview. */
-    fun setSurface(provider: SurfaceProvider) {
-        controller.setSurface(provider)
-    }
-
-    /** Set the map buffer provider. */
-    fun setBufferProvider(provider: MapBufferProvider) {
-        provider.initialiseBuffers()
-        bufferProvider = provider
-    }
-
-    // ---------------------------------------------------------------------------------------------
-    // Public interface: Get and set mapping parameters before recording
-    // ---------------------------------------------------------------------------------------------
-
-    /** Set the field's ROIs and ruler. */
-    fun setRoisAndRuler(field: RoisAndRuler) {
-        rois.clear()
-        for(roi in field.rois) rois.add(roi.copy())
-        ruler = field.ruler?.copy()
-    }
-
-    /** Get the field's ROIs and ruler. e.g. for when a view of the field needs to be reconstructed. */
-    fun getRoisAndRuler(): RoisAndRuler { return RoisAndRuler(rois, ruler) }
-
-    // ---------------------------------------------------------------------------------------------
-    // Public interface: camera controller
-    // ---------------------------------------------------------------------------------------------
+    fun setSurface(provider: SurfaceProvider) { controller.setSurface(provider) }
 
     fun getFieldSize(): Point? { return controller.getFieldSize() }
 
@@ -224,6 +197,26 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     fun setExposure(fraction: Float) { controller.setExposure(fraction) }
 
     fun setFocus(fraction: Float) { controller.setFocus(fraction) }
+
+    // ---------------------------------------------------------------------------------------------
+    // Public interface: Methods to be called after service initiation.
+    // ---------------------------------------------------------------------------------------------
+
+    /** Set the map buffer provider. */
+    fun setBufferProvider(provider: MapBufferProvider) {
+        provider.initialiseBuffers()
+        bufferProvider = provider
+    }
+
+    /** Set the field's ROIs and ruler. */
+    fun setRoisAndRuler(field: RoisAndRuler) {
+        rois.clear()
+        for(roi in field.rois) rois.add(roi.copy())
+        ruler = field.ruler?.copy()
+    }
+
+    /** Get the field's ROIs and ruler. e.g. for when a view of the field needs to be reconstructed. */
+    fun getRoisAndRuler(): RoisAndRuler { return RoisAndRuler(rois, ruler) }
 
     // ---------------------------------------------------------------------------------------------
     // Public interface: Record
@@ -357,7 +350,6 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         }
 
         // State
-
         controller.setPreview(switchOffAuto = true)
         creating = true
         timer.markRecordingStart()
