@@ -26,22 +26,32 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.lifecycle.LifecycleOwner
 import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
-import com.scepticalphysiologist.dmaple.map.MappingService.Companion.CAMERA_ASPECT_RATIO
 import java.util.concurrent.Executors
 
-
+/** A wrapper around the hideously complicated Android camera API.
+ *
+ * @param context A context for the camera provider.
+ * @param analyser An image analyser fpr the image analysis use case.
+ * @param aspectRatio The desired aspect ratio (one of entry of enum AspectRatio).
+ * @property owner The life cycle owner to which camera use cases will be bound.
+ */
 @OptIn(ExperimentalCamera2Interop::class)
 class CameraController(
     context: Context,
     analyser: ImageAnalysis.Analyzer,
+    aspectRatio: Int,
     private val owner: LifecycleOwner
 ) {
 
+    // Camera objects
+    // --------------
     /** The camera provider. */
     private val cameraProvider: ProcessCameraProvider = ProcessCameraProvider.getInstance(context).get()
     /** The camera. */
     private lateinit var camera: Camera
 
+    // Camera use cases
+    // ----------------
     /** The camera preview. */
     private var preview: Preview? = null
     /** The view ("surface provider") of the camera preview. */
@@ -49,11 +59,12 @@ class CameraController(
     /** The camera image analyser. */
     private var analyser: ImageAnalysis? = null
 
-    private var currentFraction = 0f
+    // State
+    // -----
+    /** The fraction of the focal distance set by the user (0 indicates auto-focus). */
+    private var userSetFocalFraction = 0f
+    /** The current (real-time) focal distance. */
     private var currentFocalDistance: Float? = 0f
-
-    /** Auto exposure, white-balance and focus are on. */
-    private var autoControls: Boolean = true
     /** Approximate frame rate (frames/second). */
     private var frameRateFps: Int = getAvailableFps().max()
     /** Approximate interval between frames (microseconds). */
@@ -65,15 +76,16 @@ class CameraController(
 
     init {
         cameraProvider.unbindAll()
-        setPreview()
-        setAnalyser(analyser)
+        setPreview(aspectRatio)
+        setAnalyser(analyser, aspectRatio)
         setFps(frameRateFps)
-        setAutosMode(autoControls)
+        setAutosMode(autosOn = true)
     }
 
     /** Set the preview use case of CameraX. */
-    private fun setPreview() {
+    private fun setPreview(aspectRatio: Int) {
 
+        // Call back for recording the real-time focal distance of the camera.
         val captureCallback = object : CameraCaptureSession.CaptureCallback() {
             override fun onCaptureCompleted(
                 session: CameraCaptureSession,
@@ -87,11 +99,9 @@ class CameraController(
 
         unBindUse(preview)
         preview = Preview.Builder().also { builder ->
-            builder.setTargetAspectRatio(CAMERA_ASPECT_RATIO)
-
-            val previewExtender = Camera2Interop.Extender(builder)
-            previewExtender.setSessionCaptureCallback(captureCallback)
-
+            builder.setTargetAspectRatio(aspectRatio)
+            // Listen to the focal distance.
+            Camera2Interop.Extender(builder).setSessionCaptureCallback(captureCallback)
         }.build().also { use ->
             surface?.let {s -> use.surfaceProvider = s}
             bindUse(use)
@@ -99,10 +109,10 @@ class CameraController(
     }
 
     /** Set the image analyser use case of CameraX. */
-    private fun setAnalyser(analyzer: ImageAnalysis.Analyzer) {
+    private fun setAnalyser(analyzer: ImageAnalysis.Analyzer, aspectRatio: Int) {
         unBindUse(analyser)
         analyser = ImageAnalysis.Builder().also { builder ->
-            builder.setTargetAspectRatio(CAMERA_ASPECT_RATIO)
+            builder.setTargetAspectRatio(aspectRatio)
             // We should never use ImageAnalysis.STRATEGY_BLOCK_PRODUCER, because in this mode
             // frames can come in asynchronously (out of order).
             builder.setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
@@ -140,7 +150,7 @@ class CameraController(
 
     /** Set the camera focal distance (as a fraction of the available range).*/
     fun setFocus(fraction: Float) {
-        currentFraction = fraction
+        userSetFocalFraction = fraction
         val builder = CaptureRequestOptions.Builder()
         // If fraction is zero, set auto-focus (video mode).
         if(fraction == 0f) builder.setCaptureRequestOption(
@@ -166,13 +176,12 @@ class CameraController(
         Camera2CameraControl.from(camera.cameraControl).addCaptureRequestOptions(builder.build())
     }
 
-    /** */
+    /** Set auto -focus, -exposure and -white-balance on or off. */
     fun setAutosMode(autosOn: Boolean) {
-        autoControls = autosOn
         val builder = CaptureRequestOptions.Builder()
-        builder.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_LOCK, !autoControls)
-        builder.setCaptureRequestOption(CaptureRequest.CONTROL_AE_LOCK, !autoControls)
-        if(autoControls) setFocus(currentFraction) else {
+        builder.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_LOCK, !autosOn)
+        builder.setCaptureRequestOption(CaptureRequest.CONTROL_AE_LOCK, !autosOn)
+        if(autosOn) setFocus(userSetFocalFraction) else {
             currentFocalDistance?.let { builder.setCaptureRequestOption(CaptureRequest.LENS_FOCUS_DISTANCE, it) }
             builder.setCaptureRequestOption(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF)
         }
@@ -198,16 +207,16 @@ class CameraController(
         return listOf(30)
     }
 
-    /** Get the pixel width and height of the mapping field. */
+    /** Get the pixel width and height of the images created by the image analysis use case. */
     fun getFieldSize(): Point? {
         return analyser?.resolutionInfo?.let { info ->
             Point(info.resolution.width.toFloat(), info.resolution.height.toFloat())
         }
     }
 
+    /** Get the frame of the images created by the image analysis use case. */
     fun getImageFrame(context: Context): Frame? {
         val display = (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay
         return analyser?.let{Frame.ofImageAnalyser(it, display) }
     }
-
 }

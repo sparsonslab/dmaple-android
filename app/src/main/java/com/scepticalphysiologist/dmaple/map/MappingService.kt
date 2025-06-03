@@ -73,6 +73,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     private var rois = mutableListOf<FieldRoi>()
     /** The measurement ruler in its last view frame. */
     private var ruler: FieldRuler? = null
+
+
     /** Map creators. */
     private var creators = mutableListOf<MapCreator>()
     /** The currently shown map: its [creators] index and map index within that creator. */
@@ -96,7 +98,10 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     override fun onCreate() {
         super.onCreate()
         Log.i("dmaple_lifetime", "mapping service: onCreate")
-        controller = CameraController(this, this, this)
+        controller = CameraController(
+            context = this, analyser = this,
+            aspectRatio = CAMERA_ASPECT_RATIO, owner = this
+        )
     }
 
     // ---------------------------------------------------------------------------------------------
