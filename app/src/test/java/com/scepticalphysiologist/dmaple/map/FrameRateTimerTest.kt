@@ -3,6 +3,7 @@
 package com.scepticalphysiologist.dmaple.map
 
 import com.scepticalphysiologist.dmaple.assertNumbersEqual
+import com.scepticalphysiologist.dmaple.map.camera.FrameTimer
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.robolectric.util.TempDirectory

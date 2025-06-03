@@ -1,6 +1,6 @@
 // Copyright (c) 2025-2025. Dr Sean Paul Parsons. All rights reserved.
 
-package com.scepticalphysiologist.dmaple.map
+package com.scepticalphysiologist.dmaple.map.camera
 
 import java.io.BufferedReader
 import java.io.BufferedWriter
@@ -85,7 +85,8 @@ class FrameTimer {
     fun recordingPeriod(): List<Instant> { return listOf(recordingStart, recordingEnd) }
 
     /** The second duration of the recording. */
-    fun recordingDuration(): Duration { return Duration.between(recordingStart, recordingEnd) }
+    fun recordingDuration(): Duration { return Duration.between(recordingStart, recordingEnd)
+    }
 
     // ---------------------------------------------------------------------------------------------
     // I/O
