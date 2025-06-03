@@ -10,7 +10,6 @@ import android.view.WindowManager
 import androidx.annotation.OptIn
 import androidx.camera.camera2.interop.Camera2CameraControl
 import androidx.camera.camera2.interop.Camera2CameraInfo
-import androidx.camera.camera2.interop.Camera2Interop
 import androidx.camera.camera2.interop.CaptureRequestOptions
 import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.Camera
@@ -38,6 +37,7 @@ class CameraController(
     private val cameraProvider: ProcessCameraProvider = ProcessCameraProvider.getInstance(context).get()
     /** The camera. */
     private lateinit var camera: Camera
+
     /** The camera preview. */
     private var preview: Preview? = null
     /** The view ("surface provider") of the camera preview. */
@@ -59,23 +59,16 @@ class CameraController(
         cameraProvider.unbindAll()
         setPreview()
         setAnalyser(analyser)
+        setFps(frameRateFps)
+        setAutosMode(!autosOff)
     }
 
     /** Set the preview use case of CameraX. */
-    fun setPreview(switchOffAuto: Boolean? = null) {
+    private fun setPreview(switchOffAuto: Boolean? = null) {
         switchOffAuto?.let { autosOff = switchOffAuto }
         unBindUse(preview)
         preview = Preview.Builder().also { builder ->
             builder.setTargetAspectRatio(CAMERA_ASPECT_RATIO)
-            // Frame rate.
-            val inop = Camera2Interop.Extender(builder)
-            inop.setCaptureRequestOption(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, Range(frameRateFps, frameRateFps))
-            // Auto exposure and white-balance.
-            if(autosOff) {
-                inop.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_LOCK, true)
-                inop.setCaptureRequestOption(CaptureRequest.CONTROL_AE_LOCK, true)
-                inop.setCaptureRequestOption(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF)
-            }
         }.build().also { use ->
             surface?.let {s -> use.surfaceProvider = s}
             bindUse(use)
@@ -136,15 +129,35 @@ class CameraController(
             builder.setCaptureRequestOption(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF)
             builder.setCaptureRequestOption(CaptureRequest.LENS_FOCUS_DISTANCE, distance)
         }
-        Camera2CameraControl.from(camera.cameraControl).captureRequestOptions = builder.build()
+        Camera2CameraControl.from(camera.cameraControl).addCaptureRequestOptions(builder.build())
     }
 
     /** Set the frame rate (frames per second). */
     fun setFps(fps: Int) {
         val available = getAvailableFps()
         frameRateFps = if(fps in available) fps else available.max()
-        setPreview()
+        val builder = CaptureRequestOptions.Builder()
+        builder.setCaptureRequestOption(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, Range(frameRateFps, frameRateFps))
+        Camera2CameraControl.from(camera.cameraControl).addCaptureRequestOptions(builder.build())
     }
+
+    fun setAutosMode(autosOn: Boolean) {
+        val builder = CaptureRequestOptions.Builder()
+        builder.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_LOCK, autosOn)
+        builder.setCaptureRequestOption(CaptureRequest.CONTROL_AE_LOCK, autosOn)
+        if(!autosOff) builder.setCaptureRequestOption(
+            CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF
+        )
+        Camera2CameraControl.from(camera.cameraControl).addCaptureRequestOptions(builder.build())
+    }
+
+
+    private fun <T> setControls(controls: List<Pair<CaptureRequest.Key<T>,T & Any>>) {
+        val builder = CaptureRequestOptions.Builder()
+        for(control in controls) builder.setCaptureRequestOption(control.first, control.second)
+        Camera2CameraControl.from(camera.cameraControl).addCaptureRequestOptions(builder.build())
+    }
+
 
     // ---------------------------------------------------------------------------------------------
     // Information

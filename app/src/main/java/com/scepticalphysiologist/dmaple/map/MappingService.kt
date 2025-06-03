@@ -350,7 +350,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         }
 
         // State
-        controller.setPreview(switchOffAuto = true)
+        controller.setAutosMode(autosOn = false)
         creating = true
         timer.markRecordingStart()
         imageReader.reset()
@@ -363,7 +363,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         creating = false
         timer.markRecordingEnd()
         setCreatorTemporalResolutionFromTimer()
-        controller.setPreview(switchOffAuto = false)
+        controller.setAutosMode(autosOn = true)
         return Warnings("Stop Recording")
     }
 
