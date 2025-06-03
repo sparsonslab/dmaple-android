@@ -148,13 +148,11 @@ class CameraController(
         if(!autosOff) builder.setCaptureRequestOption(
             CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF
         )
-        Camera2CameraControl.from(camera.cameraControl).addCaptureRequestOptions(builder.build())
+        setControls(builder)
     }
 
 
-    private fun <T> setControls(controls: List<Pair<CaptureRequest.Key<T>,T & Any>>) {
-        val builder = CaptureRequestOptions.Builder()
-        for(control in controls) builder.setCaptureRequestOption(control.first, control.second)
+    private fun setControls(builder: CaptureRequestOptions.Builder) {
         Camera2CameraControl.from(camera.cameraControl).addCaptureRequestOptions(builder.build())
     }
 
