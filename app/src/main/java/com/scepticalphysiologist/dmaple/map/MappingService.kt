@@ -21,7 +21,7 @@ import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.ui.dialog.Warnings
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
-import com.scepticalphysiologist.dmaple.map.camera.CameraController
+import com.scepticalphysiologist.dmaple.map.camera.CameraService
 import com.scepticalphysiologist.dmaple.map.camera.FrameTimer
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
 import com.scepticalphysiologist.dmaple.map.creator.FieldParams
@@ -63,26 +63,28 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         var AUTO_SAVE_ON_CLOSE: Boolean = false
     }
 
-    // Camera
-    // ------
-    private lateinit var controller: CameraController
+    // Sub-services
+    // ------------
+    /** Controls the camera (use cases, focus, exposure, etc.). */
+    private lateinit var camera: CameraService
+    /** Provides file-mapped byte buffers for holding map data as it is created. */
+    private var bufferProvider = MapBufferProvider(File(""), 0, 0)
 
-    // Recording
-    // ---------
+    // Field
+    // -----
     /** The mapping ROIs in their last view frame. */
     private var rois = mutableListOf<FieldRoi>()
     /** The measurement ruler in its last view frame. */
     private var ruler: FieldRuler? = null
 
-
+    // Map creation
+    // ------------
     /** Map creators. */
     private var creators = mutableListOf<MapCreator>()
     /** The currently shown map: its [creators] index and map index within that creator. */
     private var currentMap: Pair<Int, Int> = Pair(0, 0)
     /** Maps are being created ("recording"). */
     private var creating: Boolean = false
-    /** Provides file-mapped byte buffers for holding map data as it is created. */
-    private var bufferProvider = MapBufferProvider(File(""), 0, 0)
     /** Read luminance values from the camera. */
     private var imageReader: LumaReader = LumaReader()
     /** The coroutine scope for recording maps. */
@@ -98,7 +100,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     override fun onCreate() {
         super.onCreate()
         Log.i("dmaple_lifetime", "mapping service: onCreate")
-        controller = CameraController(
+        camera = CameraService(
             context = this, analyser = this,
             aspectRatio = CAMERA_ASPECT_RATIO, owner = this
         )
@@ -170,19 +172,19 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     // Public wrappers to camera controller
     // ---------------------------------------------------------------------------------------------
 
-    fun setSurface(provider: SurfaceProvider) { controller.setSurface(provider) }
+    fun setSurface(provider: SurfaceProvider) { camera.setSurface(provider) }
 
-    fun getFieldSize(): Point? { return controller.getFieldSize() }
+    fun getFieldSize(): Point? { return camera.getFieldSize() }
 
-    fun getAvailableFps(): List<Int> { return controller.getAvailableFps() }
+    fun getAvailableFps(): List<Int> { return camera.getAvailableFps() }
 
-    fun getFps(): Int { return controller.getFps() }
+    fun getFps(): Int { return camera.getFps() }
 
-    fun setFps(fps: Int) { controller.setFps(fps) }
+    fun setFps(fps: Int) { camera.setFps(fps) }
 
-    fun setExposure(fraction: Float) { controller.setExposure(fraction) }
+    fun setExposure(fraction: Float) { camera.setExposure(fraction) }
 
-    fun setFocus(fraction: Float) { controller.setFocus(fraction) }
+    fun setFocus(fraction: Float) { camera.setFocus(fraction) }
 
     // ---------------------------------------------------------------------------------------------
     // Public interface: Methods to be called after service initiation.
@@ -220,7 +222,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** The percent error in the frame rate from the expected. */
     fun frameRatePercentError(): Float {
         val mu = 1000f * timer.meanFrameIntervalMilliSec(100)
-        val err = if(mu > 0) 100f * abs((mu - controller.frameIntervalMicroSec) / controller.frameIntervalMicroSec) else 0f
+        val err = if(mu > 0) 100f * abs((mu - camera.frameIntervalMicroSec) / camera.frameIntervalMicroSec) else 0f
         return err
     }
 
@@ -314,7 +316,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             causesStop = true
         )
         if(warning.shouldStop()) return warning
-        val imageFrame = controller.getImageFrame(this) ?: return warning
+        val imageFrame = camera.getImageFrame(this) ?: return warning
         if(!enoughBuffersForMaps()) {
             warning.add(message =
                 "There are not enough buffers to process all maps.\n" +
@@ -329,14 +331,14 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             // ... initiate and set spatio-temporal resolution.
             val creator = MapCreator(roi.inNewFrame(imageFrame), FieldParams.preference.copy())
             creator.setSpatialPixelsPerUnit(ruler?.getResolution() ?: Pair(1f, "mm"))
-            creator.setFrameRatePerSec(controller.getFps().toFloat())
+            creator.setFrameRatePerSec(camera.getFps().toFloat())
             // ... buffer and add to list.
             val buffers = (0 until creator.nMaps).map{ bufferProvider.getFreeBuffer()}.filterNotNull()
             if(creator.provideBuffers(buffers)) creators.add(creator)
         }
 
         // State
-        controller.setAutosMode(autosOn = false)
+        camera.setAutosMode(autosOn = false)
         creating = true
         timer.markRecordingStart()
         imageReader.reset()
@@ -349,7 +351,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         creating = false
         timer.markRecordingEnd()
         setCreatorTemporalResolutionFromTimer()
-        controller.setAutosMode(autosOn = true)
+        camera.setAutosMode(autosOn = true)
         return Warnings("Stop Recording")
     }
 
@@ -365,7 +367,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         // often delayed) and have at least 50 frames thereafter (to give a decent average).
         // Otherwise just use the target frame rate.
         val n = timer.nFrames() - 20
-        val interval = if(n > 50) 0.001f * timer.meanFrameIntervalMilliSec(n) else 1f / controller.getFps().toFloat()
+        val interval = if(n > 50) 0.001f * timer.meanFrameIntervalMilliSec(n) else 1f / camera.getFps().toFloat()
         for(creator in creators) creator.setFrameIntervalSec(frameIntervalSec = interval)
     }
 

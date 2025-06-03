@@ -36,7 +36,7 @@ import java.util.concurrent.Executors
  * @property owner The life cycle owner to which camera use cases will be bound.
  */
 @OptIn(ExperimentalCamera2Interop::class)
-class CameraController(
+class CameraService(
     context: Context,
     analyser: ImageAnalysis.Analyzer,
     aspectRatio: Int,
