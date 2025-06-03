@@ -4,37 +4,19 @@ package com.scepticalphysiologist.dmaple.map
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.hardware.camera2.CameraCharacteristics
-import android.hardware.camera2.CaptureRequest
 import android.os.Binder
 import android.os.IBinder
 import android.util.Log
-import android.util.Range
-import android.view.Display
-import android.view.WindowManager
-import androidx.annotation.OptIn
-import androidx.camera.camera2.interop.Camera2CameraControl
-import androidx.camera.camera2.interop.Camera2CameraInfo
-import androidx.camera.camera2.interop.Camera2Interop
-import androidx.camera.camera2.interop.CaptureRequestOptions
-import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.AspectRatio
-import androidx.camera.core.Camera
-import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
-import androidx.camera.core.Preview
 import androidx.camera.core.Preview.SurfaceProvider
-import androidx.camera.core.UseCase
-import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.lifecycle.LifecycleService
 import com.scepticalphysiologist.dmaple.etc.CountedPath
-import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.ui.dialog.Warnings
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
@@ -54,7 +36,6 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.File
-import java.util.concurrent.Executors
 import kotlin.math.abs
 
 /** A foreground service that will run the camera, record spatio-temporal maps and keep ROI state.

@@ -3,13 +3,17 @@
 package com.scepticalphysiologist.dmaple.map.camera
 
 import android.content.Context
+import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CaptureRequest
+import android.hardware.camera2.CaptureResult
+import android.hardware.camera2.TotalCaptureResult
 import android.util.Range
 import android.view.WindowManager
 import androidx.annotation.OptIn
 import androidx.camera.camera2.interop.Camera2CameraControl
 import androidx.camera.camera2.interop.Camera2CameraInfo
+import androidx.camera.camera2.interop.Camera2Interop
 import androidx.camera.camera2.interop.CaptureRequestOptions
 import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.Camera
@@ -44,8 +48,12 @@ class CameraController(
     private var surface: SurfaceProvider? = null
     /** The camera image analyser. */
     private var analyser: ImageAnalysis? = null
-    /** Auto exposure, white-balance and focus are off. */
-    private var autosOff: Boolean = false
+
+    private var currentFraction = 0f
+    private var currentFocalDistance: Float? = 0f
+
+    /** Auto exposure, white-balance and focus are on. */
+    private var autoControls: Boolean = true
     /** Approximate frame rate (frames/second). */
     private var frameRateFps: Int = getAvailableFps().max()
     /** Approximate interval between frames (microseconds). */
@@ -60,15 +68,30 @@ class CameraController(
         setPreview()
         setAnalyser(analyser)
         setFps(frameRateFps)
-        setAutosMode(!autosOff)
+        setAutosMode(autoControls)
     }
 
     /** Set the preview use case of CameraX. */
-    private fun setPreview(switchOffAuto: Boolean? = null) {
-        switchOffAuto?.let { autosOff = switchOffAuto }
+    private fun setPreview() {
+
+        val captureCallback = object : CameraCaptureSession.CaptureCallback() {
+            override fun onCaptureCompleted(
+                session: CameraCaptureSession,
+                request: CaptureRequest,
+                result: TotalCaptureResult
+            ) {
+                super.onCaptureCompleted(session, request, result)
+                currentFocalDistance = result.get(CaptureResult.LENS_FOCUS_DISTANCE)
+            }
+        }
+
         unBindUse(preview)
         preview = Preview.Builder().also { builder ->
             builder.setTargetAspectRatio(CAMERA_ASPECT_RATIO)
+
+            val previewExtender = Camera2Interop.Extender(builder)
+            previewExtender.setSessionCaptureCallback(captureCallback)
+
         }.build().also { use ->
             surface?.let {s -> use.surfaceProvider = s}
             bindUse(use)
@@ -98,15 +121,15 @@ class CameraController(
     /** Unbind a CameraX use case. */
     private fun unBindUse(use: UseCase?) { cameraProvider.unbind(use) }
 
-
-    // ---------------------------------------------------------------------------------------------
-    // Settings
-    // ---------------------------------------------------------------------------------------------
-
+    /** Set the camera preview surface. Should be set before using the camera. */
     fun setSurface(provider: SurfaceProvider) {
         surface = provider
         preview?.surfaceProvider = provider
     }
+
+    // ---------------------------------------------------------------------------------------------
+    // Controls
+    // ---------------------------------------------------------------------------------------------
 
     /** Set the camera exposure (as a fraction of the available range). */
     fun setExposure(fraction: Float) {
@@ -117,15 +140,17 @@ class CameraController(
 
     /** Set the camera focal distance (as a fraction of the available range).*/
     fun setFocus(fraction: Float) {
-        // Focal distance as fraction of the available.
-        val distance = Camera2CameraInfo.from(camera.cameraInfo).getCameraCharacteristic(
-            CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE
-        )?.let { it * (1f - fraction) } ?: 0f
-        // Set focus. Auto-focus (video mode) if fraction is zero.
+        currentFraction = fraction
         val builder = CaptureRequestOptions.Builder()
-        if(fraction == 0f) {
-            builder.setCaptureRequestOption(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO)
-        } else {
+        // If fraction is zero, set auto-focus (video mode).
+        if(fraction == 0f) builder.setCaptureRequestOption(
+            CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO
+        )
+        // ... otherwise set a fixed focal distance as a fraction of the distance range.
+        else {
+            val distance = Camera2CameraInfo.from(camera.cameraInfo).getCameraCharacteristic(
+                CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE
+            )?.let { it * (1f - fraction) } ?: 0f
             builder.setCaptureRequestOption(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF)
             builder.setCaptureRequestOption(CaptureRequest.LENS_FOCUS_DISTANCE, distance)
         }
@@ -141,21 +166,18 @@ class CameraController(
         Camera2CameraControl.from(camera.cameraControl).addCaptureRequestOptions(builder.build())
     }
 
+    /** */
     fun setAutosMode(autosOn: Boolean) {
+        autoControls = autosOn
         val builder = CaptureRequestOptions.Builder()
-        builder.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_LOCK, autosOn)
-        builder.setCaptureRequestOption(CaptureRequest.CONTROL_AE_LOCK, autosOn)
-        if(!autosOff) builder.setCaptureRequestOption(
-            CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF
-        )
-        setControls(builder)
-    }
-
-
-    private fun setControls(builder: CaptureRequestOptions.Builder) {
+        builder.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_LOCK, !autoControls)
+        builder.setCaptureRequestOption(CaptureRequest.CONTROL_AE_LOCK, !autoControls)
+        if(autoControls) setFocus(currentFraction) else {
+            currentFocalDistance?.let { builder.setCaptureRequestOption(CaptureRequest.LENS_FOCUS_DISTANCE, it) }
+            builder.setCaptureRequestOption(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF)
+        }
         Camera2CameraControl.from(camera.cameraControl).addCaptureRequestOptions(builder.build())
     }
-
 
     // ---------------------------------------------------------------------------------------------
     // Information

@@ -138,6 +138,7 @@ class FieldView(context: Context, attributeSet: AttributeSet?):
 
     fun allowEditing(allow: Boolean = true) {
         exposureSlider.visibility = if(allow) View.VISIBLE else View.INVISIBLE
+        focusSlider.visibility = if(allow) View.VISIBLE else View.INVISIBLE
         roiOverlay.allowEditing(allow)
     }
 
