@@ -277,7 +277,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         // Focal distance as fraction of the available.
         val distance = Camera2CameraInfo.from(camera.cameraInfo).getCameraCharacteristic(
             CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE
-        )?.let { it - it * fraction } ?: 0f
+        )?.let { it * (1f - fraction) } ?: 0f
         // Set focus. Auto-focus (video mode) if fraction is zero.
         val builder = CaptureRequestOptions.Builder()
         if(fraction == 0f) {
