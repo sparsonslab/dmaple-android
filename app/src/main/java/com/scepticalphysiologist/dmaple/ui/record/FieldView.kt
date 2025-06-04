@@ -3,7 +3,6 @@
 package com.scepticalphysiologist.dmaple.ui.record
 
 import android.content.Context
-import android.graphics.Color
 import android.util.AttributeSet
 import android.view.Gravity
 import android.view.View
@@ -138,6 +137,7 @@ class FieldView(context: Context, attributeSet: AttributeSet?):
 
     fun allowEditing(allow: Boolean = true) {
         exposureSlider.visibility = if(allow) View.VISIBLE else View.INVISIBLE
+        focusSlider.visibility = if(allow) View.VISIBLE else View.INVISIBLE
         roiOverlay.allowEditing(allow)
     }
 

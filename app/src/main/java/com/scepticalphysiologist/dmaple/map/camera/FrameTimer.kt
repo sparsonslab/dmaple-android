@@ -1,6 +1,6 @@
 // Copyright (c) 2025-2025. Dr Sean Paul Parsons. All rights reserved.
 
-package com.scepticalphysiologist.dmaple.map
+package com.scepticalphysiologist.dmaple.map.camera
 
 import java.io.BufferedReader
 import java.io.BufferedWriter

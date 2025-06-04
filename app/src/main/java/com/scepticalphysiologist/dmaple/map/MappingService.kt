@@ -4,41 +4,25 @@ package com.scepticalphysiologist.dmaple.map
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.hardware.camera2.CameraCharacteristics
-import android.hardware.camera2.CaptureRequest
 import android.os.Binder
 import android.os.IBinder
 import android.util.Log
-import android.util.Range
-import android.view.Display
-import android.view.WindowManager
-import androidx.annotation.OptIn
-import androidx.camera.camera2.interop.Camera2CameraControl
-import androidx.camera.camera2.interop.Camera2CameraInfo
-import androidx.camera.camera2.interop.Camera2Interop
-import androidx.camera.camera2.interop.CaptureRequestOptions
-import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.AspectRatio
-import androidx.camera.core.Camera
-import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
-import androidx.camera.core.Preview
 import androidx.camera.core.Preview.SurfaceProvider
-import androidx.camera.core.UseCase
-import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.lifecycle.LifecycleService
 import com.scepticalphysiologist.dmaple.etc.CountedPath
-import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.ui.dialog.Warnings
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
+import com.scepticalphysiologist.dmaple.map.camera.CameraService
+import com.scepticalphysiologist.dmaple.map.camera.FrameTimer
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
 import com.scepticalphysiologist.dmaple.map.creator.FieldParams
 import com.scepticalphysiologist.dmaple.map.creator.LumaReader
@@ -52,7 +36,6 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.File
-import java.util.concurrent.Executors
 import kotlin.math.abs
 
 /** A foreground service that will run the camera, record spatio-temporal maps and keep ROI state.
@@ -70,7 +53,6 @@ import kotlin.math.abs
  * already handles).
  *
  */
-@OptIn(ExperimentalCamera2Interop::class)
 class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     companion object {
@@ -80,50 +62,34 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         var AUTO_SAVE_ON_CLOSE: Boolean = false
     }
 
-    // Camera
-    // ------
-    /** The camera provider. */
-    private lateinit var cameraProvider: ProcessCameraProvider
-    /** The camera. */
-    private lateinit var camera: Camera
-    /** The device display. */
-    private lateinit var display: Display
-    /** The camera preview. */
-    private var preview: Preview? = null
-    /** The view ("surface provider") of the camera preview. */
-    private var surface: SurfaceProvider? = null
-    /** The camera image analyser. */
-    private var analyser: ImageAnalysis? = null
-
-    // Camera State
+    // Sub-services
     // ------------
-    /** Approximate frame rate (frames/second). */
-    private var frameRateFps: Int = getAvailableFps().max()
-    /** Approximate interval between frames (microseconds). */
-    private val frameIntervalMicroSec: Long get() = (1_000_000f / frameRateFps.toFloat()).toLong()
-    /** Auto exposure, white-balance and focus are on. */
-    private var autosOn: Boolean = true
+    /** Controls the camera (use cases, focus, exposure, etc.). */
+    private lateinit var camera: CameraService
+    /** Timer for marking recording duration and frame intervals. */
+    private val timer = FrameTimer()
+    /** Read luminance values from the camera. */
+    private var imageReader: LumaReader = LumaReader()
+    /** Provides file-mapped byte buffers for holding map data as it is created. */
+    private var bufferProvider = MapBufferProvider(File(""), 0, 0)
 
-    // Recording
-    // ---------
+    // Field
+    // -----
     /** The mapping ROIs in their last view frame. */
     private var rois = mutableListOf<FieldRoi>()
     /** The measurement ruler in its last view frame. */
     private var ruler: FieldRuler? = null
+
+    // Recording State
+    // ---------------
+    /** Maps are being created ("recording"). */
+    private var creating: Boolean = false
     /** Map creators. */
     private var creators = mutableListOf<MapCreator>()
     /** The currently shown map: its [creators] index and map index within that creator. */
     private var currentMap: Pair<Int, Int> = Pair(0, 0)
-    /** Maps are being created ("recording"). */
-    private var creating: Boolean = false
-    /** Provides file-mapped byte buffers for holding map data as it is created. */
-    private var bufferProvider = MapBufferProvider(File(""), 0, 0)
-    /** Read luminance values from the camera. */
-    private var imageReader: LumaReader = LumaReader()
     /** The coroutine scope for recording maps. */
     private var scope: CoroutineScope = MainScope()
-    /** Timer for marking recording duration and regularising frame rate. */
-    private val timer = FrameTimer()
 
     // ---------------------------------------------------------------------------------------------
     // Initiation
@@ -133,55 +99,10 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     override fun onCreate() {
         super.onCreate()
         Log.i("dmaple_lifetime", "mapping service: onCreate")
-        display = (this.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay
-        cameraProvider = ProcessCameraProvider.getInstance(this).get()
-        cameraProvider.unbindAll()
-        setPreview()
-        setAnalyser()
+        camera = CameraService(
+            context = this, analyser = this, aspectRatio = CAMERA_ASPECT_RATIO, owner = this
+        )
     }
-
-    /** Set the preview use case of CameraX. */
-    private fun setPreview() {
-        unBindUse(preview)
-        preview = Preview.Builder().also { builder ->
-            builder.setTargetAspectRatio(CAMERA_ASPECT_RATIO)
-            // Frame rate.
-            val inop = Camera2Interop.Extender(builder)
-            inop.setCaptureRequestOption(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, Range(frameRateFps, frameRateFps))
-            // Auto exposure and white-balance.
-            if(!autosOn) {
-                inop.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_LOCK, true)
-                inop.setCaptureRequestOption(CaptureRequest.CONTROL_AE_LOCK, true)
-                inop.setCaptureRequestOption(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF)
-            }
-        }.build().also { use ->
-            surface?.let {s -> use.surfaceProvider = s}
-            bindUse(use)
-        }
-    }
-
-    /** Set the image analyser use case of CameraX. */
-    private fun setAnalyser() {
-        unBindUse(analyser)
-        analyser = ImageAnalysis.Builder().also { builder ->
-            builder.setTargetAspectRatio(CAMERA_ASPECT_RATIO)
-            // We should never use ImageAnalysis.STRATEGY_BLOCK_PRODUCER, because in this mode
-            // frames can come in asynchronously (out of order).
-            builder.setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-            builder.setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
-        }.build().also { use ->
-            use.setAnalyzer(Executors.newFixedThreadPool(5), this)
-            bindUse(use)
-        }
-    }
-
-    /** Bind a CameraX use case. */
-    private fun bindUse(use: UseCase?) {
-        camera = cameraProvider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, use)
-    }
-
-    /** Unbind a CameraX use case. */
-    private fun unBindUse(use: UseCase?) { cameraProvider.unbind(use) }
 
     // ---------------------------------------------------------------------------------------------
     // Binding access to the service
@@ -246,79 +167,31 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     }
 
     // ---------------------------------------------------------------------------------------------
-    // Public interface: Methods to be called after service initiation.
+    // Public wrappers to camera controller
     // ---------------------------------------------------------------------------------------------
 
-    /** Set the surface provider (physical view) for the camera preview. */
-    fun setSurface(provider: SurfaceProvider) {
-        surface = provider
-        preview?.surfaceProvider = provider
-    }
+    fun setSurface(provider: SurfaceProvider) { camera.setSurface(provider) }
+
+    fun getFieldSize(): Point? { return camera.getFieldSize() }
+
+    fun getAvailableFps(): List<Int> { return camera.getAvailableFps() }
+
+    fun getFps(): Int { return camera.getFps() }
+
+    fun setFps(fps: Int) { camera.setFps(fps) }
+
+    fun setExposure(fraction: Float) { camera.setExposure(fraction) }
+
+    fun setFocus(fraction: Float) { camera.setFocus(fraction) }
+
+    // ---------------------------------------------------------------------------------------------
+    // Public interface: Methods to be called after service initiation.
+    // ---------------------------------------------------------------------------------------------
 
     /** Set the map buffer provider. */
     fun setBufferProvider(provider: MapBufferProvider) {
         provider.initialiseBuffers()
         bufferProvider = provider
-    }
-
-    // ---------------------------------------------------------------------------------------------
-    // Public interface: Get and set mapping parameters before recording
-    // ---------------------------------------------------------------------------------------------
-
-    /** Set the camera exposure (as a fraction of the available range). */
-    fun setExposure(fraction: Float) {
-        val range = camera.cameraInfo.exposureState.exposureCompensationRange
-        val exposure = (range.lower + fraction * (range.upper - range.lower)).toInt()
-        camera.cameraControl.setExposureCompensationIndex(exposure)
-    }
-
-    /** Set the camera focal distance (as a fraction of the available range).*/
-    fun setFocus(fraction: Float) {
-        // Focal distance as fraction of the available.
-        val distance = Camera2CameraInfo.from(camera.cameraInfo).getCameraCharacteristic(
-            CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE
-        )?.let { it * (1f - fraction) } ?: 0f
-        // Set focus. Auto-focus (video mode) if fraction is zero.
-        val builder = CaptureRequestOptions.Builder()
-        if(fraction == 0f) {
-            builder.setCaptureRequestOption(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO)
-        } else {
-            builder.setCaptureRequestOption(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF)
-            builder.setCaptureRequestOption(CaptureRequest.LENS_FOCUS_DISTANCE, distance)
-        }
-        Camera2CameraControl.from(camera.cameraControl).captureRequestOptions = builder.build()
-    }
-
-    /** Set the frame rate (frames per second). */
-    fun setFps(fps: Int) {
-        val available = getAvailableFps()
-        frameRateFps = if(fps in available) fps else available.max()
-        setPreview()
-    }
-
-    /** Get the approximate frame rate (frames/second). */
-    fun getFps(): Int { return frameRateFps }
-
-    /** Get the allocated buffer size for each map. */
-    fun getBufferSize(): Long { return bufferProvider.bufferSize() }
-
-    /** Get the available frame rates (frames per second). */
-    fun getAvailableFps(): List<Int> {
-        if(::camera.isInitialized) {
-            Camera2CameraInfo.from(camera.cameraInfo).getCameraCharacteristic(
-                CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES
-            )?.let { ranges ->
-                return ranges.filter { it.lower == it.upper }.map{ it.lower }
-            }
-        }
-        return listOf(30)
-    }
-
-    /** Get the pixel width and height of the mapping field. */
-    fun getFieldSize(): Point? {
-        return analyser?.resolutionInfo?.let { info ->
-            Point(info.resolution.width.toFloat(), info.resolution.height.toFloat())
-        }
     }
 
     /** Set the field's ROIs and ruler. */
@@ -347,7 +220,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** The percent error in the frame rate from the expected. */
     fun frameRatePercentError(): Float {
         val mu = 1000f * timer.meanFrameIntervalMilliSec(100)
-        val err = if(mu > 0) 100f * abs((mu - frameIntervalMicroSec) / frameIntervalMicroSec) else 0f
+        val err = if(mu > 0) 100f * abs((mu - camera.frameIntervalMicroSec) / camera.frameIntervalMicroSec) else 0f
         return err
     }
 
@@ -368,6 +241,9 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     /** Given a selected ROI, set the next map to show. */
     fun setNextMap(roiUID: String) { currentMap = getNextMap(roiUID) }
+
+    /** Get the allocated buffer size for each map. */
+    fun getBufferSize(): Long { return bufferProvider.bufferSize() }
 
     // ---------------------------------------------------------------------------------------------
     // Public interface: save and load recordings.
@@ -438,7 +314,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             causesStop = true
         )
         if(warning.shouldStop()) return warning
-        val imageFrame = analyser?.let{Frame.ofImageAnalyser(it, display)} ?: return warning
+        val imageFrame = camera.getImageFrame(this) ?: return warning
         if(!enoughBuffersForMaps()) {
             warning.add(message =
                 "There are not enough buffers to process all maps.\n" +
@@ -453,15 +329,14 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             // ... initiate and set spatio-temporal resolution.
             val creator = MapCreator(roi.inNewFrame(imageFrame), FieldParams.preference.copy())
             creator.setSpatialPixelsPerUnit(ruler?.getResolution() ?: Pair(1f, "mm"))
-            creator.setFrameRatePerSec(frameRateFps.toFloat())
+            creator.setFrameRatePerSec(camera.getFps().toFloat())
             // ... buffer and add to list.
             val buffers = (0 until creator.nMaps).map{ bufferProvider.getFreeBuffer()}.filterNotNull()
             if(creator.provideBuffers(buffers)) creators.add(creator)
         }
 
         // State
-        autosOn = false
-        setPreview()
+        camera.setAutosMode(autosOn = false)
         creating = true
         timer.markRecordingStart()
         imageReader.reset()
@@ -474,8 +349,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         creating = false
         timer.markRecordingEnd()
         setCreatorTemporalResolutionFromTimer()
-        autosOn = true
-        setPreview()
+        camera.setAutosMode(autosOn = true)
         return Warnings("Stop Recording")
     }
 
@@ -491,7 +365,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         // often delayed) and have at least 50 frames thereafter (to give a decent average).
         // Otherwise just use the target frame rate.
         val n = timer.nFrames() - 20
-        val interval = if(n > 50) 0.001f * timer.meanFrameIntervalMilliSec(n) else 1f / frameRateFps.toFloat()
+        val interval = if(n > 50) 0.001f * timer.meanFrameIntervalMilliSec(n) else 1f / camera.getFps().toFloat()
         for(creator in creators) creator.setFrameIntervalSec(frameIntervalSec = interval)
     }
 

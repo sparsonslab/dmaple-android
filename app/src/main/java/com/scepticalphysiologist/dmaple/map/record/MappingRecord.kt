@@ -5,7 +5,7 @@ package com.scepticalphysiologist.dmaple.map.record
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Environment
-import com.scepticalphysiologist.dmaple.map.FrameTimer
+import com.scepticalphysiologist.dmaple.map.camera.FrameTimer
 import com.scepticalphysiologist.dmaple.map.buffer.MapBufferProvider
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.field.FieldRuler
