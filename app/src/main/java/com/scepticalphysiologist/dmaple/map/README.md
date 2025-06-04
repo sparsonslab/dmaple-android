@@ -15,6 +15,7 @@ map i/o ([record](record)) and encapsulation of objects in the mapping field ([f
 | Package            | Description                                                                                                         |
 |--------------------|---------------------------------------------------------------------------------------------------------------------|
 | [buffer](buffer)   | Buffers for collecting map values as they are calculated during recording and for loading of already recorded maps. |
+| [camera](camera)   | Camera control and frame timing.                                                                                    |
 | [creator](creator) | The objects that create (calculate) spatio-temporal maps.                                                           |
 | [field](field)     | Objects in the mapping field - mapping ROIs, the ruler and an image of the field itself.                            |
 | [record](record)   | The object for encapsulating a recording of maps.                                                                   |
