@@ -31,8 +31,8 @@ import java.util.concurrent.Executors
 /** A wrapper around the hideously complicated Android camera API.
  *
  * @param context A context for the camera provider.
- * @param analyser An image analyser fpr the image analysis use case.
- * @param aspectRatio The desired aspect ratio (one of entry of enum AspectRatio).
+ * @param analyser An image analyser for the image analysis use case.
+ * @param aspectRatio The desired aspect ratio (an entry of the AspectRatio enum).
  * @property owner The life cycle owner to which camera use cases will be bound.
  */
 @OptIn(ExperimentalCamera2Interop::class)

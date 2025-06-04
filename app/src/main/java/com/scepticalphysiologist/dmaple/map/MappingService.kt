@@ -53,7 +53,6 @@ import kotlin.math.abs
  * already handles).
  *
  */
-
 class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     companion object {
@@ -67,6 +66,10 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     // ------------
     /** Controls the camera (use cases, focus, exposure, etc.). */
     private lateinit var camera: CameraService
+    /** Timer for marking recording duration and frame intervals. */
+    private val timer = FrameTimer()
+    /** Read luminance values from the camera. */
+    private var imageReader: LumaReader = LumaReader()
     /** Provides file-mapped byte buffers for holding map data as it is created. */
     private var bufferProvider = MapBufferProvider(File(""), 0, 0)
 
@@ -77,20 +80,16 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     /** The measurement ruler in its last view frame. */
     private var ruler: FieldRuler? = null
 
-    // Map creation
-    // ------------
+    // Recording State
+    // ---------------
+    /** Maps are being created ("recording"). */
+    private var creating: Boolean = false
     /** Map creators. */
     private var creators = mutableListOf<MapCreator>()
     /** The currently shown map: its [creators] index and map index within that creator. */
     private var currentMap: Pair<Int, Int> = Pair(0, 0)
-    /** Maps are being created ("recording"). */
-    private var creating: Boolean = false
-    /** Read luminance values from the camera. */
-    private var imageReader: LumaReader = LumaReader()
     /** The coroutine scope for recording maps. */
     private var scope: CoroutineScope = MainScope()
-    /** Timer for marking recording duration and regularising frame rate. */
-    private val timer = FrameTimer()
 
     // ---------------------------------------------------------------------------------------------
     // Initiation
@@ -101,8 +100,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         super.onCreate()
         Log.i("dmaple_lifetime", "mapping service: onCreate")
         camera = CameraService(
-            context = this, analyser = this,
-            aspectRatio = CAMERA_ASPECT_RATIO, owner = this
+            context = this, analyser = this, aspectRatio = CAMERA_ASPECT_RATIO, owner = this
         )
     }
 
