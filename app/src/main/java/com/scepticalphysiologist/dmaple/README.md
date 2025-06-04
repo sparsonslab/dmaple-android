@@ -12,6 +12,10 @@ docstrings.
 | [ui](ui)     | The "frontend" of the app. Fragments and views.                                                                                                                                                                      |
 
 
+| ![image](images/class_overview.png) |
+|:-----------------------------------:|
+|   *The main classes in the app.*    |
+
 ## Dictionary
 
 There is a fair amount of domain jargon and architectural lingo which is used throughout the codebase and the
