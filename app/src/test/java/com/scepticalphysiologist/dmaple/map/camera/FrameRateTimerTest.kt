@@ -1,10 +1,9 @@
 // Copyright (c) 2025-2025. Dr Sean Paul Parsons. All rights reserved.
 
-package com.scepticalphysiologist.dmaple.map
+package com.scepticalphysiologist.dmaple.map.camera
 
 import com.scepticalphysiologist.dmaple.assertNumbersEqual
-import com.scepticalphysiologist.dmaple.map.camera.FrameTimer
-import org.junit.Assert.assertEquals
+import org.junit.Assert
 import org.junit.Test
 import org.robolectric.util.TempDirectory
 import java.io.File
@@ -31,7 +30,7 @@ class FrameRateTimerTest {
         val timerRead = FrameTimer.read(file)
 
         // Then: The times are as expected.
-        assertEquals(timer.recordingPeriod(), timerRead?.recordingPeriod())
+        Assert.assertEquals(timer.recordingPeriod(), timerRead?.recordingPeriod())
         assertNumbersEqual(timer.intervalsMilliSec(), timerRead?.intervalsMilliSec() ?: listOf())
     }
 
@@ -52,7 +51,7 @@ class FrameRateTimerTest {
 
         // Then: The mean frame rate is as expected.
         timer.lastFrameIntervalMilliSec()?.let { meanInterval ->
-            assertEquals(targetIntervalMs.toFloat(), meanInterval, 0.1f)
+            Assert.assertEquals(targetIntervalMs.toFloat(), meanInterval, 0.1f)
         }
     }
 
