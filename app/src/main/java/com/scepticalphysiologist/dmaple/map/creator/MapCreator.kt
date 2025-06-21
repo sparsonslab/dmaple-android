@@ -165,9 +165,6 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
         } catch (_: java.nio.BufferOverflowException) { reachedEnd = true }
     }
 
-    /** Set the temporal resolution from the recording duration (sec). */
-    fun setDurationSec(durationSec: Float) { setFrameIntervalSec(nt.toFloat() / durationSec) }
-
     /** Set the temporal resolution from the frame interval (sec). */
     fun setFrameIntervalSec(frameIntervalSec: Float) { temporalRes = Pair(1f / frameIntervalSec, "s") }
 
