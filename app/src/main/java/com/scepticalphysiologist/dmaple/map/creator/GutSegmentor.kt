@@ -31,6 +31,8 @@ class GutSegmentor(roi: FieldRoi, val params: FieldParams) {
     // ----------
     /** The pixel indices along the longitudinal axis of the gut. */
     val longIdx: IntArray
+    /** The pixel indices along the transverse axis of the gut. */
+    val transIdx: IntArray
     /** The transverse-axis indices of the spine along the centre of the gut. */
     val spine: IntArray
     /** The transverse-axis indices of the smoothed spine along the centre of the gut.*/
@@ -45,14 +47,16 @@ class GutSegmentor(roi: FieldRoi, val params: FieldParams) {
     // ---------------------------------------------------------------------------------------------
 
     init {
-        // Axes longitudinal and transverse to gut.
         fun pairFloatToInt(pair: Pair<Float, Float>): Pair<Int, Int> {
             return Pair(pair.first.toInt(), pair.second.toInt())
         }
-        val (l0, l1) = pairFloatToInt(roi.longitudinalAxis())
-        transAxis = pairFloatToInt(roi.transverseAxis())
 
-        // Longitudinal samples.
+        // Transverse axis, range and indices.
+        transAxis = pairFloatToInt(roi.transverseAxis())
+        transIdx = (transAxis.first..transAxis.second).toList().toIntArray()
+
+        // Longitudinal axis, range and indices.
+        val (l0, l1) = pairFloatToInt(roi.longitudinalAxis())
         val step = params.spineSkipPixels + 1
         longIdx = if(l0 < l1) (l0..l1 step step).toList().toIntArray()
         else (l0 downTo l1 step step).toList().toIntArray()
