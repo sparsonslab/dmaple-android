@@ -40,6 +40,8 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
     // ---------------
     /** The segmentor used for calculating the map values. */
     val segmentor: GutSegmentor
+    /** Segmentation is required. */
+    private var segmentationRequired: Boolean = false
 
     // Buffering
     // ---------
@@ -51,6 +53,8 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
     private var radiusMapRight: ShortMap? = null
     /** The spine intensity map. */
     private var spineMap: ByteMap? = null
+    /** The light intensity map. */
+    private var lightMap: ByteMap? = null
     /** The maps and their descriptions.
      * The description is used both as the prefix to the map's file name (and so must be valid as
      * part of a file name) and as a TIFF tag to identify the map's creator.
@@ -59,7 +63,8 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
         Pair("diameter", diameterMap),
         Pair("radius_left", radiusMapLeft),
         Pair("radius_right", radiusMapRight),
-        Pair("spine", spineMap)
+        Pair("spine", spineMap),
+        Pair("light", lightMap)
     )
     /** The end of any one of the buffers has been reached. */
     private var reachedEnd = false
@@ -78,7 +83,10 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
 
     /** Provide buffers for holding map data. */
     fun provideBuffers(buffers: List<ByteBuffer>): Boolean {
+        // Check there are enough buffers.
         if(buffers.size < nMaps) return false
+
+        // Allocate the buffers.
         var i = 0
         for(map in roi.maps) when(map) {
             MapType.DIAMETER -> {
@@ -94,7 +102,14 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
                 spineMap = ByteMap(buffers[i], ns)
                 i += 1
             }
+            MapType.LIGHT -> {
+                lightMap = ByteMap(buffers[i], ns)
+                i += 1
+            }
         }
+
+        // Segmentation is required if more than the light map is being created.
+        segmentationRequired = !((nMaps == 1) && (lightMap != null))
         return true
     }
 
@@ -117,8 +132,10 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
         try {
             // Analyse the bitmap.
             segmentor.setFieldImage(image)
-            if(nt == 0) segmentor.detectGutAndSeedSpine()
-            else segmentor.updateBoundaries()
+            if(segmentationRequired) {
+                if(nt == 0) segmentor.detectGutAndSeedSpine()
+                else segmentor.updateBoundaries()
+            }
 
             // Update the map values.
             var j: Int
@@ -134,13 +151,18 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
                     p = if(segmentor.gutIsHorizontal) image.getPixelLuminance(k, j) else image.getPixelLuminance(j, k)
                     map.addSample(p.toByte())
                 }
+                lightMap?.let { map ->
+                    k = segmentor.longIdx[i]
+                    var mu: Double = 0.0
+                    if(segmentor.gutIsHorizontal)
+                        mu = segmentor.transIdx.map { image.getPixelLuminance(k, it).toFloat() }.average()
+                    else mu = segmentor.transIdx.map { image.getPixelLuminance(it, k).toFloat() }.average()
+                    map.addSample(mu.toInt().toByte())
+                }
             }
             nt += 1
         } catch (_: java.nio.BufferOverflowException) { reachedEnd = true }
     }
-
-    /** Set the temporal resolution from the recording duration (sec). */
-    fun setDurationSec(durationSec: Float) { setFrameIntervalSec(nt.toFloat() / durationSec) }
 
     /** Set the temporal resolution from the frame interval (sec). */
     fun setFrameIntervalSec(frameIntervalSec: Float) { temporalRes = Pair(1f / frameIntervalSec, "s") }

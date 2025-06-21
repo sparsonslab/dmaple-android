@@ -13,5 +13,6 @@ enum class MapType (
 ){
     DIAMETER(title = "diameter", nMaps = 1, bytesPerSample = 2),
     RADIUS(title = "radius", nMaps = 2, bytesPerSample = 2),
-    SPINE(title = "spine profile", nMaps = 1, bytesPerSample = 1);
+    SPINE(title = "spine profile", nMaps = 1, bytesPerSample = 1),
+    LIGHT(title = "light box", nMaps = 1, bytesPerSample = 1);
 }
