@@ -41,7 +41,7 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
     /** The segmentor used for calculating the map values. */
     val segmentor: GutSegmentor
     /** Segmentation is required. */
-    var segmentationRequired: Boolean = false
+    private var segmentationRequired: Boolean = false
 
     // Buffering
     // ---------
@@ -110,7 +110,6 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
 
         // Segmentation is required if more than the light map is being created.
         segmentationRequired = !((nMaps == 1) && (lightMap != null))
-
         return true
     }
 
