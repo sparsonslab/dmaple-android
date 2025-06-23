@@ -100,7 +100,9 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         super.onCreate()
         Log.i("dmaple_lifetime", "mapping service: onCreate")
         camera = CameraService(
-            context = this, analyser = this, aspectRatio = CAMERA_ASPECT_RATIO, owner = this
+            context = this, analyser = this,
+            aspectRatio = CAMERA_ASPECT_RATIO, owner = this,
+            videoFolder = applicationContext.getExternalFilesDir(null)
         )
     }
 
@@ -183,6 +185,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     fun setExposure(fraction: Float) { camera.setExposure(fraction) }
 
     fun setFocus(fraction: Float) { camera.setFocus(fraction) }
+
+    fun setVideoBitRate(kilobitsPerSecond: Int) { camera.setVideoBitRate(kilobitsPerSecond) }
 
     // ---------------------------------------------------------------------------------------------
     // Public interface: Methods to be called after service initiation.
@@ -271,6 +275,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             )
             record.write()
             MappingRecord.read(path.file)?.let {MappingRecord.records.add(0, it)}
+            // Save the video.
+            camera.saveRecording(path.file)
         }
         clearCreators()
     }
@@ -337,6 +343,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
         // State
         camera.setAutosMode(autosOn = false)
+        camera.startRecording(this)
         creating = true
         timer.markRecordingStart()
         imageReader.reset()
@@ -349,6 +356,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         creating = false
         timer.markRecordingEnd()
         setCreatorTemporalResolutionFromTimer()
+        camera.stopRecording()
         camera.setAutosMode(autosOn = true)
         return Warnings("Stop Recording")
     }

@@ -14,6 +14,7 @@ import androidx.preference.SeekBarPreference
 import com.scepticalphysiologist.dmaple.MainActivity
 import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.map.MappingService
+import com.scepticalphysiologist.dmaple.map.camera.CameraService
 import com.scepticalphysiologist.dmaple.map.creator.FieldParams
 import com.scepticalphysiologist.dmaple.ui.record.BackgroundHighlight
 import com.scepticalphysiologist.dmaple.ui.record.SpineOverlay
@@ -55,6 +56,7 @@ class Settings: PreferenceFragmentCompat() {
             Recorder.leftHanded = getPreference("SCREEN_FOR_LEFT_HAND", false)
             MainActivity.keepScreenOn = getPreference("KEEP_SCREEN_ON", false)
             MainActivity.setMappingServiceFrameRate(getPreference("FRAME_RATE_FPS", "30").toInt())
+            MainActivity.setMappingServiceVideoBitRate(getPreference("VIDEO_BITRATE", 0))
             setThresholdInverted(getPreference("THRESHOLD_INVERTED", false))
             FieldParams.preference.spineSkipPixels = getPreference("SPINE_SKIP", 0)
             FieldParams.preference.minWidth = getPreference("SEED_MIN_WIDTH", 10)
