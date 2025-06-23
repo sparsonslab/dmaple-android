@@ -153,11 +153,13 @@ class MapCreator(val roi: FieldRoi, val params: FieldParams) {
                 }
                 lightMap?.let { map ->
                     k = segmentor.longIdx[i]
-                    var mu: Double = 0.0
-                    if(segmentor.gutIsHorizontal)
-                        mu = segmentor.transIdx.map { image.getPixelLuminance(k, it).toFloat() }.average()
-                    else mu = segmentor.transIdx.map { image.getPixelLuminance(it, k).toFloat() }.average()
-                    map.addSample(mu.toInt().toByte())
+                    // Note, Calculating the transverse axis mean: accumulation of sum is MUCH
+                    // faster than mapping the transIdx and then calling average().
+                    // This makes a real difference on slower tablets like the Lenovo.
+                    var sum: Double = 0.0
+                    if(segmentor.gutIsHorizontal) for(j in segmentor.transIdx) sum += image.getPixelLuminance(k, j).toFloat()
+                    else for(j in segmentor.transIdx) sum += image.getPixelLuminance(j, k).toFloat()
+                    map.addSample((sum / segmentor.transIdx.size).toInt().toByte())
                 }
             }
             nt += 1

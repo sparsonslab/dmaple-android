@@ -15,6 +15,7 @@ import java.io.FileOutputStream
 import java.io.FileWriter
 import java.io.OutputStream
 import java.nio.ByteBuffer
+import kotlin.system.measureTimeMillis
 
 
 class ExampleClass(
@@ -24,6 +25,27 @@ class ExampleClass(
 
 
 class Scrap {
+
+    @Test
+    fun `average speed test`() {
+
+        val arr = IntArray(1000)
+        var mu: Double
+        var t: Long
+
+        t = measureTimeMillis {
+            mu = arr.map{it.toFloat() + 3.2f}.average()
+        }
+        println("mapping\t$t\t$mu")
+
+        t = measureTimeMillis {
+            mu = 0.0
+            for(i in arr.indices) mu += arr[i].toFloat() + 3.2f
+            mu /= arr.size
+        }
+        println("cumulative\t$t\t$mu")
+
+    }
 
     @Test
     fun `serialize nulls`() {
