@@ -37,6 +37,7 @@ import androidx.core.util.Consumer
 import androidx.lifecycle.LifecycleOwner
 import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
+import com.scepticalphysiologist.dmaple.geom.videoQualityHeight
 import java.io.File
 import java.util.concurrent.Executors
 
@@ -68,8 +69,6 @@ class CameraService(
     private val cameraProvider: ProcessCameraProvider = ProcessCameraProvider.getInstance(context).get()
     /** Information about the camera being used. */
     private val cameraInfo: CameraInfo = cameraProvider.getCameraInfo(CAMERA_ID)
-    /** The resolution of the camera expressed as quality (SD, HD, FHD, UHD, etc.). */
-    private var resolution: Quality = Quality.HD
     /** The camera object. */
     private lateinit var camera: Camera
 
@@ -107,12 +106,6 @@ class CameraService(
     // ---------------------------------------------------------------------------------------------
 
     init {
-        // If the target resolution is not available, get the highest.
-        val qualities = Recorder.getVideoCapabilities(cameraInfo).getSupportedQualities(DynamicRange.SDR)
-        if(!qualities.contains(resolution)) resolution = qualities.maxBy {
-            QualitySelector.getResolution(cameraInfo, it)?.width ?: 0
-        }
-
         // Set use cases.
         cameraProvider.unbindAll()
         setPreview()
@@ -144,9 +137,9 @@ class CameraService(
             builder.setTargetAspectRatio(ASPECT_RATIO)
             // Listen to the focal distance.
             Camera2Interop.Extender(builder).setSessionCaptureCallback(captureCallback)
-        }.build().also { use ->
-            surface?.let {s -> use.surfaceProvider = s}
-            bindUse(use)
+        }.build().also { prev ->
+            surface?.let {s -> prev.surfaceProvider = s}
+            bindUse(prev)
         }
     }
 
@@ -171,12 +164,27 @@ class CameraService(
         unBindUse(video)
         if(bitsPerSecond < 1000) return
         val recorder = Recorder.Builder().also { builder ->
-            builder.setQualitySelector(QualitySelector.from(resolution))
+            builder.setQualitySelector(QualitySelector.from(getVideoQuality()))
             builder.setAspectRatio(ASPECT_RATIO)
             builder.setTargetVideoEncodingBitRate(bitsPerSecond)
         }.build()
         video = VideoCapture.withOutput(recorder)
         bindUse(video)
+    }
+
+    /** Get the video quality. Gets the quality from the preview if it is already bound.*/
+    private fun getVideoQuality(): Quality {
+        // Video qualities available for the camera.
+        val qualities = Recorder.getVideoCapabilities(cameraInfo).getSupportedQualities(DynamicRange.SDR)
+        // Base upon the preview.
+        preview?.resolutionInfo?.resolution?.let { resolution ->
+            qualities.firstOrNull { videoQualityHeight(it) == resolution.height }?.let { quality ->
+                return quality
+            }
+        }
+        // Otherwise use HD or (if not available), use the highest.
+        if(qualities.contains(Quality.HD)) return Quality.HD
+        return qualities.maxBy { QualitySelector.getResolution(cameraInfo, it)?.height ?: 0 }
     }
 
     /** Bind a CameraX use case. */
