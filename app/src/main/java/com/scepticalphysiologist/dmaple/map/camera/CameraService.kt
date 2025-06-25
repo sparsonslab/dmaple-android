@@ -111,7 +111,6 @@ class CameraService(
         setPreview()
         setAnalyser(analyser)
         setVideoRecorder()
-
         // Set capture parameters.
         setFps(frameRateFps)
         setAutosMode(autosOn = true)
