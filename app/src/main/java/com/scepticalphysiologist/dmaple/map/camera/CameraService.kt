@@ -159,10 +159,14 @@ class CameraService(
     }
 
     /** Set the video recorder use case of CameraX.
-     * If the bit-rate is < 1000 do not bind. */
+     * If the bit-rate is < 1000 do not record video. */
     private fun setVideoRecorder(bitsPerSecond: Int = 1_000_000) {
         unBindUse(video)
-        if(bitsPerSecond < 1000) return
+        // If less then 1kbps, block video
+        if(bitsPerSecond < 1000) {
+            video = null
+            return
+        }
         val recorder = Recorder.Builder().also { builder ->
             builder.setQualitySelector(QualitySelector.from(getVideoQuality()))
             builder.setAspectRatio(ASPECT_RATIO)
