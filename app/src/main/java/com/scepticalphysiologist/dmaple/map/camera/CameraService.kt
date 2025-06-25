@@ -253,9 +253,9 @@ class CameraService(
     }
 
     /** Set video recording bit rate. */
-    fun setVideoBitRate(kilobitsPerSecond: Int) {
+    fun setVideoBitRate(megabitsPerSecond: Int) {
         // There is no CaptureRequest for video bitrate, so have to rebind the video use case.
-        setVideoRecorder(bitsPerSecond = kilobitsPerSecond * 1000)
+        setVideoRecorder(bitsPerSecond = megabitsPerSecond * 1_000_000)
     }
 
     // ---------------------------------------------------------------------------------------------

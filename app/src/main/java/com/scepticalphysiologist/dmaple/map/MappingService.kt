@@ -182,7 +182,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     fun setFocus(fraction: Float) { camera.setFocus(fraction) }
 
-    fun setVideoBitRate(kilobitsPerSecond: Int) { camera.setVideoBitRate(kilobitsPerSecond) }
+    fun setVideoBitRate(megabitsPerSecond: Int) { camera.setVideoBitRate(megabitsPerSecond) }
 
     // ---------------------------------------------------------------------------------------------
     // Public interface: Methods to be called after service initiation.

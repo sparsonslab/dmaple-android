@@ -58,7 +58,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         fun setMappingServiceFrameRate(fps: Int) { mapService?.setFps(fps) }
 
         /** Set the bit-rate (video quality) of captured video. Set to 0 to not capture video. */
-        fun setMappingServiceVideoBitRate(kiloBitsPerSecond: Int) { mapService?.setVideoBitRate(kiloBitsPerSecond) }
+        fun setMappingServiceVideoBitRate(megaBitsPerSecond: Int) { mapService?.setVideoBitRate(megaBitsPerSecond) }
 
     }
 
