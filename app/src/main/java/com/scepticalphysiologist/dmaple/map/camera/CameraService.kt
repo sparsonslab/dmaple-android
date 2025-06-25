@@ -16,8 +16,11 @@ import androidx.camera.camera2.interop.Camera2CameraInfo
 import androidx.camera.camera2.interop.Camera2Interop
 import androidx.camera.camera2.interop.CaptureRequestOptions
 import androidx.camera.camera2.interop.ExperimentalCamera2Interop
+import androidx.camera.core.AspectRatio
 import androidx.camera.core.Camera
+import androidx.camera.core.CameraInfo
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.DynamicRange
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.core.Preview.SurfaceProvider
@@ -41,7 +44,6 @@ import java.util.concurrent.Executors
  *
  * @param context A context for the camera provider.
  * @param analyser An image analyser for the image analysis use case.
- * @param aspectRatio The desired aspect ratio (an entry of the AspectRatio enum).
  * @property owner The life cycle owner to which camera use cases will be bound.
  * @param videoFolder A folder for keeping temporary video files.
  */
@@ -49,16 +51,26 @@ import java.util.concurrent.Executors
 class CameraService(
     context: Context,
     analyser: ImageAnalysis.Analyzer,
-    aspectRatio: Int,
     private val owner: LifecycleOwner,
     videoFolder: File? = null
 ): Consumer<VideoRecordEvent> {
+
+    companion object {
+        /** The camera being used for mapping.*/
+        val CAMERA_ID = CameraSelector.DEFAULT_BACK_CAMERA
+        /** The aspect ratio of the camera. */
+        const val ASPECT_RATIO = AspectRatio.RATIO_16_9
+    }
 
     // Camera objects
     // --------------
     /** The camera provider. */
     private val cameraProvider: ProcessCameraProvider = ProcessCameraProvider.getInstance(context).get()
-    /** The camera. */
+    /** Information about the camera being used. */
+    private val cameraInfo: CameraInfo = cameraProvider.getCameraInfo(CAMERA_ID)
+    /** The resolution of the camera expressed as quality (SD, HD, FHD, UHD, etc.). */
+    private var resolution: Quality = Quality.HD
+    /** The camera object. */
     private lateinit var camera: Camera
 
     // Camera use cases
@@ -95,16 +107,25 @@ class CameraService(
     // ---------------------------------------------------------------------------------------------
 
     init {
+        // If the target resolution is not available, get the highest.
+        val qualities = Recorder.getVideoCapabilities(cameraInfo).getSupportedQualities(DynamicRange.SDR)
+        if(!qualities.contains(resolution)) resolution = qualities.maxBy {
+            QualitySelector.getResolution(cameraInfo, it)?.width ?: 0
+        }
+
+        // Set use cases.
         cameraProvider.unbindAll()
-        setPreview(aspectRatio)
-        setAnalyser(analyser, aspectRatio)
+        setPreview()
+        setAnalyser(analyser)
         setVideoRecorder()
+
+        // Set capture parameters.
         setFps(frameRateFps)
         setAutosMode(autosOn = true)
     }
 
     /** Set the preview use case of CameraX. */
-    private fun setPreview(aspectRatio: Int) {
+    private fun setPreview() {
 
         // Call back for recording the real-time focal distance of the camera.
         val captureCallback = object : CameraCaptureSession.CaptureCallback() {
@@ -120,7 +141,7 @@ class CameraService(
 
         unBindUse(preview)
         preview = Preview.Builder().also { builder ->
-            builder.setTargetAspectRatio(aspectRatio)
+            builder.setTargetAspectRatio(ASPECT_RATIO)
             // Listen to the focal distance.
             Camera2Interop.Extender(builder).setSessionCaptureCallback(captureCallback)
         }.build().also { use ->
@@ -130,10 +151,10 @@ class CameraService(
     }
 
     /** Set the image analyser use case of CameraX. */
-    private fun setAnalyser(analyzer: ImageAnalysis.Analyzer, aspectRatio: Int) {
+    private fun setAnalyser(analyzer: ImageAnalysis.Analyzer) {
         unBindUse(analyser)
         analyser = ImageAnalysis.Builder().also { builder ->
-            builder.setTargetAspectRatio(aspectRatio)
+            builder.setTargetAspectRatio(ASPECT_RATIO)
             // We should never use ImageAnalysis.STRATEGY_BLOCK_PRODUCER, because in this mode
             // frames can come in asynchronously (out of order).
             builder.setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
@@ -150,7 +171,8 @@ class CameraService(
         unBindUse(video)
         if(bitsPerSecond < 1000) return
         val recorder = Recorder.Builder().also { builder ->
-            builder.setQualitySelector(QualitySelector.from(Quality.HD))
+            builder.setQualitySelector(QualitySelector.from(resolution))
+            builder.setAspectRatio(ASPECT_RATIO)
             builder.setTargetVideoEncodingBitRate(bitsPerSecond)
         }.build()
         video = VideoCapture.withOutput(recorder)
@@ -159,7 +181,7 @@ class CameraService(
 
     /** Bind a CameraX use case. */
     private fun bindUse(use: UseCase?) {
-        camera = cameraProvider.bindToLifecycle(owner, CameraSelector.DEFAULT_BACK_CAMERA, use)
+        camera = cameraProvider.bindToLifecycle(owner, CAMERA_ID, use)
     }
 
     /** Unbind a CameraX use case. */

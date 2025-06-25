@@ -18,6 +18,7 @@ import com.scepticalphysiologist.dmaple.R
 import com.scepticalphysiologist.dmaple.geom.Point
 import com.scepticalphysiologist.dmaple.map.MappingService
 import com.scepticalphysiologist.dmaple.geom.aspectRatioRatio
+import com.scepticalphysiologist.dmaple.map.camera.CameraService
 import com.scepticalphysiologist.dmaple.map.creator.MapCreator
 import com.scepticalphysiologist.dmaple.map.field.FieldImage
 import com.scepticalphysiologist.dmaple.map.field.RoisAndRuler
@@ -196,7 +197,7 @@ class FieldView(context: Context, attributeSet: AttributeSet?):
 
         // Appropriate aspect ratio for screen size.
         val screenArea = Point(display.width.toFloat(), display.height.toFloat())
-        val arr = aspectRatioRatio(MappingService.CAMERA_ASPECT_RATIO)
+        val arr = aspectRatioRatio(CameraService.ASPECT_RATIO)
         val ratio = if(screenArea.x < screenArea.y) Point(1f, arr) else Point(arr, 1f)
 
         // Pad view area to obtain aspect ratio.
