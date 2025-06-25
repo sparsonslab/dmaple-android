@@ -255,7 +255,7 @@ class CameraService(
         Camera2CameraControl.from(camera.cameraControl).addCaptureRequestOptions(builder.build())
     }
 
-    /** Set video recording bit rate. */
+    /** Set video recording bit rate (Mbps). If zero or less, video recording is blocked. */
     fun setVideoBitRate(megabitsPerSecond: Int) {
         // There is no CaptureRequest for video bitrate, so have to rebind the video use case.
         setVideoRecorder(bitsPerSecond = megabitsPerSecond * 1_000_000)
