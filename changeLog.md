@@ -1,5 +1,6 @@
 # DMaoLE for Android: change log
 
+- 25/06/2025: Feature: Video recording (PR#30).
 - 23/06/2025: Performance: faster light box averaging (PR#29).
 - 03/06/2025: Refactor: Camera service into its own class (PR#24).
 - 02/06/2025: Feature: Added manual focus (PR#22).

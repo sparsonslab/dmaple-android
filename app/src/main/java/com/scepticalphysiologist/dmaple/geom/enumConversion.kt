@@ -4,6 +4,7 @@ package com.scepticalphysiologist.dmaple.geom
 
 import android.view.Surface
 import androidx.camera.core.AspectRatio
+import androidx.camera.video.Quality
 
 /** Get the degree value of a Surface rotation enum. */
 fun surfaceRotationDegrees(rotation: Int): Int {
@@ -25,3 +26,16 @@ fun aspectRatioRatio(aspect: Int): Float {
         else -> 1f
     }
 }
+
+/** Get the video pixel height of a video quality. */
+fun videoQualityHeight(quality: Quality): Int {
+    // https://en.wikipedia.org/wiki/Display_resolution_standards
+    return when(quality) {
+        Quality.SD -> 480
+        Quality.HD -> 720
+        Quality.FHD -> 1080
+        Quality.UHD -> 2160
+        else -> 720
+    }
+}
+

@@ -9,7 +9,6 @@ import android.content.pm.ServiceInfo
 import android.os.Binder
 import android.os.IBinder
 import android.util.Log
-import androidx.camera.core.AspectRatio
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview.SurfaceProvider
@@ -56,8 +55,6 @@ import kotlin.math.abs
 class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
     companion object {
-        /** The aspect ratio of the camera. */
-        const val CAMERA_ASPECT_RATIO = AspectRatio.RATIO_16_9
         /** Automatically save any live recording when the app is closed. */
         var AUTO_SAVE_ON_CLOSE: Boolean = false
     }
@@ -100,7 +97,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         super.onCreate()
         Log.i("dmaple_lifetime", "mapping service: onCreate")
         camera = CameraService(
-            context = this, analyser = this, aspectRatio = CAMERA_ASPECT_RATIO, owner = this
+            context = this, analyser = this, owner = this,
+            videoFolder = applicationContext.getExternalFilesDir(null)
         )
     }
 
@@ -183,6 +181,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
     fun setExposure(fraction: Float) { camera.setExposure(fraction) }
 
     fun setFocus(fraction: Float) { camera.setFocus(fraction) }
+
+    fun setVideoBitRate(megabitsPerSecond: Int) { camera.setVideoBitRate(megabitsPerSecond) }
 
     // ---------------------------------------------------------------------------------------------
     // Public interface: Methods to be called after service initiation.
@@ -271,6 +271,8 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
             )
             record.write()
             MappingRecord.read(path.file)?.let {MappingRecord.records.add(0, it)}
+            // Save the video.
+            camera.saveRecording(path.file)
         }
         clearCreators()
     }
@@ -337,6 +339,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
 
         // State
         camera.setAutosMode(autosOn = false)
+        camera.startRecording(this)
         creating = true
         timer.markRecordingStart()
         imageReader.reset()
@@ -349,6 +352,7 @@ class MappingService: LifecycleService(), ImageAnalysis.Analyzer {
         creating = false
         timer.markRecordingEnd()
         setCreatorTemporalResolutionFromTimer()
+        camera.stopRecording()
         camera.setAutosMode(autosOn = true)
         return Warnings("Stop Recording")
     }

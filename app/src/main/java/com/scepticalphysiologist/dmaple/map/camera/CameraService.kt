@@ -16,38 +16,60 @@ import androidx.camera.camera2.interop.Camera2CameraInfo
 import androidx.camera.camera2.interop.Camera2Interop
 import androidx.camera.camera2.interop.CaptureRequestOptions
 import androidx.camera.camera2.interop.ExperimentalCamera2Interop
+import androidx.camera.core.AspectRatio
 import androidx.camera.core.Camera
+import androidx.camera.core.CameraInfo
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.DynamicRange
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.core.Preview.SurfaceProvider
 import androidx.camera.core.UseCase
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.video.FileOutputOptions
+import androidx.camera.video.Quality
+import androidx.camera.video.QualitySelector
+import androidx.camera.video.Recorder
+import androidx.camera.video.Recording
+import androidx.camera.video.VideoCapture
+import androidx.camera.video.VideoRecordEvent
+import androidx.core.util.Consumer
 import androidx.lifecycle.LifecycleOwner
 import com.scepticalphysiologist.dmaple.geom.Frame
 import com.scepticalphysiologist.dmaple.geom.Point
+import com.scepticalphysiologist.dmaple.geom.videoQualityHeight
+import java.io.File
 import java.util.concurrent.Executors
 
 /** A wrapper around the hideously complicated Android camera API.
  *
  * @param context A context for the camera provider.
  * @param analyser An image analyser for the image analysis use case.
- * @param aspectRatio The desired aspect ratio (an entry of the AspectRatio enum).
  * @property owner The life cycle owner to which camera use cases will be bound.
+ * @param videoFolder A folder for keeping temporary video files.
  */
 @OptIn(ExperimentalCamera2Interop::class)
 class CameraService(
     context: Context,
     analyser: ImageAnalysis.Analyzer,
-    aspectRatio: Int,
-    private val owner: LifecycleOwner
-) {
+    private val owner: LifecycleOwner,
+    videoFolder: File? = null
+): Consumer<VideoRecordEvent> {
+
+    companion object {
+        /** The camera being used for mapping.*/
+        val CAMERA_ID = CameraSelector.DEFAULT_BACK_CAMERA
+        /** The aspect ratio of the camera. */
+        const val ASPECT_RATIO = AspectRatio.RATIO_16_9
+    }
 
     // Camera objects
     // --------------
     /** The camera provider. */
     private val cameraProvider: ProcessCameraProvider = ProcessCameraProvider.getInstance(context).get()
-    /** The camera. */
+    /** Information about the camera being used. */
+    private val cameraInfo: CameraInfo = cameraProvider.getCameraInfo(CAMERA_ID)
+    /** The camera object. */
     private lateinit var camera: Camera
 
     // Camera use cases
@@ -58,6 +80,8 @@ class CameraService(
     private var surface: SurfaceProvider? = null
     /** The camera image analyser. */
     private var analyser: ImageAnalysis? = null
+    /** Video capture. */
+    private var video: VideoCapture<Recorder>? = null
 
     // State
     // -----
@@ -70,20 +94,30 @@ class CameraService(
     /** Approximate interval between frames (microseconds). */
     val frameIntervalMicroSec: Long get() = (1_000_000f / frameRateFps.toFloat()).toLong()
 
+    // Video
+    // -----
+    /** Recording object. Null when video is not being recorded. */
+    private var recording: Recording? = null
+    /** A temporary file for recording video. */
+    private val temporaryVideoPath = File(videoFolder, "temp_video.mp4")
+
     // ---------------------------------------------------------------------------------------------
     // Initiation
     // ---------------------------------------------------------------------------------------------
 
     init {
+        // Set use cases.
         cameraProvider.unbindAll()
-        setPreview(aspectRatio)
-        setAnalyser(analyser, aspectRatio)
+        setPreview()
+        setAnalyser(analyser)
+        setVideoRecorder()
+        // Set capture parameters.
         setFps(frameRateFps)
         setAutosMode(autosOn = true)
     }
 
     /** Set the preview use case of CameraX. */
-    private fun setPreview(aspectRatio: Int) {
+    private fun setPreview() {
 
         // Call back for recording the real-time focal distance of the camera.
         val captureCallback = object : CameraCaptureSession.CaptureCallback() {
@@ -99,20 +133,20 @@ class CameraService(
 
         unBindUse(preview)
         preview = Preview.Builder().also { builder ->
-            builder.setTargetAspectRatio(aspectRatio)
+            builder.setTargetAspectRatio(ASPECT_RATIO)
             // Listen to the focal distance.
             Camera2Interop.Extender(builder).setSessionCaptureCallback(captureCallback)
-        }.build().also { use ->
-            surface?.let {s -> use.surfaceProvider = s}
-            bindUse(use)
+        }.build().also { prev ->
+            surface?.let {s -> prev.surfaceProvider = s}
+            bindUse(prev)
         }
     }
 
     /** Set the image analyser use case of CameraX. */
-    private fun setAnalyser(analyzer: ImageAnalysis.Analyzer, aspectRatio: Int) {
+    private fun setAnalyser(analyzer: ImageAnalysis.Analyzer) {
         unBindUse(analyser)
         analyser = ImageAnalysis.Builder().also { builder ->
-            builder.setTargetAspectRatio(aspectRatio)
+            builder.setTargetAspectRatio(ASPECT_RATIO)
             // We should never use ImageAnalysis.STRATEGY_BLOCK_PRODUCER, because in this mode
             // frames can come in asynchronously (out of order).
             builder.setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
@@ -123,9 +157,42 @@ class CameraService(
         }
     }
 
+    /** Set the video recorder use case of CameraX.
+     * If the bit-rate is < 1000 do not record video. */
+    private fun setVideoRecorder(bitsPerSecond: Int = 1_000_000) {
+        unBindUse(video)
+        // If less then 1kbps, block video
+        if(bitsPerSecond < 1000) {
+            video = null
+            return
+        }
+        val recorder = Recorder.Builder().also { builder ->
+            builder.setQualitySelector(QualitySelector.from(getVideoQuality()))
+            builder.setAspectRatio(ASPECT_RATIO)
+            builder.setTargetVideoEncodingBitRate(bitsPerSecond)
+        }.build()
+        video = VideoCapture.withOutput(recorder)
+        bindUse(video)
+    }
+
+    /** Get the video quality. Gets the quality from the preview if it is already bound.*/
+    private fun getVideoQuality(): Quality {
+        // Video qualities available for the camera.
+        val qualities = Recorder.getVideoCapabilities(cameraInfo).getSupportedQualities(DynamicRange.SDR)
+        // Base upon the preview.
+        preview?.resolutionInfo?.resolution?.let { resolution ->
+            qualities.firstOrNull { videoQualityHeight(it) == resolution.height }?.let { quality ->
+                return quality
+            }
+        }
+        // Otherwise use HD or (if not available), use the highest.
+        if(qualities.contains(Quality.HD)) return Quality.HD
+        return qualities.maxBy { QualitySelector.getResolution(cameraInfo, it)?.height ?: 0 }
+    }
+
     /** Bind a CameraX use case. */
     private fun bindUse(use: UseCase?) {
-        camera = cameraProvider.bindToLifecycle(owner, CameraSelector.DEFAULT_BACK_CAMERA, use)
+        camera = cameraProvider.bindToLifecycle(owner, CAMERA_ID, use)
     }
 
     /** Unbind a CameraX use case. */
@@ -188,6 +255,41 @@ class CameraService(
         Camera2CameraControl.from(camera.cameraControl).addCaptureRequestOptions(builder.build())
     }
 
+    /** Set video recording bit rate (Mbps). If zero or less, video recording is blocked. */
+    fun setVideoBitRate(megabitsPerSecond: Int) {
+        // There is no CaptureRequest for video bitrate, so have to rebind the video use case.
+        setVideoRecorder(bitsPerSecond = megabitsPerSecond * 1_000_000)
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Video capture
+    // ---------------------------------------------------------------------------------------------
+
+    fun startRecording(context: Context) {
+        // We are already recording or the bitrate is.
+        if(recording != null) return
+        // Start recording.
+        val fileOptions = FileOutputOptions.Builder(temporaryVideoPath).build()
+        video?.output?.prepareRecording(context, fileOptions)?.let { pending ->
+            recording = pending.start(Executors.newSingleThreadExecutor(), this)
+        }
+    }
+
+    fun stopRecording() {
+        recording?.stop()
+        recording = null
+    }
+
+    fun saveRecording(destPath: File) {
+        // Don't save if: the folder doesn't exist, the video folder doesn't exist or
+        // we are in the middle of a recording.
+        if(!destPath.exists() || !temporaryVideoPath.exists() || (recording != null)) return
+        // "Rename" (i.e. move) the video.
+        temporaryVideoPath.renameTo(File(destPath, "field_video.mp4"))
+    }
+
+    override fun accept(value: VideoRecordEvent) {}
+
     // ---------------------------------------------------------------------------------------------
     // Information
     // ---------------------------------------------------------------------------------------------
@@ -219,4 +321,5 @@ class CameraService(
         val display = (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay
         return analyser?.let{Frame.ofImageAnalyser(it, display) }
     }
+
 }

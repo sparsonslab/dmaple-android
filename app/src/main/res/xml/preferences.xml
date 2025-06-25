@@ -47,6 +47,15 @@
             android:max="4"
             android:defaultValue="0"/>
 
+        <SeekBarPreference
+            android:key="VIDEO_BITRATE"
+            android:title="Video Bit Rate"
+            android:summary="The bitrate (Mbps) of recorded video. Set to 0 to not record video."
+            app:showSeekBarValue="true"
+            app:min="0"
+            android:max="10"
+            android:defaultValue="0"/>
+
     </PreferenceCategory>
 
     <PreferenceCategory
