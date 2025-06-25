@@ -29,6 +29,7 @@ fun aspectRatioRatio(aspect: Int): Float {
 
 /** Get the video pixel height of a video quality. */
 fun videoQualityHeight(quality: Quality): Int {
+    // https://en.wikipedia.org/wiki/Display_resolution_standards
     return when(quality) {
         Quality.SD -> 480
         Quality.HD -> 720
